@@ -1,7 +1,7 @@
 'use client'
 
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, CircleMarker, Tooltip, Popup, useMapEvents } from 'react-leaflet'
+import { MapContainer, Marker, Tooltip, Popup, useMapEvents } from 'react-leaflet'
 import './MapPinPopup.css'
 import MapBaseLayers from '@/components/map/MapBaseLayers'
 import L from 'leaflet'
@@ -60,6 +60,32 @@ function getOrgColor(org: OrgMarker) {
   return org.color ?? CATEGORY_COLOR[org.category ?? ''] ?? '#71717a'
 }
 
+function createDropIcon(color: string, selected: boolean): L.DivIcon {
+  const w = selected ? 28 : 22
+  const h = selected ? 38 : 30
+  const cx = w / 2
+  const r = cx - 1
+  const cy = r + 1
+  const tipY = h - 1
+  const ctrlY = Math.round(cy + r * 0.65)
+  const path = `M ${cx} ${tipY} C ${cx} ${tipY} 1 ${ctrlY} 1 ${cy} A ${r} ${r} 0 1 1 ${w - 1} ${cy} C ${w - 1} ${ctrlY} ${cx} ${tipY} ${cx} ${tipY} Z`
+  const innerR = Math.round(r * 0.36)
+  const innerCy = Math.round(cy * 0.88)
+  const glow = `drop-shadow(0 0 ${selected ? 8 : 5}px ${color}cc) drop-shadow(0 2px 8px rgba(0,0,0,0.5))`
+  const html = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:${glow}"><path d="${path}" fill="${color}" stroke="white" stroke-width="2"/><circle cx="${cx}" cy="${innerCy}" r="${innerR}" fill="rgba(255,255,255,0.3)"/></svg>`
+  return L.divIcon({ html, className: '', iconSize: [w, h], iconAnchor: [cx, h], tooltipAnchor: [0, -h] })
+}
+
+function createLocationIcon(color: string, selected: boolean): L.DivIcon {
+  const r = selected ? 9 : 7
+  const pad = 8
+  const size = (r + pad) * 2
+  const c = size / 2
+  const glow = `drop-shadow(0 0 ${selected ? 8 : 5}px ${color}dd)`
+  const html = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:${glow}"><circle cx="${c}" cy="${c}" r="${r + 4}" fill="${color}22" stroke="${color}66" stroke-width="1.5"/><circle cx="${c}" cy="${c}" r="${r}" fill="${color}" stroke="white" stroke-width="2"/></svg>`
+  return L.divIcon({ html, className: '', iconSize: [size, size], iconAnchor: [c, c], tooltipAnchor: [0, -(r + pad)] })
+}
+
 type Selected =
   | { type: 'org'; data: OrgMarker }
   | { type: 'location'; data: LocationMarker }
@@ -111,54 +137,58 @@ export default function LeafletMap({
         <MapClickClose onClose={() => setSelected(null)} />
 
         {/* 조직 거점 마커 */}
-        {showOrgs && visibleOrgs.map((org) => (
-          <CircleMarker
-            key={`org-${org.id}`}
-            center={[org.hq_y, org.hq_x]}
-            radius={selected?.type === 'org' && selected.data.id === org.id ? 13 : 10}
-            bubblingMouseEvents={false}
-            pathOptions={{ fillColor: getOrgColor(org), color: '#fff', fillOpacity: 0.9, weight: 2 }}
-            eventHandlers={{
-              click: (e) => {
-                e.originalEvent.stopPropagation()
-                setSelected((prev) =>
-                  prev?.type === 'org' && prev.data.id === org.id ? null : { type: 'org', data: org }
-                )
-              },
-            }}
-          >
-            {!(selected?.type === 'org' && selected.data.id === org.id) && <Tooltip direction="top" offset={[0, -12]}>{org.name}</Tooltip>}
-          </CircleMarker>
-        ))}
+        {showOrgs && visibleOrgs.map((org) => {
+          const isSelected = selected?.type === 'org' && selected.data.id === org.id
+          return (
+            <Marker
+              key={`org-${org.id}`}
+              position={[org.hq_y, org.hq_x]}
+              icon={createDropIcon(getOrgColor(org), isSelected)}
+              bubblingMouseEvents={false}
+              eventHandlers={{
+                click: (e) => {
+                  e.originalEvent.stopPropagation()
+                  setSelected((prev) =>
+                    prev?.type === 'org' && prev.data.id === org.id ? null : { type: 'org', data: org }
+                  )
+                },
+              }}
+            >
+              {!isSelected && <Tooltip direction="top">{org.name}</Tooltip>}
+            </Marker>
+          )
+        })}
 
-        {/* 작업 위치 마커 */}
-        {showLocations && visibleLocations.map((loc) => (
-          <CircleMarker
-            key={`loc-${loc.id}`}
-            center={[loc.y, loc.x]}
-            radius={7}
-            bubblingMouseEvents={false}
-            pathOptions={{ fillColor: loc.color, color: '#fff', fillOpacity: 0.85, weight: 2, dashArray: '3 2' }}
-            eventHandlers={{
-              click: (e) => {
-                e.originalEvent.stopPropagation()
-                setSelected((prev) =>
-                  prev?.type === 'location' && prev.data.id === loc.id ? null : { type: 'location', data: loc }
-                )
-              },
-            }}
-          >
-            <Tooltip direction="top" offset={[0, -9]}>
-              {loc.name}{loc.label ? ` (${loc.label})` : ''}
-            </Tooltip>
-          </CircleMarker>
-        ))}
+        {/* 주요 장소 마커 */}
+        {showLocations && visibleLocations.map((loc) => {
+          const isSelected = selected?.type === 'location' && selected.data.id === loc.id
+          return (
+            <Marker
+              key={`loc-${loc.id}`}
+              position={[loc.y, loc.x]}
+              icon={createLocationIcon(loc.color, isSelected)}
+              bubblingMouseEvents={false}
+              eventHandlers={{
+                click: (e) => {
+                  e.originalEvent.stopPropagation()
+                  setSelected((prev) =>
+                    prev?.type === 'location' && prev.data.id === loc.id ? null : { type: 'location', data: loc }
+                  )
+                },
+              }}
+            >
+              <Tooltip direction="top">
+                {loc.name}{loc.label ? ` (${loc.label})` : ''}
+              </Tooltip>
+            </Marker>
+          )
+        })}
       {/* 선택 카드 */}
       {selected && (selected.type === 'org' ? showOrgs && visibleOrgs.some((org) => org.id === selected.data.id) : showLocations && visibleLocations.some((l) => l.id === selected.data.id)) && (
         <Popup
           key={`${selected.type}-${selected.data.id}`}
           position={selected.type === 'org' ? [selected.data.hq_y, selected.data.hq_x] : [selected.data.y, selected.data.x]}
-          offset={[0, -16]}
+          offset={selected?.type === 'org' ? [0, -40] : [0, -20]}
           className="map-pin-popup"
           closeButton={false}
           closeOnClick={false}
