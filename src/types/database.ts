@@ -58,6 +58,9 @@ export type Database = {
           is_disbanded: boolean
           name_confirmed: boolean
           gang_id: string | null
+          hq_x: number | null
+          hq_y: number | null
+          hq_label: string | null
           created_at: string
           updated_at: string
         }
@@ -142,6 +145,20 @@ export type Database = {
         }
         Insert: Omit<Database['public']['Tables']['reports']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['reports']['Insert']>
+      }
+      map_locations: {
+        Row: {
+          id: string
+          name: string
+          label: string | null
+          description: string | null
+          color: string
+          x: number | null
+          y: number | null
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['map_locations']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['map_locations']['Insert']>
       }
     }
   }

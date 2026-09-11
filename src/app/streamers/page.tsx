@@ -1,3 +1,5 @@
+export const revalidate = 60
+
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'

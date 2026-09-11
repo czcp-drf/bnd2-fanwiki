@@ -10,5 +10,5 @@ export async function GET(req: NextRequest) {
   }
   const entries = await Promise.all(channelIds.map(async (id) => [id, await checkChannelLive(id)] as const))
   const map: LiveMap = Object.fromEntries(entries)
-  return NextResponse.json(map, { headers: { 'Cache-Control': 'no-store' } })
+  return NextResponse.json(map, { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=60' } })
 }

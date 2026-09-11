@@ -26,6 +26,8 @@ export default function ReportForm() {
 
   return (
     <form ref={formRef} action={action} className="space-y-6">
+      {/* 허니팟 — 봇 방지용 숨김 필드 */}
+      <input type="text" name="_hp" defaultValue="" aria-hidden="true" tabIndex={-1} style={{ position: 'absolute', left: '-9999px' }} />
       {/* 유형 선택 */}
       <fieldset className="space-y-2">
         <legend className="text-sm font-semibold text-zinc-300">

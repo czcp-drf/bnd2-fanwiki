@@ -37,9 +37,27 @@ yarn-error.log*
 # vercel
 .vercel
 
+# data files
+streamers.csv
+streamers.md
+
+# test scripts
+/scripts/
+
+# map tiles (CDN으로 서빙, git 추적 제외)
+/public/mapStyles/
+
+# next.js default template assets (unused)
+/public/file.svg
+/public/globe.svg
+/public/next.svg
+/public/vercel.svg
+/public/window.svg
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 # Orca isolated review checkout
 /admin-reliability/
+CLAUDE.md
