@@ -76,6 +76,8 @@ export default async function EditEventPage({ params }: Props) {
               occurred_at: event.occurred_at ? event.occurred_at.slice(0, 16) : '',
               thumbnail_url: event.thumbnail_url ?? '',
               is_published: event.is_published,
+              location_x: event.location_x ?? null,
+              location_y: event.location_y ?? null,
             }}
           />
         </section>

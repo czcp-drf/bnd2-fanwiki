@@ -11,6 +11,8 @@ export async function createEvent(data: {
   occurred_at: string | null
   thumbnail_url: string | null
   is_published: boolean
+  location_x: number | null
+  location_y: number | null
 }) {
   const supabase = await requireAdmin()
   const { data: event, error } = await supabase
@@ -32,6 +34,8 @@ export async function updateEvent(id: string, data: {
   occurred_at: string | null
   thumbnail_url: string | null
   is_published: boolean
+  location_x: number | null
+  location_y: number | null
 }) {
   const supabase = await requireAdmin()
   const { error } = await supabase.from('events').update(data).eq('id', id)

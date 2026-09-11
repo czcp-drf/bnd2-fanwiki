@@ -1,8 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
+import { MapPin, X } from 'lucide-react'
 import { createEvent, updateEvent, deleteEvent } from './actions'
+
+const MapPinPicker = dynamic(() => import('@/components/report/MapPinPicker'), { ssr: false })
 
 const typeOptions = [
   { value: 'war', label: '전쟁/항쟁' },
@@ -22,6 +26,8 @@ type EventData = {
   occurred_at: string
   thumbnail_url: string
   is_published: boolean
+  location_x?: number | null
+  location_y?: number | null
 }
 
 export default function EventForm({ initial }: { initial?: EventData }) {
@@ -33,10 +39,23 @@ export default function EventForm({ initial }: { initial?: EventData }) {
   const [occurredAt, setOccurredAt] = useState(initial?.occurred_at ?? '')
   const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnail_url ?? '')
   const [isPublished, setIsPublished] = useState(initial?.is_published ?? false)
+  const [locationX, setLocationX] = useState<number | null>(initial?.location_x ?? null)
+  const [locationY, setLocationY] = useState<number | null>(initial?.location_y ?? null)
+  const [showMap, setShowMap] = useState(!!(initial?.location_x || initial?.location_y))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const router = useRouter()
+
+  function handleMapPick(lat: number, lng: number) {
+    setLocationX(lng)
+    setLocationY(lat)
+  }
+
+  function clearLocation() {
+    setLocationX(null)
+    setLocationY(null)
+  }
 
   async function save() {
     if (!title.trim()) { setError('제목을 입력해주세요.'); return }
@@ -50,6 +69,8 @@ export default function EventForm({ initial }: { initial?: EventData }) {
       occurred_at: occurredAt || null,
       thumbnail_url: thumbnailUrl.trim() || null,
       is_published: isPublished,
+      location_x: locationX,
+      location_y: locationY,
     }
     try {
       if (isEdit) {
@@ -137,6 +158,80 @@ export default function EventForm({ initial }: { initial?: EventData }) {
             className="w-full resize-y rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
           />
         </div>
+      </div>
+
+      {/* 위치 정보 */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-zinc-500">발생 위치 (선택)</label>
+          <div className="flex items-center gap-2">
+            {(locationX !== null || locationY !== null) && (
+              <button
+                type="button"
+                onClick={clearLocation}
+                className="flex items-center gap-1 text-xs text-zinc-600 hover:text-red-400 transition-colors"
+              >
+                <X size={11} /> 위치 제거
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowMap((v) => !v)}
+              className="flex items-center gap-1.5 rounded border border-zinc-700 px-2.5 py-1 text-xs text-zinc-400 hover:border-amber-400/50 hover:text-amber-400 transition-colors"
+            >
+              <MapPin size={11} />
+              {showMap ? '지도 닫기' : '지도에서 선택'}
+            </button>
+          </div>
+        </div>
+
+        {/* 좌표 직접 입력 */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-1">
+            <span className="text-xs text-zinc-600 w-4">X</span>
+            <input
+              type="number"
+              step="0.1"
+              value={locationX ?? ''}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value)
+                setLocationX(isNaN(v) ? null : v)
+              }}
+              placeholder="경도 (선택)"
+              className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 flex-1">
+            <span className="text-xs text-zinc-600 w-4">Y</span>
+            <input
+              type="number"
+              step="0.1"
+              value={locationY ?? ''}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value)
+                setLocationY(isNaN(v) ? null : v)
+              }}
+              placeholder="위도 (선택)"
+              className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* 지도 */}
+        {showMap && (
+          <div className="rounded-lg overflow-hidden border border-zinc-700" style={{ height: 280 }}>
+            <MapPinPicker
+              coords={locationX !== null && locationY !== null ? { lat: locationY, lng: locationX } : null}
+              onPick={handleMapPick}
+            />
+          </div>
+        )}
+
+        {locationX !== null && locationY !== null && (
+          <p className="text-xs text-amber-400/70">
+            X: {locationX.toFixed(1)}, Y: {locationY.toFixed(1)}
+          </p>
+        )}
       </div>
 
       <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">

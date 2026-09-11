@@ -102,6 +102,8 @@ export type Database = {
           thumbnail_url: string | null
           occurred_at: string | null
           is_published: boolean
+          location_x: number | null
+          location_y: number | null
           created_at: string
           updated_at: string
         }
