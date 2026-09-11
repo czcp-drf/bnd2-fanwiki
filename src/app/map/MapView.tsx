@@ -16,6 +16,7 @@ const CATEGORIES = ['city_hall', 'public_service', 'gang', 'business', 'illegal'
 export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locations: LocationMarker[] }) {
   const focusOrgId = useSearchParams().get('org')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [showOrgs, setShowOrgs] = useState(true)
   const [showLocations, setShowLocations] = useState(true)
   const [activeLocationLabel, setActiveLocationLabel] = useState<string | null>(null)
 
@@ -35,6 +36,21 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* 조직 거점 토글 */}
+          <button
+            onClick={() => {
+              setShowOrgs((v) => !v)
+              if (showOrgs) setActiveCategory(null)
+            }}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer border ${
+              showOrgs
+                ? 'border-zinc-600 bg-zinc-800 text-zinc-300'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            조직 거점 {showOrgs ? '표시 중' : '숨김'}
+          </button>
+
           {/* 작업 위치 토글 + label 필터 */}
           {locations.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -81,29 +97,31 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
             </div>
           )}
 
-          {/* 카테고리 필터 */}
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              onClick={() => setActiveCategory(null)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                activeCategory === null ? 'bg-zinc-200 text-zinc-900' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-              }`}
-            >
-              전체 ({orgs.length})
-            </button>
-            {CATEGORIES.filter((c) => counts[c] > 0).map((cat) => (
+          {/* 카테고리 필터 (조직 거점 표시 중일 때만) */}
+          {showOrgs && (
+            <div className="flex flex-wrap gap-1.5">
               <button
-                key={cat}
-                onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                onClick={() => setActiveCategory(null)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                  activeCategory === cat ? 'text-zinc-900' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                  activeCategory === null ? 'bg-zinc-200 text-zinc-900' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                 }`}
-                style={activeCategory === cat ? { backgroundColor: CATEGORY_COLOR[cat] } : {}}
               >
-                {CATEGORY_LABEL[cat]} ({counts[cat]})
+                전체 ({orgs.length})
               </button>
-            ))}
-          </div>
+              {CATEGORIES.filter((c) => counts[c] > 0).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                    activeCategory === cat ? 'text-zinc-900' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                  }`}
+                  style={activeCategory === cat ? { backgroundColor: CATEGORY_COLOR[cat] } : {}}
+                >
+                  {CATEGORY_LABEL[cat]} ({counts[cat]})
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -114,6 +132,7 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
           orgs={orgs}
           locations={locations}
           activeCategory={activeCategory}
+          showOrgs={showOrgs}
           showLocations={showLocations}
           activeLocationLabel={activeLocationLabel}
         />

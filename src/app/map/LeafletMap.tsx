@@ -68,6 +68,7 @@ export default function LeafletMap({
   orgs,
   locations,
   activeCategory,
+  showOrgs,
   showLocations,
   activeLocationLabel,
   focusOrgId,
@@ -75,6 +76,7 @@ export default function LeafletMap({
   orgs: OrgMarker[]
   locations: LocationMarker[]
   activeCategory: string | null
+  showOrgs: boolean
   showLocations: boolean
   activeLocationLabel: string | null
   focusOrgId: string | null
@@ -109,7 +111,7 @@ export default function LeafletMap({
         <MapClickClose onClose={() => setSelected(null)} />
 
         {/* 조직 거점 마커 */}
-        {visibleOrgs.map((org) => (
+        {showOrgs && visibleOrgs.map((org) => (
           <CircleMarker
             key={`org-${org.id}`}
             center={[org.hq_y, org.hq_x]}
@@ -152,7 +154,7 @@ export default function LeafletMap({
           </CircleMarker>
         ))}
       {/* 선택 카드 */}
-      {selected && (selected.type === 'org' ? visibleOrgs.some((org) => org.id === selected.data.id) : showLocations && visibleLocations.some((l) => l.id === selected.data.id)) && (
+      {selected && (selected.type === 'org' ? showOrgs && visibleOrgs.some((org) => org.id === selected.data.id) : showLocations && visibleLocations.some((l) => l.id === selected.data.id)) && (
         <Popup
           key={`${selected.type}-${selected.data.id}`}
           position={selected.type === 'org' ? [selected.data.hq_y, selected.data.hq_x] : [selected.data.y, selected.data.x]}
