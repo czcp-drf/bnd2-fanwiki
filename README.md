@@ -1,44 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 봉누도2 위키
 
-## Getting Started
+봉누도2 GTA RP 서버의 팬 제작 위키 사이트입니다.
+스트리머, 캐릭터, 조직, 사건, 지도 등의 정보를 아카이빙합니다.
 
-First, run the development server:
+> **비공식 팬 사이트입니다.** 봉누도2 서버 및 원작자와 공식적인 관계가 없습니다.
+
+---
+
+## 주요 기능
+
+- **스트리머** — 참여 스트리머 목록 및 치지직 채널 연결
+- **캐릭터** — 등장 캐릭터 정보 (이름, 별명, 직업, 소속 조직)
+- **조직** — 서버 내 세력 및 조직 정보
+- **사건** — 주요 사건 아카이브 및 참여 인물·클립 정리
+- **지도** — GTA V 맵 기반 거점 위치 표시
+- **라이브** — 치지직 실시간 방송 상태 연동
+- **빨간약 / 파란약** — 스트리머↔캐릭터 정보 표시 토글
+- **제보** — 커뮤니티 정보 제보 양식
+
+---
+
+## 기술 스택
+
+- **Framework:** Next.js 15 (App Router)
+- **Database:** Supabase (PostgreSQL)
+- **Styling:** Tailwind CSS
+- **Map:** Leaflet + 커스텀 GTA V CRS
+- **Deployment:** Vercel
+
+---
+
+## 로컬 실행
+
+### 1. 환경 변수 설정
+
+`.env.local.example`을 복사해 `.env.local`을 만들고 값을 채웁니다.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+ADMIN_PASSWORD=...
+ADMIN_TOKEN=...
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. 패키지 설치 및 실행
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Reliability checks
+[http://localhost:3000](http://localhost:3000) 에서 확인할 수 있습니다.
 
-With Node.js 22.19 or newer, run `npm run test:live` to check live API fallback,
-unknown/offline handling, database failures, and current-organization filtering.
-These tests use mocked services and do not modify the real database.
-Use `npm run test:reliability` to also check admin mutation failures and report input validation.
-Run `npm run lint` and `npm run build` before integrating changes.
+---
 
-## Learn More
+## 라이선스
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+본 프로젝트는 팬 제작 비영리 아카이빙 사이트입니다.
+콘텐츠 저작권은 봉누도2 서버 및 각 스트리머에게 있습니다.
