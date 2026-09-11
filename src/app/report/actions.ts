@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/types/database'
 
 async function getIp(): Promise<string | null> {
@@ -10,7 +11,7 @@ async function getIp(): Promise<string | null> {
 }
 
 async function isBlocked(ip: string): Promise<boolean> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { count } = await supabase
     .from('blocked_ips')
     .select('*', { count: 'exact', head: true })
