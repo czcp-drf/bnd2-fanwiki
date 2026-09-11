@@ -1,0 +1,55 @@
+.leaflet-container .leaflet-control-layers {
+  border: 1px solid #3f3f46;
+  border-radius: 12px;
+  background: rgb(24 24 27 / 95%);
+  color: #a1a1aa;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 25%);
+  backdrop-filter: blur(8px);
+  font-family: inherit;
+}
+
+.leaflet-container .leaflet-control-layers-expanded {
+  padding: 4px;
+}
+
+.leaflet-control-layers .leaflet-control-layers-base {
+  display: flex;
+  gap: 4px;
+}
+
+.leaflet-control-layers .leaflet-control-layers-base label {
+  position: relative;
+  margin: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  transition: background-color 150ms, color 150ms;
+}
+
+.leaflet-control-layers .leaflet-control-layers-base label:hover {
+  background: #27272a;
+  color: #f4f4f5;
+}
+
+.leaflet-control-layers .leaflet-control-layers-base label:has(input:checked) {
+  background: rgb(251 191 36 / 12%);
+  color: #fbbf24;
+  box-shadow: inset 0 0 0 1px rgb(251 191 36 / 30%);
+}
+
+.leaflet-control-layers .leaflet-control-layers-base label:has(input:focus-visible) {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+/* Keep native radio keyboard behavior while displaying segmented labels. */
+.leaflet-control-layers .leaflet-control-layers-selector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
