@@ -8,6 +8,7 @@ import StreamerListWithLive from '@/components/streamers/StreamerListWithLive'
 import { getLiveStreamers } from '@/lib/data/live-streamers'
 import AppImage from '@/components/ui/AppImage'
 import LiveDataError from '@/components/live/LiveDataError'
+import { LIVE_ENABLED } from '@/lib/live/config'
 
 async function getStats() {
   const supabase = await createClient()
@@ -60,7 +61,7 @@ const quickLinks = [
 export default async function HomePage() {
   const [stats, streamers, events] = await Promise.all([
     getStats(),
-    getLiveStreamers().catch(() => null),
+    LIVE_ENABLED ? getLiveStreamers().catch(() => null) : Promise.resolve(null),
     getRecentEvents(),
   ])
 
@@ -101,7 +102,7 @@ export default async function HomePage() {
       </section>
 
       {/* 라이브 바로가기 */}
-      <section className="space-y-4">
+      {LIVE_ENABLED && <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
@@ -119,8 +120,7 @@ export default async function HomePage() {
         ) : (
           <StreamerListWithLive streamers={streamers} onlineOnly />
         )}
-      </section>
-
+      </section>}
       {/* 최근 사건 */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">

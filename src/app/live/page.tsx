@@ -7,6 +7,7 @@ import { getOrganizationFilterOptions } from '@/lib/data/organizations'
 import CharacterFilters from '@/components/characters/CharacterFilters'
 import StreamerListWithLive from '@/components/streamers/StreamerListWithLive'
 import LiveDataError from '@/components/live/LiveDataError'
+import { LIVE_ENABLED } from '@/lib/live/config'
 
 export const metadata: Metadata = {
   title: '라이브',
@@ -19,6 +20,14 @@ type Props = {
 }
 
 export default async function LivePage({ searchParams }: Props) {
+  if (!LIVE_ENABLED) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-10 space-y-3">
+        <h1 className="text-2xl font-black text-white">라이브</h1>
+        <p className="text-sm text-zinc-400">라이브 현황 서비스를 잠시 쉬어갑니다.</p>
+      </div>
+    )
+  }
   const { org = '', sort = 'name' } = await searchParams
   const [organizations, streamers] = await Promise.all([
     getOrganizationFilterOptions(),

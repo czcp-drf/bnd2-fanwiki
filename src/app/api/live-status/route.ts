@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkChannelLive, type LiveMap } from '@/lib/live/status'
+import { LIVE_ENABLED } from '@/lib/live/config'
 
 export async function GET(req: NextRequest) {
+  if (!LIVE_ENABLED) {
+    return NextResponse.json({ error: 'Live status is temporarily disabled' }, {
+      status: 503,
+      headers: { 'Cache-Control': 'no-store', 'Retry-After': '3600' },
+    })
+  }
   const ids = req.nextUrl.searchParams.get('ids')
   if (!ids) return NextResponse.json({})
   const channelIds = [...new Set(ids.split(',').filter(Boolean))]

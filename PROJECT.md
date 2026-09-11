@@ -103,6 +103,7 @@ src/
 - `StreamerBlur`: RedPill OFF 시 자식 블러 처리 (숨기지는 않음)
 
 ### 라이브 상태
+- 트래픽 관리를 위해 현재 임시 중단: `src/lib/live/config.ts`의 `LIVE_ENABLED = false`. 홈 라이브 섹션과 메뉴를 숨기고, `/live`는 안내만 표시하며 API는 외부 조회 없이 503을 반환합니다. 재개 시 true로 변경 후 재배포합니다.
 - `/api/live-status?ids=...` — Chzzk API 호출 (v3.3 → v2 폴백)
 - `live: true` = 방송 중, `live: false` = 오프라인, `live: null` = 확인 불가
 - `useLiveStatus` 훅 — 60초 자동갱신, 탭 숨김 시 일시정지, retry 지원
