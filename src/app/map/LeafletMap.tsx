@@ -1,12 +1,13 @@
 'use client'
 
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, TileLayer, CircleMarker, Tooltip, useMapEvents } from 'react-leaflet'
+import { MapContainer, CircleMarker, Tooltip, useMapEvents } from 'react-leaflet'
+import MapBaseLayers from '@/components/map/MapBaseLayers'
 import L from 'leaflet'
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  TILE_URL, MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
+  MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
   MAP_MAX_BOUNDS, GTA_CRS_CONFIG, CATEGORY_COLOR, CATEGORY_LABEL,
 } from '@/lib/map/constants'
 
@@ -88,7 +89,7 @@ export default function LeafletMap({
         maxBoundsViscosity={1}
         style={{ height: '100%', width: '100%', background: '#153E6A' }}
       >
-        <TileLayer url={TILE_URL} noWrap />
+        <MapBaseLayers />
         <MapClickClose onClose={() => setSelected(null)} />
 
         {/* 조직 거점 마커 */}

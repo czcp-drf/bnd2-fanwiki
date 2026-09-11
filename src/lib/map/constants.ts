@@ -3,7 +3,10 @@
 // - 프로덕션: NEXT_PUBLIC_MAP_TILE_BASE=https://your-r2.r2.dev 등 CDN URL 설정
 const TILE_BASE = process.env.NEXT_PUBLIC_MAP_TILE_BASE ?? ''
 
-export const TILE_URL = `${TILE_BASE}/mapStyles/styleSatelite/{z}/{x}/{y}.jpg`
+export const MAP_TILE_URLS = {
+  atlas: `${TILE_BASE}/mapStyles/styleAtlas/{z}/{x}/{y}.jpg`,
+  satellite: `${TILE_BASE}/mapStyles/styleSatelite/{z}/{x}/{y}.jpg`,
+}
 
 // 줌 설정 (RiceaRaul/gta-v-map-leaflet 기준)
 export const MAP_MIN_ZOOM = 1

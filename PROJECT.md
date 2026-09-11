@@ -2,6 +2,8 @@
 
 ## 지도 타일 Storage
 
+- 공개·관리자 지도 우상단에서 Atlas / Satellite 전환 가능. 기본값은 Atlas이며 선택한 배경 타일만 로드합니다.
+
 - 공개 버킷: `map-tiles`, 경로: `mapStyles/<스타일>/{z}/{x}/{y}.jpg`.
 - `NEXT_PUBLIC_MAP_TILE_BASE`는 Supabase 프로젝트 URL 뒤에 `/storage/v1/object/public/map-tiles`를 붙인 값입니다. 변경 후 개발 서버 재시작 또는 배포 재빌드가 필요합니다.
 - 업로드: `node --env-file=.env.local scripts/upload-map-tiles.mjs` (Node 22 이상). 기존 파일은 덮어쓰지 않고 건너뛰며, 실패한 업로드는 재시도합니다.
