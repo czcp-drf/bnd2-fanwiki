@@ -102,9 +102,11 @@ src/
 - 채널 ID 형식: 32자 소문자 hex
 
 ### 어드민 인증
-- Supabase Auth 기반
-- `createAdminClient()` — service role key 사용 (서버에서만)
-- 미들웨어로 `/admin/*` 보호
+- 쿠키 기반 토큰 인증 (`ADMIN_PASSWORD`, `ADMIN_TOKEN` 환경변수)
+- `requireAdmin()` — 쿠키 검증 후 미인증 시 `/admin/login` 리다이렉트
+- `src/proxy.ts` — 미들웨어 파일 (`middleware.ts` 아님, 이 Next.js 버전의 컨벤션)
+- `export function proxy()` — 미들웨어 함수명
+- `/admin/*` 전체 보호, `/admin/login` 제외
 
 ---
 
