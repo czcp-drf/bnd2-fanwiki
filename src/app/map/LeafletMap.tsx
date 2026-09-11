@@ -1,7 +1,8 @@
 'use client'
 
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, CircleMarker, Tooltip, useMapEvents } from 'react-leaflet'
+import { MapContainer, CircleMarker, Tooltip, Popup, useMapEvents } from 'react-leaflet'
+import './MapPinPopup.css'
 import MapBaseLayers from '@/components/map/MapBaseLayers'
 import L from 'leaflet'
 import { useState } from 'react'
@@ -51,7 +52,7 @@ function createGtaCRS() {
 const GTA_CRS = createGtaCRS()
 
 function MapClickClose({ onClose }: { onClose: () => void }) {
-  useMapEvents({ click: onClose })
+  useMapEvents({ click: onClose, keydown: (event) => { if (event.originalEvent.key === 'Escape') onClose() } })
   return null
 }
 
@@ -118,7 +119,7 @@ export default function LeafletMap({
               },
             }}
           >
-            <Tooltip direction="top" offset={[0, -12]}>{org.name}</Tooltip>
+            {!(selected?.type === 'org' && selected.data.id === org.id) && <Tooltip direction="top" offset={[0, -12]}>{org.name}</Tooltip>}
           </CircleMarker>
         ))}
 
@@ -128,6 +129,7 @@ export default function LeafletMap({
             key={`loc-${loc.id}`}
             center={[loc.y, loc.x]}
             radius={7}
+            bubblingMouseEvents={false}
             pathOptions={{ fillColor: loc.color, color: '#fff', fillOpacity: 0.85, weight: 2, dashArray: '3 2' }}
             eventHandlers={{
               click: (e) => {
@@ -143,11 +145,20 @@ export default function LeafletMap({
             </Tooltip>
           </CircleMarker>
         ))}
-      </MapContainer>
-
       {/* 선택 카드 */}
-      {selected && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] w-80 max-w-[calc(100%-2rem)] max-h-[70%] overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-md p-5 shadow-2xl">
+      {selected && (selected.type === 'org' ? visibleOrgs.some((org) => org.id === selected.data.id) : showLocations) && (
+        <Popup
+          key={`${selected.type}-${selected.data.id}`}
+          position={selected.type === 'org' ? [selected.data.hq_y, selected.data.hq_x] : [selected.data.y, selected.data.x]}
+          offset={[0, -16]}
+          className="map-pin-popup"
+          closeButton={false}
+          closeOnClick={false}
+          closeOnEscapeKey={false}
+          maxWidth={320}
+          autoPanPadding={[20, 20]}
+        >
+        <div onKeyDown={(event) => { if (event.key === 'Escape') setSelected(null) }} className="relative w-72 max-w-[calc(100vw-5rem)] max-h-[50vh] overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-md p-5 shadow-2xl">
           <button onClick={() => setSelected(null)} aria-label="설명 카드 닫기"
             className="absolute right-3 top-3 rounded-lg p-1 text-zinc-500 hover:bg-zinc-800 hover:text-white cursor-pointer"><X size={16} /></button>
 
@@ -192,7 +203,9 @@ export default function LeafletMap({
             )
           })()}
         </div>
+        </Popup>
       )}
+      </MapContainer>
     </div>
   )
 }
