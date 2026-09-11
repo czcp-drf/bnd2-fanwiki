@@ -1,9 +1,15 @@
 'use client'
 
-import { useActionState, useEffect, useRef } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { submitReport, type ReportFormState } from '@/app/report/actions'
 import { cn } from '@/lib/utils'
-import { CheckCircle, AlertCircle, Send } from 'lucide-react'
+import { CheckCircle, AlertCircle, Send, MapPin, X } from 'lucide-react'
+
+const MapPinPicker = dynamic(() => import('./MapPinPicker'), {
+  ssr: false,
+  loading: () => <div className="h-full w-full animate-pulse bg-zinc-800" />,
+})
 
 const typeOptions = [
   { value: 'new_character', label: '새 캐릭터 정보', desc: '위키에 없는 캐릭터 추가 요청' },
@@ -17,10 +23,14 @@ const initialState: ReportFormState = { status: 'idle' }
 export default function ReportForm() {
   const [state, action, isPending] = useActionState(submitReport, initialState)
   const formRef = useRef<HTMLFormElement>(null)
+  const [showMap, setShowMap] = useState(false)
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null)
 
   useEffect(() => {
     if (state.status === 'success') {
       formRef.current?.reset()
+      setShowMap(false)
+      setMapCoords(null)
     }
   }, [state])
 
@@ -28,6 +38,7 @@ export default function ReportForm() {
     <form ref={formRef} action={action} className="space-y-6">
       {/* 허니팟 — 봇 방지용 숨김 필드 */}
       <input type="text" name="_hp" defaultValue="" aria-hidden="true" tabIndex={-1} style={{ position: 'absolute', left: '-9999px' }} />
+
       {/* 유형 선택 */}
       <fieldset className="space-y-2">
         <legend className="text-sm font-semibold text-zinc-300">
@@ -91,6 +102,70 @@ export default function ReportForm() {
           className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none transition-colors"
         />
         <p className="text-xs text-zinc-600 text-right">최대 2000자</p>
+      </div>
+
+      {/* 지도 위치 첨부 */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-zinc-300">
+            지도 위치 첨부{' '}
+            <span className="font-normal text-zinc-600">(선택)</span>
+          </p>
+          {!showMap ? (
+            <button
+              type="button"
+              onClick={() => setShowMap(true)}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:border-amber-400/40 hover:text-amber-400"
+            >
+              <MapPin size={12} />
+              위치 첨부하기
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { setShowMap(false); setMapCoords(null) }}
+              className="flex cursor-pointer items-center gap-1 text-xs text-zinc-600 transition-colors hover:text-zinc-400"
+            >
+              <X size={12} />
+              닫기
+            </button>
+          )}
+        </div>
+
+        {showMap && (
+          <div className="space-y-2">
+            <p className="text-xs text-zinc-500">
+              지도를 클릭해 위치를 찍어주세요. 조직 거점, 작업 위치 등을 정확하게 알려주실 수 있습니다.
+            </p>
+            <div className="h-64 overflow-hidden rounded-xl border border-zinc-800">
+              <MapPinPicker coords={mapCoords} onPick={(lat, lng) => setMapCoords({ lat, lng })} />
+            </div>
+            {mapCoords ? (
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-1 text-xs text-amber-400">
+                  <MapPin size={10} />
+                  X: {mapCoords.lng.toFixed(1)}, Y: {mapCoords.lat.toFixed(1)}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setMapCoords(null)}
+                  className="cursor-pointer text-xs text-zinc-600 transition-colors hover:text-zinc-400"
+                >
+                  핀 제거
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-zinc-600">아직 위치가 선택되지 않았습니다.</p>
+            )}
+          </div>
+        )}
+
+        {mapCoords && (
+          <>
+            <input type="hidden" name="map_x" value={mapCoords.lng.toFixed(4)} />
+            <input type="hidden" name="map_y" value={mapCoords.lat.toFixed(4)} />
+          </>
+        )}
       </div>
 
       {/* 참고 URL */}

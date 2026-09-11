@@ -2,7 +2,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import ReportStatusSelect from './ReportStatusSelect'
 import BlockIpButton from './BlockIpButton'
+import ReportCoordAction from './ReportCoordAction'
 import type { Report } from '@/types/database'
+
+function stripCoordLine(content: string): string {
+  return content.replace(/\n\n\[지도 좌표\] X: [-\d.]+, Y: [-\d.]+$/, '').trim()
+}
 
 const typeLabel: Record<string, string> = {
   new_character: '새 캐릭터',
@@ -85,7 +90,9 @@ export default async function AdminReportsPage({ searchParams }: Props) {
                 <ReportStatusSelect id={r.id} status={r.status} />
               </div>
 
-              <p className="text-sm text-zinc-400 whitespace-pre-wrap">{r.content}</p>
+              <p className="text-sm text-zinc-400 whitespace-pre-wrap">{stripCoordLine(r.content)}</p>
+
+              <ReportCoordAction content={r.content} title={r.title} />
 
               <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-600 border-t border-zinc-800 pt-3">
                 {(r.contact || r.contact_method) && (

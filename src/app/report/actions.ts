@@ -56,6 +56,8 @@ export async function submitReport(
   const contact = getString(formData, 'contact')
   const contact_method = getString(formData, 'contact_method')
   const reference_url = getString(formData, 'reference_url')
+  const map_x = getString(formData, 'map_x')
+  const map_y = getString(formData, 'map_y')
 
   if (!type || !title || !content) {
     return { status: 'error', message: '유형, 제목, 내용은 필수 항목입니다.' }
@@ -93,10 +95,15 @@ export async function submitReport(
     return { status: 'error', message: '참고 링크는 500자 이내로 입력해주세요.' }
   }
 
+  const hasCoords = map_x && map_y && !isNaN(Number(map_x)) && !isNaN(Number(map_y))
+  const fullContent = hasCoords
+    ? `${content.trim()}\n\n[지도 좌표] X: ${Number(map_x).toFixed(1)}, Y: ${Number(map_y).toFixed(1)}`
+    : content.trim()
+
   const payload = {
     type,
     title: title.trim(),
-    content: content.trim(),
+    content: fullContent,
     contact: contact.trim() || null,
     contact_method: contact_method.trim() || null,
     reference_url: reference_url.trim() || null,
