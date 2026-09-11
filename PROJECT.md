@@ -1,5 +1,12 @@
 # 봉누도2 위키 — 프로젝트 가이드
 
+## 지도 타일 Storage
+
+- 공개 버킷: `map-tiles`, 경로: `mapStyles/<스타일>/{z}/{x}/{y}.jpg`.
+- `NEXT_PUBLIC_MAP_TILE_BASE`는 Supabase 프로젝트 URL 뒤에 `/storage/v1/object/public/map-tiles`를 붙인 값입니다. 변경 후 개발 서버 재시작 또는 배포 재빌드가 필요합니다.
+- 업로드: `node --env-file=.env.local scripts/upload-map-tiles.mjs` (Node 22 이상). 기존 파일은 덮어쓰지 않고 건너뛰며, 실패한 업로드는 재시도합니다.
+- 업로드용 `SUPABASE_SERVICE_ROLE_KEY`는 로컬 서버 환경에서만 사용합니다.
+
 > AI 에이전트(Claude Code, Codex 등)가 공통으로 참조하는 프로젝트 지식 문서입니다.
 > 기능을 추가하거나 구조를 변경할 때 이 파일도 함께 업데이트해 주세요.
 

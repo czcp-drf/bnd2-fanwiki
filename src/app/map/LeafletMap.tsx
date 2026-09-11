@@ -86,7 +86,7 @@ export default function LeafletMap({
         maxZoom={MAP_MAX_ZOOM}
         maxBounds={MAP_MAX_BOUNDS}
         maxBoundsViscosity={1}
-        style={{ height: '100%', width: '100%', background: '#18181b' }}
+        style={{ height: '100%', width: '100%', background: '#153E6A' }}
       >
         <TileLayer url={TILE_URL} noWrap />
         <MapClickClose onClose={() => setSelected(null)} />

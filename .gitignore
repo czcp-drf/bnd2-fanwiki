@@ -42,7 +42,9 @@ streamers.csv
 streamers.md
 
 # test scripts
-/scripts/
+/scripts/*
+!/scripts/upload-map-tiles.mjs
+/supabase/.temp/
 
 # map tiles (CDN으로 서빙, git 추적 제외)
 /public/mapStyles/
