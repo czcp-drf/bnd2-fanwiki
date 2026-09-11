@@ -255,10 +255,10 @@ export default function ReportForm({
   useEffect(() => {
     if (state.status === 'success') {
       formRef.current?.reset()
-      setSelectedType('')
       setShowMap(false)
       setMapCoords(null)
       setResetKey(k => k + 1)
+      // selectedType 유지 — 같은 유형으로 연속 제보 가능
     }
   }, [state])
 
@@ -283,6 +283,7 @@ export default function ReportForm({
                 name="type"
                 value={opt.value}
                 required
+                checked={selectedType === opt.value}
                 onChange={() => setSelectedType(opt.value)}
                 className="peer sr-only"
               />
