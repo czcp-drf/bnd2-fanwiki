@@ -279,6 +279,7 @@ export default function StreamerListWithLive({
   const onlineStreamers = activeStreamers.filter(isStreamerLive)
   const offlineStreamers = activeStreamers.filter((s) => liveMap[s.chzzk_channel_id]?.live === false)
   const unknownCount = activeStreamers.length - onlineStreamers.length - offlineStreamers.length
+  const displayOnline = onlineOnly ? onlineStreamers.slice(0, 9) : onlineStreamers
 
   return (
     <div className="space-y-10">
@@ -323,8 +324,10 @@ export default function StreamerListWithLive({
           <EmptyState message={unknownCount > 0 ? '현재 확인된 라이브 방송이 없습니다.' : '현재 방송 중인 스트리머가 없습니다.'} />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {onlineStreamers.map((s) => (
-              <StreamerCard key={s.id} streamer={s} isLive liveDisplay liveTitle={getLiveTitle(s)} compact={onlineOnly} />
+            {displayOnline.map((s, i) => (
+              <div key={s.id} className={onlineOnly && i >= 4 ? 'hidden sm:block' : undefined}>
+                <StreamerCard streamer={s} isLive liveDisplay liveTitle={getLiveTitle(s)} compact={onlineOnly} />
+              </div>
             ))}
           </div>
         )}
