@@ -138,6 +138,7 @@ export type Database = {
           reference_url: string | null
           status: 'pending' | 'reviewing' | 'applied' | 'rejected'
           created_at: string
+          ip: string | null
         }
         Insert: Omit<Database['public']['Tables']['reports']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['reports']['Insert']>

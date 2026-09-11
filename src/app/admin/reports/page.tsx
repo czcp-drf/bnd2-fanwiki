@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import ReportStatusSelect from './ReportStatusSelect'
+import BlockIpButton from './BlockIpButton'
 import type { Report } from '@/types/database'
 
 const typeLabel: Record<string, string> = {
@@ -86,7 +87,7 @@ export default async function AdminReportsPage({ searchParams }: Props) {
 
               <p className="text-sm text-zinc-400 whitespace-pre-wrap">{r.content}</p>
 
-              <div className="flex flex-wrap gap-4 text-xs text-zinc-600 border-t border-zinc-800 pt-3">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-600 border-t border-zinc-800 pt-3">
                 {(r.contact || r.contact_method) && (
                   <span>
                     연락처:{' '}
@@ -99,6 +100,12 @@ export default async function AdminReportsPage({ searchParams }: Props) {
                   <a href={r.reference_url} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline truncate max-w-xs">
                     참고 링크 →
                   </a>
+                )}
+                {r.ip && (
+                  <div className="ml-auto flex items-center gap-2">
+                    <span className="font-mono text-zinc-600">{r.ip}</span>
+                    <BlockIpButton ip={r.ip} />
+                  </div>
                 )}
               </div>
             </div>

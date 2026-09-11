@@ -1,7 +1,22 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
+
+async function getIp(): Promise<string | null> {
+  const h = await headers()
+  return h.get('x-forwarded-for')?.split(',')[0].trim() ?? h.get('x-real-ip') ?? null
+}
+
+async function isBlocked(ip: string): Promise<boolean> {
+  const supabase = await createClient()
+  const { count } = await supabase
+    .from('blocked_ips')
+    .select('*', { count: 'exact', head: true })
+    .eq('ip', ip)
+  return (count ?? 0) > 0
+}
 
 export type ReportFormState =
   | { status: 'idle' }
@@ -23,6 +38,17 @@ export async function submitReport(
   _prev: ReportFormState,
   formData: FormData
 ): Promise<ReportFormState> {
+  // 허니팟 체크 — 봇이 채우면 차단
+  if (getString(formData, '_hp')) {
+    return { status: 'success' } // 봇에게는 성공처럼 보이게
+  }
+
+  // 차단된 IP 체크
+  const ip = await getIp()
+  if (ip && await isBlocked(ip)) {
+    return { status: 'error', message: '제보가 제한된 환경입니다.' }
+  }
+
   const type = getString(formData, 'type')
   const title = getString(formData, 'title')
   const content = getString(formData, 'content')
@@ -74,6 +100,7 @@ export async function submitReport(
     contact_method: contact_method.trim() || null,
     reference_url: reference_url.trim() || null,
     status: 'pending',
+    ip: ip ?? null,
   } satisfies Database['public']['Tables']['reports']['Insert']
 
   try {
