@@ -6,9 +6,8 @@ import L from 'leaflet'
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  TILE_CONFIGS, MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
+  TILE_URL, MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
   MAP_MAX_BOUNDS, GTA_CRS_CONFIG, CATEGORY_COLOR, CATEGORY_LABEL,
-  type MapStyle,
 } from '@/lib/map/constants'
 
 export type OrgMarker = {
@@ -64,21 +63,17 @@ export default function LeafletMap({
   locations,
   activeCategory,
   showLocations,
-  mapStyle,
 }: {
   orgs: OrgMarker[]
   locations: LocationMarker[]
   activeCategory: string | null
   showLocations: boolean
-  mapStyle: MapStyle
 }) {
   const [selected, setSelected] = useState<Selected | null>(null)
 
   const visibleOrgs = activeCategory
     ? orgs.filter((o) => o.category === activeCategory)
     : orgs
-
-  const tile = TILE_CONFIGS[mapStyle]
 
   return (
     <div className="relative h-full w-full">
@@ -93,7 +88,7 @@ export default function LeafletMap({
         maxBoundsViscosity={1}
         style={{ height: '100%', width: '100%', background: '#18181b' }}
       >
-        <TileLayer key={mapStyle} url={tile.url} noWrap />
+        <TileLayer url={TILE_URL} noWrap />
         <MapClickClose onClose={() => setSelected(null)} />
 
         {/* 조직 거점 마커 */}
@@ -102,12 +97,7 @@ export default function LeafletMap({
             key={`org-${org.id}`}
             center={[org.hq_y, org.hq_x]}
             radius={10}
-            pathOptions={{
-              fillColor: getOrgColor(org),
-              color: '#fff',
-              fillOpacity: 0.9,
-              weight: 2,
-            }}
+            pathOptions={{ fillColor: getOrgColor(org), color: '#fff', fillOpacity: 0.9, weight: 2 }}
             eventHandlers={{
               click: (e) => {
                 e.originalEvent.stopPropagation()
@@ -127,13 +117,7 @@ export default function LeafletMap({
             key={`loc-${loc.id}`}
             center={[loc.y, loc.x]}
             radius={7}
-            pathOptions={{
-              fillColor: loc.color,
-              color: '#fff',
-              fillOpacity: 0.85,
-              weight: 2,
-              dashArray: '3 2',
-            }}
+            pathOptions={{ fillColor: loc.color, color: '#fff', fillOpacity: 0.85, weight: 2, dashArray: '3 2' }}
             eventHandlers={{
               click: (e) => {
                 e.originalEvent.stopPropagation()

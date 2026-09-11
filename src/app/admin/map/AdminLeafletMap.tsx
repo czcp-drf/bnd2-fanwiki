@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css'
 import { MapContainer, TileLayer, CircleMarker, Tooltip, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import {
-  TILE_CONFIGS, MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
+  TILE_URL, MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
   MAP_MAX_BOUNDS, GTA_CRS_CONFIG, CATEGORY_COLOR,
 } from '@/lib/map/constants'
 
@@ -90,7 +90,7 @@ export default function AdminLeafletMap({
       maxBoundsViscosity={1}
       style={{ height: '100%', width: '100%', background: '#18181b', cursor: isPlacing ? 'crosshair' : 'grab' }}
     >
-      <TileLayer url={TILE_CONFIGS.satellite.url} noWrap />
+      <TileLayer url={TILE_URL} noWrap />
       <MapClickHandler active={isPlacing} onMapClick={onMapClick} />
 
       {/* 조직 거점 마커 */}
