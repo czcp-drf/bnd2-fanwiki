@@ -66,6 +66,7 @@ export default function AdminLeafletMap({
   selectedLocationId,
   pendingCoords,
   onMapClick,
+  addingNew = false,
 }: {
   orgs: AdminOrg[]
   locations: AdminLocation[]
@@ -74,8 +75,9 @@ export default function AdminLeafletMap({
   selectedLocationId: string | null
   pendingCoords: PendingCoords | null
   onMapClick: (lat: number, lng: number) => void
+  addingNew?: boolean
 }) {
-  const isPlacing = mode === 'org' ? !!selectedOrgId : !!selectedLocationId
+  const isPlacing = addingNew || (mode === 'org' ? !!selectedOrgId : !!selectedLocationId)
   const selectedOrg = orgs.find((o) => o.id === selectedOrgId)
   const selectedLocation = locations.find((l) => l.id === selectedLocationId)
 
@@ -158,13 +160,13 @@ export default function AdminLeafletMap({
           <Tooltip direction="top" offset={[0, -14]} permanent>{selectedOrg.name}</Tooltip>
         </CircleMarker>
       )}
-      {pendingCoords && mode === 'location' && selectedLocation && (
+      {pendingCoords && mode === 'location' && (
         <CircleMarker
           center={[pendingCoords.lat, pendingCoords.lng]}
           radius={10}
-          pathOptions={{ fillColor: selectedLocation.color, color: '#fbbf24', fillOpacity: 1, weight: 3, dashArray: '3 2' }}
+          pathOptions={{ fillColor: selectedLocation?.color ?? '#facc15', color: '#fbbf24', fillOpacity: 1, weight: 3, dashArray: '3 2' }}
         >
-          <Tooltip direction="top" offset={[0, -12]} permanent>{selectedLocation.name}</Tooltip>
+          <Tooltip direction="top" offset={[0, -12]} permanent>{selectedLocation?.name ?? '새 위치'}</Tooltip>
         </CircleMarker>
       )}
     </MapContainer>

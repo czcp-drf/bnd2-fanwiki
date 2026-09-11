@@ -454,6 +454,7 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
           selectedLocationId={selectedId}
           pendingCoords={pendingCoords}
           onMapClick={handleMapClick}
+          addingNew={addingNew}
         />
 
         {/* 안내 오버레이 */}
