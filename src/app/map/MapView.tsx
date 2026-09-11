@@ -17,11 +17,14 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
   const focusOrgId = useSearchParams().get('org')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [showLocations, setShowLocations] = useState(true)
+  const [activeLocationLabel, setActiveLocationLabel] = useState<string | null>(null)
 
   const counts = CATEGORIES.reduce((acc, cat) => {
     acc[cat] = orgs.filter((o) => o.category === cat).length
     return acc
   }, {} as Record<string, number>)
+
+  const locationLabels = [...new Set(locations.map((l) => l.label).filter(Boolean))] as string[]
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 flex flex-col gap-4" style={{ height: 'calc(100vh - 5rem)' }}>
@@ -32,18 +35,50 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* 작업 위치 토글 */}
+          {/* 작업 위치 토글 + label 필터 */}
           {locations.length > 0 && (
-            <button
-              onClick={() => setShowLocations((v) => !v)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer border ${
-                showLocations
-                  ? 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400'
-                  : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              작업 위치 {showLocations ? '표시 중' : '숨김'}
-            </button>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                onClick={() => {
+                  setShowLocations((v) => !v)
+                  setActiveLocationLabel(null)
+                }}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer border ${
+                  showLocations
+                    ? 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400'
+                    : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                작업 위치 {showLocations ? '표시 중' : '숨김'}
+              </button>
+              {showLocations && locationLabels.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setActiveLocationLabel(null)}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                      activeLocationLabel === null
+                        ? 'bg-yellow-500/20 text-yellow-300'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    전체
+                  </button>
+                  {locationLabels.map((label) => (
+                    <button
+                      key={label}
+                      onClick={() => setActiveLocationLabel(activeLocationLabel === label ? null : label)}
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                        activeLocationLabel === label
+                          ? 'bg-yellow-500/20 text-yellow-300'
+                          : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
           )}
 
           {/* 카테고리 필터 */}
@@ -80,6 +115,7 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
           locations={locations}
           activeCategory={activeCategory}
           showLocations={showLocations}
+          activeLocationLabel={activeLocationLabel}
         />
       </div>
     </div>

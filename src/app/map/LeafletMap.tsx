@@ -69,12 +69,14 @@ export default function LeafletMap({
   locations,
   activeCategory,
   showLocations,
+  activeLocationLabel,
   focusOrgId,
 }: {
   orgs: OrgMarker[]
   locations: LocationMarker[]
   activeCategory: string | null
   showLocations: boolean
+  activeLocationLabel: string | null
   focusOrgId: string | null
 }) {
   const focusedOrg = orgs.find((org) => org.id === focusOrgId)
@@ -85,6 +87,10 @@ export default function LeafletMap({
   const visibleOrgs = activeCategory
     ? orgs.filter((o) => o.category === activeCategory)
     : orgs
+
+  const visibleLocations = activeLocationLabel
+    ? locations.filter((l) => l.label === activeLocationLabel)
+    : locations
 
   return (
     <div className="relative h-full w-full">
@@ -124,7 +130,7 @@ export default function LeafletMap({
         ))}
 
         {/* 작업 위치 마커 */}
-        {showLocations && locations.map((loc) => (
+        {showLocations && visibleLocations.map((loc) => (
           <CircleMarker
             key={`loc-${loc.id}`}
             center={[loc.y, loc.x]}
@@ -146,7 +152,7 @@ export default function LeafletMap({
           </CircleMarker>
         ))}
       {/* 선택 카드 */}
-      {selected && (selected.type === 'org' ? visibleOrgs.some((org) => org.id === selected.data.id) : showLocations) && (
+      {selected && (selected.type === 'org' ? visibleOrgs.some((org) => org.id === selected.data.id) : showLocations && visibleLocations.some((l) => l.id === selected.data.id)) && (
         <Popup
           key={`${selected.type}-${selected.data.id}`}
           position={selected.type === 'org' ? [selected.data.hq_y, selected.data.hq_x] : [selected.data.y, selected.data.x]}

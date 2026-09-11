@@ -13,7 +13,6 @@ const typeOptions = [
   { value: 'crime', label: '범죄' },
   { value: 'political', label: '정치' },
   { value: 'social', label: '사회' },
-  { value: 'accident', label: '사고' },
   { value: 'other', label: '기타' },
 ]
 
