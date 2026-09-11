@@ -7,13 +7,34 @@ export const metadata: Metadata = { title: '거점 지도 관리' }
 
 async function getAllOrgs(): Promise<AdminOrg[]> {
   const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('organizations')
-    .select('id, name, color, category, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label')
-    .eq('is_active', true)
-    .eq('is_disbanded', false)
-    .order('category').order('name')
-  return (data ?? []) as AdminOrg[]
+
+  const [{ data: orgs }, { data: linkedBizOrgs }] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select('id, name, color, category, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label')
+      .eq('is_active', true)
+      .eq('is_disbanded', false)
+      .is('gang_id', null)
+      .order('category').order('name'),
+
+    supabase
+      .from('organizations')
+      .select('id, name, hq_x, hq_y, gang_id')
+      .eq('is_active', true)
+      .eq('is_disbanded', false)
+      .not('gang_id', 'is', null),
+  ])
+
+  const bizByGang = new Map((linkedBizOrgs ?? []).map((b) => [b.gang_id, b]))
+
+  return (orgs ?? []).map((org) => {
+    if (org.biz_x !== null) return org as AdminOrg
+    const linked = bizByGang.get(org.id)
+    if (linked) {
+      return { ...org, biz_x: linked.hq_x ?? null, biz_y: linked.hq_y ?? null, biz_label: linked.name } as AdminOrg
+    }
+    return org as AdminOrg
+  })
 }
 
 async function getAllLocations(): Promise<AdminLocation[]> {
