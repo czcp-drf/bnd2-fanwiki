@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import StreamerEditRow from './StreamerEditRow'
+import AdminStreamersClient from './AdminStreamersClient'
 import { addStreamer } from './actions'
 import type { Metadata } from 'next'
 
@@ -61,31 +61,7 @@ export default async function AdminStreamersPage() {
         </div>
       </form>
 
-      {/* 목록 */}
-      <div className="rounded-xl border border-zinc-800 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-zinc-900">
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">이름</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">채널 ID</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 w-24">프로필 이미지</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 w-16">상태</th>
-              <th className="px-4 py-3 w-12" />
-            </tr>
-          </thead>
-          <tbody>
-            {streamers.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-sm text-zinc-600">
-                  등록된 스트리머가 없습니다.
-                </td>
-              </tr>
-            ) : (
-              streamers.map((s) => <StreamerEditRow key={s.id} streamer={s} />)
-            )}
-          </tbody>
-        </table>
-      </div>
+      <AdminStreamersClient streamers={streamers} />
     </div>
   )
 }

@@ -1,20 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
-import ReportStatusSelect from './ReportStatusSelect'
-import BlockIpButton from './BlockIpButton'
-import ReportCoordAction from './ReportCoordAction'
+import AdminReportsClient from './AdminReportsClient'
 import type { Report } from '@/types/database'
-
-function stripCoordLine(content: string): string {
-  return content.replace(/\n\n\[지도 좌표\] X: [-\d.]+, Y: [-\d.]+$/, '').trim()
-}
-
-const typeLabel: Record<string, string> = {
-  new_character: '새 캐릭터',
-  new_event: '새 사건',
-  correction: '수정 요청',
-  other: '기타',
-}
 
 const filterOptions = [
   { value: '', label: '전체' },
@@ -46,10 +33,7 @@ export default async function AdminReportsPage({ searchParams }: Props) {
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-black text-white">제보 관리</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">총 {reports.length}건</p>
-        </div>
+        <h1 className="text-xl font-black text-white">제보 관리</h1>
         <div className="flex items-center gap-2 flex-wrap">
           {filterOptions.map((opt) => (
             <Link
@@ -67,58 +51,7 @@ export default async function AdminReportsPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {reports.length === 0 ? (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 py-20 text-center text-sm text-zinc-600">
-          해당하는 제보가 없습니다.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {reports.map((r) => (
-            <div key={r.id} className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 space-y-3">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
-                      {typeLabel[r.type]}
-                    </span>
-                    <span className="text-xs text-zinc-600">
-                      {new Date(r.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <p className="font-bold text-white">{r.title}</p>
-                </div>
-                <ReportStatusSelect id={r.id} status={r.status} />
-              </div>
-
-              <p className="text-sm text-zinc-400 whitespace-pre-wrap">{stripCoordLine(r.content)}</p>
-
-              <ReportCoordAction content={r.content} title={r.title} />
-
-              <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-600 border-t border-zinc-800 pt-3">
-                {(r.contact || r.contact_method) && (
-                  <span>
-                    연락처:{' '}
-                    <span className="text-zinc-400">
-                      {[r.contact_method, r.contact].filter(Boolean).join(' · ')}
-                    </span>
-                  </span>
-                )}
-                {r.reference_url && (
-                  <a href={r.reference_url} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline truncate max-w-xs">
-                    참고 링크 →
-                  </a>
-                )}
-                {r.ip && (
-                  <div className="ml-auto flex items-center gap-2">
-                    <span className="font-mono text-zinc-600">{r.ip}</span>
-                    <BlockIpButton ip={r.ip} />
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <AdminReportsClient reports={reports} />
     </div>
   )
 }
