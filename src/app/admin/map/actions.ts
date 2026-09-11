@@ -15,7 +15,19 @@ export async function updateOrgHq(
   revalidatePath('/map')
 }
 
-// ── 작업 위치 ──────────────────────────────────────────
+// ── 사업체 위치 ────────────────────────────────────────
+
+export async function updateOrgBiz(
+  id: string,
+  data: { biz_x: number | null; biz_y: number | null; biz_label: string | null }
+) {
+  const supabase = await requireAdmin()
+  await supabase.from('organizations').update(data).eq('id', id)
+  revalidatePath('/admin/map')
+  revalidatePath('/map')
+}
+
+// ── 주요 장소 ──────────────────────────────────────────
 
 export async function addMapLocation(data: {
   name: string

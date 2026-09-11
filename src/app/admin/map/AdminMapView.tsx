@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateOrgHq, addMapLocation, updateMapLocation, deleteMapLocation } from './actions'
+import { updateOrgHq, updateOrgBiz, addMapLocation, updateMapLocation, deleteMapLocation } from './actions'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from '@/lib/map/constants'
 import type { AdminOrg, AdminLocation } from './AdminLeafletMap'
 
@@ -56,8 +56,9 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
+  const [orgMode, setOrgMode] = useState<'hq' | 'biz'>('hq')
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null)
-  const [hqLabel, setHqLabel] = useState('')
+  const [label, setLabel] = useState('')
   const [coordX, setCoordX] = useState('')
   const [coordY, setCoordY] = useState('')
 
@@ -65,35 +66,47 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
 
   function handleSelectOrg(org: AdminOrg) {
     if (selectedOrgId === org.id) {
-      setSelectedOrgId(null); setPendingCoords(null); setHqLabel('')
-      setCoordX(''); setCoordY('')
+      setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setCoordX(''); setCoordY('')
     } else {
-      setSelectedOrgId(org.id); setPendingCoords(null); setHqLabel(org.hq_label ?? '')
-      setCoordX(org.hq_x != null ? String(org.hq_x) : '')
-      setCoordY(org.hq_y != null ? String(org.hq_y) : '')
+      setSelectedOrgId(org.id); setPendingCoords(null)
+      syncFields(org, orgMode)
     }
   }
 
-  // 지도 클릭 → 좌표 입력창 동기화
+  function syncFields(org: AdminOrg, mode: 'hq' | 'biz') {
+    if (mode === 'hq') {
+      setLabel(org.hq_label ?? '')
+      setCoordX(org.hq_x != null ? String(org.hq_x) : '')
+      setCoordY(org.hq_y != null ? String(org.hq_y) : '')
+    } else {
+      setLabel(org.biz_label ?? '')
+      setCoordX(org.biz_x != null ? String(org.biz_x) : '')
+      setCoordY(org.biz_y != null ? String(org.biz_y) : '')
+    }
+    setPendingCoords(null)
+  }
+
+  function handleSetOrgMode(mode: 'hq' | 'biz') {
+    setOrgMode(mode)
+    if (selectedOrg) syncFields(selectedOrg, mode)
+  }
+
   function handleMapClick(lat: number, lng: number) {
     setPendingCoords({ lat, lng })
     setCoordX(lng.toFixed(2))
     setCoordY(lat.toFixed(2))
   }
 
-  // 좌표 입력창 → 지도 핀 동기화
   function handleCoordX(v: string) {
     setCoordX(v)
-    const nx = parseFloat(v)
-    const ny = parseFloat(coordY)
+    const nx = parseFloat(v), ny = parseFloat(coordY)
     if (!isNaN(nx) && !isNaN(ny)) setPendingCoords({ lat: ny, lng: nx })
     else setPendingCoords(null)
   }
 
   function handleCoordY(v: string) {
     setCoordY(v)
-    const nx = parseFloat(coordX)
-    const ny = parseFloat(v)
+    const nx = parseFloat(coordX), ny = parseFloat(v)
     if (!isNaN(nx) && !isNaN(ny)) setPendingCoords({ lat: ny, lng: nx })
     else setPendingCoords(null)
   }
@@ -101,18 +114,24 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
   function handleSave() {
     if (!selectedOrgId || !pendingCoords) return
     startTransition(async () => {
-      await updateOrgHq(selectedOrgId, { hq_x: pendingCoords.lng, hq_y: pendingCoords.lat, hq_label: hqLabel.trim() || null })
-      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setHqLabel('')
-      setCoordX(''); setCoordY('')
+      if (orgMode === 'hq') {
+        await updateOrgHq(selectedOrgId, { hq_x: pendingCoords.lng, hq_y: pendingCoords.lat, hq_label: label.trim() || null })
+      } else {
+        await updateOrgBiz(selectedOrgId, { biz_x: pendingCoords.lng, biz_y: pendingCoords.lat, biz_label: label.trim() || null })
+      }
+      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setCoordX(''); setCoordY('')
     })
   }
 
   function handleClear() {
     if (!selectedOrgId) return
     startTransition(async () => {
-      await updateOrgHq(selectedOrgId, { hq_x: null, hq_y: null, hq_label: null })
-      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setHqLabel('')
-      setCoordX(''); setCoordY('')
+      if (orgMode === 'hq') {
+        await updateOrgHq(selectedOrgId, { hq_x: null, hq_y: null, hq_label: null })
+      } else {
+        await updateOrgBiz(selectedOrgId, { biz_x: null, biz_y: null, biz_label: null })
+      }
+      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setCoordX(''); setCoordY('')
     })
   }
 
@@ -136,6 +155,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
               <div className="space-y-0.5">
                 {list.map((org) => {
                   const hasHq = org.hq_x !== null
+                  const hasBiz = org.biz_x !== null
                   const isSelected = selectedOrgId === org.id
                   return (
                     <button key={org.id} onClick={() => handleSelectOrg(org)}
@@ -145,6 +165,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
                           style={{ backgroundColor: org.color ?? CATEGORY_COLOR[cat] ?? '#71717a', opacity: hasHq ? 1 : 0.3 }} />
                         <span className="truncate flex-1">{org.name}</span>
                         {hasHq && <span className="text-[9px] text-green-500 font-medium">HQ</span>}
+                        {hasBiz && <span className="text-[9px] text-purple-400 font-medium">BIZ</span>}
                       </div>
                     </button>
                   )
@@ -157,23 +178,33 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
 
       {/* 우측: 지도 */}
       <div className="relative flex-1 overflow-hidden">
-        <AdminLeafletMap orgs={orgs} locations={locations} mode="org"
+        <AdminLeafletMap orgs={orgs} locations={locations} mode="org" orgMode={orgMode}
           selectedOrgId={selectedOrgId} selectedLocationId={null}
           pendingCoords={pendingCoords} onMapClick={handleMapClick} />
+
+        {/* 거점 / 사업체 서브 모드 탭 */}
+        <div className="absolute top-3 right-3 z-[1000] flex rounded-lg border border-zinc-700 bg-zinc-900/90 backdrop-blur-sm overflow-hidden">
+          {(['hq', 'biz'] as const).map((m) => (
+            <button key={m} onClick={() => handleSetOrgMode(m)}
+              className={`px-3 py-1.5 text-[11px] font-medium transition-colors cursor-pointer ${orgMode === m ? 'bg-amber-400/20 text-amber-400' : 'text-zinc-500 hover:text-zinc-300'}`}>
+              {m === 'hq' ? '조직 거점' : '불법 사업체'}
+            </button>
+          ))}
+        </div>
 
         {/* 선택 안내 */}
         {selectedOrgId && !pendingCoords && (
           <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-[1000] rounded-full border border-amber-400/40 bg-zinc-900/90 px-4 py-2 text-xs text-amber-400 backdrop-blur-sm">
-            지도를 클릭하거나 아래 좌표를 입력해 <strong>{selectedOrg?.name}</strong>의 거점을 설정하세요
+            지도를 클릭하거나 아래 좌표를 입력해 <strong>{selectedOrg?.name}</strong>의 {orgMode === 'hq' ? '거점' : '사업체 위치'}를 설정하세요
           </div>
         )}
 
         {/* 저장 패널 (좌표 있을 때) */}
         {selectedOrgId && pendingCoords && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] w-80 rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-sm p-4 shadow-xl space-y-3">
-            <p className="text-sm font-bold text-white">{selectedOrg?.name} <span className="ml-1 text-xs font-normal text-zinc-500">거점 저장</span></p>
-            <input value={hqLabel} onChange={(e) => setHqLabel(e.target.value)}
-              placeholder="거점 이름 (예: Grove Street 본부)"
+            <p className="text-sm font-bold text-white">{selectedOrg?.name} <span className="ml-1 text-xs font-normal text-zinc-500">{orgMode === 'hq' ? '거점' : '사업체 위치'} 저장</span></p>
+            <input value={label} onChange={(e) => setLabel(e.target.value)}
+              placeholder={orgMode === 'hq' ? '거점 이름 (예: Grove Street 본부)' : '사업체 이름 (예: 마약공장, 창고)'}
               className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
             <CoordInputs x={coordX} y={coordY} onX={handleCoordX} onY={handleCoordY} />
             <p className="text-[10px] text-zinc-600">지도 클릭 또는 좌표 수정으로 위치를 조정할 수 있습니다</p>
@@ -182,13 +213,13 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
                 className="flex-1 rounded bg-amber-400 py-1.5 text-xs font-semibold text-zinc-900 hover:bg-amber-300 disabled:opacity-50 cursor-pointer transition-colors">
                 {isPending ? '저장 중…' : '저장'}
               </button>
-              {selectedOrg?.hq_x !== null && (
+              {(orgMode === 'hq' ? selectedOrg?.hq_x : selectedOrg?.biz_x) !== null && (
                 <button onClick={handleClear} disabled={isPending}
                   className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/5 disabled:opacity-50 cursor-pointer transition-colors">
-                  거점 삭제
+                  삭제
                 </button>
               )}
-              <button onClick={() => { setSelectedOrgId(null); setPendingCoords(null); setHqLabel(''); setCoordX(''); setCoordY('') }}
+              <button onClick={() => { setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setCoordX(''); setCoordY('') }}
                 className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 cursor-pointer transition-colors">
                 취소
               </button>
@@ -201,10 +232,10 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] w-72 rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-sm p-3 shadow-xl space-y-2">
             <p className="text-[11px] text-zinc-500">좌표를 알고 있다면 직접 입력하세요</p>
             <CoordInputs x={coordX} y={coordY} onX={handleCoordX} onY={handleCoordY} />
-            {selectedOrg?.hq_x !== null && (
+            {(orgMode === 'hq' ? selectedOrg?.hq_x : selectedOrg?.biz_x) !== null && (
               <button onClick={handleClear} disabled={isPending}
                 className="w-full rounded border border-red-500/30 py-1 text-[10px] text-red-400 hover:bg-red-500/5 disabled:opacity-50 cursor-pointer transition-colors">
-                거점 삭제
+                {orgMode === 'hq' ? '거점' : '사업체 위치'} 삭제
               </button>
             )}
           </div>

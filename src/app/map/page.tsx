@@ -12,7 +12,7 @@ async function getOrgsWithHq(): Promise<OrgMarker[]> {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('organizations')
-    .select('id, name, color, category, hq_x, hq_y, hq_label, description, logo_url')
+    .select('id, name, color, category, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label, description, logo_url')
     .eq('is_active', true)
     .eq('is_disbanded', false)
     .not('hq_x', 'is', null)

@@ -22,6 +22,9 @@ export type OrgMarker = {
   hq_x: number
   hq_y: number
   hq_label: string | null
+  biz_x: number | null
+  biz_y: number | null
+  biz_label: string | null
   description: string | null
   logo_url: string | null
 }
@@ -76,6 +79,15 @@ function createDropIcon(color: string, selected: boolean): L.DivIcon {
   return L.divIcon({ html, className: '', iconSize: [w, h], iconAnchor: [cx, h], tooltipAnchor: [0, -h] })
 }
 
+function createBizIcon(color: string, selected: boolean): L.DivIcon {
+  const size = selected ? 20 : 16
+  const half = size / 2
+  const path = `M ${half} 1 L ${size - 1} ${half} L ${half} ${size - 1} L 1 ${half} Z`
+  const glow = `drop-shadow(0 0 ${selected ? 7 : 4}px ${color}cc) drop-shadow(0 2px 6px rgba(0,0,0,0.4))`
+  const html = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:${glow}"><path d="${path}" fill="${color}" stroke="white" stroke-width="2"/></svg>`
+  return L.divIcon({ html, className: '', iconSize: [size, size], iconAnchor: [half, half], tooltipAnchor: [0, -half - 4] })
+}
+
 function createLocationIcon(color: string, selected: boolean): L.DivIcon {
   const r = selected ? 9 : 7
   const pad = 8
@@ -88,6 +100,7 @@ function createLocationIcon(color: string, selected: boolean): L.DivIcon {
 
 type Selected =
   | { type: 'org'; data: OrgMarker }
+  | { type: 'biz'; data: OrgMarker }
   | { type: 'location'; data: LocationMarker }
 
 export default function LeafletMap({
@@ -159,6 +172,29 @@ export default function LeafletMap({
           )
         })}
 
+        {/* 사업체 마커 */}
+        {showOrgs && visibleOrgs.filter((o) => o.biz_x !== null && o.biz_y !== null).map((org) => {
+          const isSelected = selected?.type === 'biz' && selected.data.id === org.id
+          return (
+            <Marker
+              key={`biz-${org.id}`}
+              position={[org.biz_y!, org.biz_x!]}
+              icon={createBizIcon(getOrgColor(org), isSelected)}
+              bubblingMouseEvents={false}
+              eventHandlers={{
+                click: (e) => {
+                  e.originalEvent.stopPropagation()
+                  setSelected((prev) =>
+                    prev?.type === 'biz' && prev.data.id === org.id ? null : { type: 'biz', data: org }
+                  )
+                },
+              }}
+            >
+              {!isSelected && <Tooltip direction="top">{org.name} — {org.biz_label || '사업체'}</Tooltip>}
+            </Marker>
+          )
+        })}
+
         {/* 주요 장소 마커 */}
         {showLocations && visibleLocations.map((loc) => {
           const isSelected = selected?.type === 'location' && selected.data.id === loc.id
@@ -184,11 +220,19 @@ export default function LeafletMap({
           )
         })}
       {/* 선택 카드 */}
-      {selected && (selected.type === 'org' ? showOrgs && visibleOrgs.some((org) => org.id === selected.data.id) : showLocations && visibleLocations.some((l) => l.id === selected.data.id)) && (
+      {selected && (
+        selected.type === 'org' ? showOrgs && visibleOrgs.some((o) => o.id === selected.data.id) :
+        selected.type === 'biz' ? showOrgs && visibleOrgs.some((o) => o.id === selected.data.id && o.biz_x !== null) :
+        showLocations && visibleLocations.some((l) => l.id === selected.data.id)
+      ) && (
         <Popup
           key={`${selected.type}-${selected.data.id}`}
-          position={selected.type === 'org' ? [selected.data.hq_y, selected.data.hq_x] : [selected.data.y, selected.data.x]}
-          offset={selected?.type === 'org' ? [0, -40] : [0, -20]}
+          position={
+            selected.type === 'org' ? [selected.data.hq_y, selected.data.hq_x] :
+            selected.type === 'biz' ? [selected.data.biz_y!, selected.data.biz_x!] :
+            [selected.data.y, selected.data.x]
+          }
+          offset={selected.type === 'org' ? [0, -40] : selected.type === 'biz' ? [0, -16] : [0, -20]}
           className="map-pin-popup"
           closeButton={false}
           closeOnClick={false}
@@ -215,6 +259,28 @@ export default function LeafletMap({
                 </div>
                 <div className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-800/70 px-3 py-2 text-xs text-zinc-300"><MapPin size={14} className="shrink-0 text-amber-400" />{org.hq_label || '조직 거점'}</div>
                 {org.description && <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-zinc-400">{org.description}</p>}
+                <Link href={`/organizations/${org.id}`}
+                  className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2.5 text-xs font-semibold text-amber-400 hover:bg-amber-400/20 transition-colors">
+                  조직 상세 보기 <ArrowUpRight size={14} />
+                </Link>
+              </>
+            )
+          })()}
+
+          {selected.type === 'biz' && (() => {
+            const org = selected.data
+            return (
+              <>
+                <div className="flex items-center gap-3 pr-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800 text-xl font-black" style={{ color: getOrgColor(org) }}>
+                    {org.logo_url ? <AppImage src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : org.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0 space-y-1.5">
+                    {org.category && <span className="inline-block rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold" style={{ color: getOrgColor(org) }}>{CATEGORY_LABEL[org.category] ?? org.category}</span>}
+                    <p className="text-base font-bold text-white break-words">{org.name}</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-800/70 px-3 py-2 text-xs text-zinc-300"><MapPin size={14} className="shrink-0 text-purple-400" />{org.biz_label || '불법 사업체'}</div>
                 <Link href={`/organizations/${org.id}`}
                   className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2.5 text-xs font-semibold text-amber-400 hover:bg-amber-400/20 transition-colors">
                   조직 상세 보기 <ArrowUpRight size={14} />

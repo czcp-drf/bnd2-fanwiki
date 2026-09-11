@@ -61,6 +61,9 @@ export type Database = {
           hq_x: number | null
           hq_y: number | null
           hq_label: string | null
+          biz_x: number | null
+          biz_y: number | null
+          biz_label: string | null
           created_at: string
           updated_at: string
         }

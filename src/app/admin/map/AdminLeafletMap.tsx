@@ -17,6 +17,9 @@ export type AdminOrg = {
   hq_x: number | null
   hq_y: number | null
   hq_label: string | null
+  biz_x: number | null
+  biz_y: number | null
+  biz_label: string | null
 }
 
 export type AdminLocation = {
@@ -62,6 +65,7 @@ export default function AdminLeafletMap({
   orgs,
   locations,
   mode,
+  orgMode = 'hq',
   selectedOrgId,
   selectedLocationId,
   pendingCoords,
@@ -71,6 +75,7 @@ export default function AdminLeafletMap({
   orgs: AdminOrg[]
   locations: AdminLocation[]
   mode: 'org' | 'location'
+  orgMode?: 'hq' | 'biz'
   selectedOrgId: string | null
   selectedLocationId: string | null
   pendingCoords: PendingCoords | null
@@ -112,14 +117,39 @@ export default function AdminLeafletMap({
           </CircleMarker>
         ))}
 
+      {/* 조직 사업체 마커 (다이아몬드) */}
+      {orgs
+        .filter((o) => o.biz_x !== null && o.biz_y !== null && o.id !== (orgMode === 'biz' ? selectedOrgId : null))
+        .map((org) => (
+          <CircleMarker
+            key={`biz-${org.id}`}
+            center={[org.biz_y!, org.biz_x!]}
+            radius={6}
+            pathOptions={{ fillColor: getOrgColor(org), color: '#fff', fillOpacity: 0.8, weight: 2, dashArray: '2 2' }}
+          >
+            <Tooltip direction="top" offset={[0, -8]}>
+              {org.name} — {org.biz_label || '사업체'}
+            </Tooltip>
+          </CircleMarker>
+        ))}
+
       {/* 선택된 조직 기존 위치 (점선) */}
-      {selectedOrg && selectedOrg.hq_x !== null && selectedOrg.hq_y !== null && !pendingCoords && (
+      {selectedOrg && orgMode === 'hq' && selectedOrg.hq_x !== null && selectedOrg.hq_y !== null && !pendingCoords && (
         <CircleMarker
           center={[selectedOrg.hq_y, selectedOrg.hq_x]}
           radius={10}
           pathOptions={{ fillColor: getOrgColor(selectedOrg), color: '#fbbf24', fillOpacity: 0.35, weight: 2, dashArray: '5 4' }}
         >
-          <Tooltip direction="top" offset={[0, -12]} permanent>현재 위치</Tooltip>
+          <Tooltip direction="top" offset={[0, -12]} permanent>현재 거점</Tooltip>
+        </CircleMarker>
+      )}
+      {selectedOrg && orgMode === 'biz' && selectedOrg.biz_x !== null && selectedOrg.biz_y !== null && !pendingCoords && (
+        <CircleMarker
+          center={[selectedOrg.biz_y, selectedOrg.biz_x]}
+          radius={8}
+          pathOptions={{ fillColor: getOrgColor(selectedOrg), color: '#fbbf24', fillOpacity: 0.35, weight: 2, dashArray: '5 4' }}
+        >
+          <Tooltip direction="top" offset={[0, -10]} permanent>현재 사업체</Tooltip>
         </CircleMarker>
       )}
 
@@ -154,10 +184,15 @@ export default function AdminLeafletMap({
       {pendingCoords && mode === 'org' && selectedOrg && (
         <CircleMarker
           center={[pendingCoords.lat, pendingCoords.lng]}
-          radius={12}
-          pathOptions={{ fillColor: getOrgColor(selectedOrg), color: '#fbbf24', fillOpacity: 1, weight: 3 }}
+          radius={orgMode === 'biz' ? 9 : 12}
+          pathOptions={{
+            fillColor: getOrgColor(selectedOrg), color: '#fbbf24', fillOpacity: 1, weight: 3,
+            ...(orgMode === 'biz' ? { dashArray: '3 2' } : {}),
+          }}
         >
-          <Tooltip direction="top" offset={[0, -14]} permanent>{selectedOrg.name}</Tooltip>
+          <Tooltip direction="top" offset={[0, -14]} permanent>
+            {selectedOrg.name} {orgMode === 'biz' ? '— 사업체' : '— 거점'}
+          </Tooltip>
         </CircleMarker>
       )}
       {pendingCoords && mode === 'location' && (
