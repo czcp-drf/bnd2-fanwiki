@@ -1,8 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { useLiveStatus } from '@/lib/live/useLiveStatus'
 import Link from 'next/link'
-import { ExternalLink, User } from 'lucide-react'
+import { ExternalLink, User, Search, X } from 'lucide-react'
 import { useRedPill } from '@/lib/context/RedPillContext'
 import AppImage from '@/components/ui/AppImage'
 
@@ -233,17 +234,50 @@ export default function StreamerListWithLive({
   liveStatus?: boolean
   onlineOnly?: boolean
 }) {
-  const activeStreamers = streamers.filter((s) => s.is_active)
-  const inactiveStreamers = streamers.filter((s) => !s.is_active)
+  const [search, setSearch] = useState('')
+
+  const matchSearch = (s: StreamerItem) => {
+    if (!search.trim()) return true
+    const q = search.trim().toLowerCase()
+    return (
+      s.display_name.toLowerCase().includes(q) ||
+      s.characters.some((c) => c.name.toLowerCase().includes(q))
+    )
+  }
+
+  const allActive = streamers.filter((s) => s.is_active)
+  const allInactive = streamers.filter((s) => !s.is_active)
+  const activeStreamers = allActive.filter(matchSearch)
+  const inactiveStreamers = allInactive.filter(matchSearch)
   const activeIds = activeStreamers.map((s) => s.chzzk_channel_id).join(',')
   const { map: liveMap, loading: isLoading, refreshing, checkedAt, retry } = useLiveStatus(activeIds, liveStatus)
 
   if (!liveStatus) {
     return (
-      <div className="space-y-10">
+      <div className="space-y-8">
+        {/* 검색창 */}
+        <div className="relative max-w-xs">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="이름 또는 캐릭터 검색..."
+            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 py-2 pl-8 pr-8 text-sm text-white placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
         <section className="space-y-4">
           <h2 className="text-sm font-semibold text-zinc-300">
-            스트리머 <span className="text-zinc-500 font-normal">({activeStreamers.length}명)</span>
+            스트리머 <span className="text-zinc-500 font-normal">({activeStreamers.length}명{search.trim() ? ` / 전체 ${allActive.length}명` : ''})</span>
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {activeStreamers.map((s) => (
@@ -255,7 +289,7 @@ export default function StreamerListWithLive({
         {inactiveStreamers.length > 0 && (
           <section className="space-y-4">
             <h2 className="text-sm font-semibold text-zinc-500">
-              비활동 <span className="font-normal">({inactiveStreamers.length}명)</span>
+              비활동 <span className="font-normal">({inactiveStreamers.length}명{search.trim() ? ` / 전체 ${allInactive.length}명` : ''})</span>
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-60">
               {inactiveStreamers.map((s) => (
@@ -263,6 +297,12 @@ export default function StreamerListWithLive({
               ))}
             </div>
           </section>
+        )}
+
+        {activeStreamers.length === 0 && inactiveStreamers.length === 0 && (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 py-16 text-center text-zinc-500 text-sm">
+            검색 결과가 없습니다.
+          </div>
         )}
       </div>
     )

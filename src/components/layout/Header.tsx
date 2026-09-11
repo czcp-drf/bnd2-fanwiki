@@ -18,7 +18,6 @@ const navItems = [
   { href: '/organizations', label: '조직' },
   { href: '/map', label: '지도' },
   { href: '/events', label: '사건' },
-  { href: '/guide', label: '가이드' },
   { href: '/report', label: '제보' },
 ]
 
