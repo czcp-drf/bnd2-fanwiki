@@ -509,7 +509,7 @@ export default function AdminMapView({ orgs, locations }: { orgs: AdminOrg[]; lo
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 border-b border-zinc-800">
-        {([['org', '조직 거점'], ['location', '작업 위치']] as const).map(([key, label]) => (
+        {([['org', '조직 거점'], ['location', '주요 장소']] as const).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
             className={`px-5 py-2.5 text-sm font-medium transition-colors cursor-pointer border-b-2 -mb-px ${
               tab === key ? 'border-amber-400 text-amber-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'

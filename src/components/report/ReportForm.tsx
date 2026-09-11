@@ -398,7 +398,7 @@ export default function ReportForm({
         {showMap && (
           <div className="space-y-2">
             <p className="text-xs text-zinc-500">
-              지도를 클릭해 위치를 찍어주세요. 조직 거점, 작업 위치 등을 정확하게 알려주실 수 있습니다.
+              지도를 클릭해 위치를 찍어주세요. 조직 거점, 주요 장소 등을 정확하게 알려주실 수 있습니다.
             </p>
             <div className="h-64 overflow-hidden rounded-xl border border-zinc-800">
               <MapPinPicker coords={mapCoords} onPick={(lat, lng) => setMapCoords({ lat, lng })} />

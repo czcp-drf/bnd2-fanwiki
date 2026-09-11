@@ -51,7 +51,7 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
             조직 거점 {showOrgs ? '표시 중' : '숨김'}
           </button>
 
-          {/* 작업 위치 토글 + label 필터 */}
+          {/* 주요 장소 토글 + label 필터 */}
           {locations.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               <button
@@ -65,7 +65,7 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
                     : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
                 }`}
               >
-                작업 위치 {showLocations ? '표시 중' : '숨김'}
+                주요 장소 {showLocations ? '표시 중' : '숨김'}
               </button>
               {showLocations && locationLabels.length > 0 && (
                 <>

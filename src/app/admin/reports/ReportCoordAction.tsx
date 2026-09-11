@@ -38,7 +38,7 @@ export default function ReportCoordAction({ content, title }: { content: string;
     return (
       <div className="flex items-center gap-1.5 text-xs text-green-400">
         <Check size={12} />
-        작업 위치에 추가됨
+        주요 장소에 추가됨
       </div>
     )
   }
@@ -56,7 +56,7 @@ export default function ReportCoordAction({ content, title }: { content: string;
             className="flex cursor-pointer items-center gap-1 rounded-lg border border-zinc-700 px-2.5 py-1 text-xs text-zinc-400 transition-colors hover:border-amber-400/40 hover:text-amber-400"
           >
             <Plus size={11} />
-            작업 위치로 추가
+            주요 장소로 추가
           </button>
         )}
       </div>
