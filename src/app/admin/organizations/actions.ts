@@ -24,7 +24,9 @@ export async function deleteOrganization(id: string) {
   const { error } = await supabase.from('organizations').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/organizations')
+  revalidatePath('/admin/map')
   revalidatePath('/organizations')
+  revalidatePath('/map')
   return { success: true }
 }
 
@@ -41,6 +43,8 @@ export async function updateOrganization(id: string, data: {
   const { error } = await supabase.from('organizations').update(data).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/organizations')
+  revalidatePath('/admin/map')
   revalidatePath('/organizations')
+  revalidatePath('/map')
   return { success: true }
 }
