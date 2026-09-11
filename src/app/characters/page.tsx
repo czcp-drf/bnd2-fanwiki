@@ -25,24 +25,10 @@ type CharacterWithRelations = Character & {
   }>
 }
 
-const statusLabel: Record<string, string> = {
-  active: '활동',
-  dead: '사망',
-  retired: '은퇴',
-  hiatus: '휴식',
-}
-
-const statusColor: Record<string, string> = {
-  active: 'text-green-400 bg-green-400/10 border-green-400/20',
-  dead: 'text-red-400 bg-red-400/10 border-red-400/20',
-  retired: 'text-zinc-400 bg-zinc-400/10 border-zinc-400/20',
-  hiatus: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-}
-
-async function getCharacters(status: string, orgId: string, sort: string) {
+async function getCharacters(orgId: string, sort: string) {
   const supabase = await createClient()
 
-  let query = supabase
+  const { data } = await supabase
     .from('characters')
     .select(`
       *,
@@ -57,10 +43,6 @@ async function getCharacters(status: string, orgId: string, sort: string) {
       sort === 'latest' || sort === 'oldest' ? 'created_at' : 'name',
       { ascending: sort === 'name' || sort === 'oldest' }
     )
-
-  if (status) query = query.eq('status', status)
-
-  const { data } = await query
   let characters = (data ?? []) as unknown as CharacterWithRelations[]
 
   // 조직 필터
@@ -76,14 +58,14 @@ async function getCharacters(status: string, orgId: string, sort: string) {
 }
 
 type Props = {
-  searchParams: Promise<{ status?: string; org?: string; sort?: string }>
+  searchParams: Promise<{ org?: string; sort?: string }>
 }
 
 export default async function CharactersPage({ searchParams }: Props) {
-  const { status = '', org = '', sort = 'name' } = await searchParams
+  const { org = '', sort = 'name' } = await searchParams
   const [organizations, characters] = await Promise.all([
     getOrganizationFilterOptions(),
-    getCharacters(status, org, sort),
+    getCharacters(org, sort),
   ])
 
   return (
@@ -103,7 +85,7 @@ export default async function CharactersPage({ searchParams }: Props) {
 
       {/* 필터 */}
       <Suspense>
-        <CharacterFilters organizations={organizations} />
+        <CharacterFilters organizations={organizations} showStatus={false} />
       </Suspense>
 
       {/* 캐릭터 그리드 */}
@@ -115,7 +97,6 @@ export default async function CharactersPage({ searchParams }: Props) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {characters.map((c) => {
             const primaryMember = c.organization_members.find((m) => m.is_primary)
-            const primaryOrg = primaryMember?.organizations
             const allOrgs = c.organization_members
               .map((m) => m.organizations)
               .filter(Boolean)
@@ -151,9 +132,6 @@ export default async function CharactersPage({ searchParams }: Props) {
                       </p>
                     )}
                   </div>
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${statusColor[c.status]}`}>
-                    {statusLabel[c.status]}
-                  </span>
                 </div>
 
                 {/* 직업 / 직급 */}
