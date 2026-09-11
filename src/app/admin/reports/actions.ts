@@ -13,7 +13,10 @@ export async function updateReportStatus(id: string, status: string) {
 
 export async function blockIp(ip: string, reason?: string) {
   const supabase = await requireAdmin()
-  await supabase.from('blocked_ips').upsert({ ip, reason: reason ?? null }, { onConflict: 'ip' })
+  await Promise.all([
+    supabase.from('blocked_ips').upsert({ ip, reason: reason ?? null }, { onConflict: 'ip' }),
+    supabase.from('reports').update({ status: 'rejected' }).eq('ip', ip).in('status', ['pending', 'reviewing']),
+  ])
   revalidatePath('/admin/reports')
   revalidatePath('/admin/blocked-ips')
 }
