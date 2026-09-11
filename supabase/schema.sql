@@ -1,0 +1,174 @@
+-- 봉누도2 팬사이트 DB 스키마
+-- Supabase SQL Editor에서 실행
+
+-- streamers
+create table streamers (
+  id                uuid primary key default gen_random_uuid(),
+  chzzk_channel_id  text unique not null,
+  display_name      text not null,
+  profile_image_url text,
+  is_active         boolean default true,
+  created_at        timestamptz default now(),
+  updated_at        timestamptz default now()
+);
+
+-- characters
+create table characters (
+  id             uuid primary key default gen_random_uuid(),
+  streamer_id    uuid references streamers(id) on delete cascade,
+  name           text not null,
+  alias          text[],
+  avatar_url     text,
+  job            text,
+  description    text,
+  status         text default 'active'
+                 check (status in ('active', 'dead', 'retired', 'hiatus')),
+  first_appeared date,
+  created_at     timestamptz default now(),
+  updated_at     timestamptz default now()
+);
+
+-- organizations
+create table organizations (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  type        text check (type in (
+                'police', 'gang', 'medical', 'legal',
+                'government', 'civilian', 'other'
+              )),
+  description text,
+  logo_url    text,
+  color       text,
+  is_active   boolean default true,
+  created_at  timestamptz default now(),
+  updated_at  timestamptz default now()
+);
+
+-- organization_members
+create table organization_members (
+  id              uuid primary key default gen_random_uuid(),
+  character_id    uuid references characters(id) on delete cascade,
+  organization_id uuid references organizations(id) on delete cascade,
+  role            text,
+  is_primary      boolean default true,
+  joined_at       date,
+  left_at         date,
+  unique (character_id, organization_id)
+);
+
+-- character_relationships
+create table character_relationships (
+  id             uuid primary key default gen_random_uuid(),
+  character_a_id uuid references characters(id) on delete cascade,
+  character_b_id uuid references characters(id) on delete cascade,
+  type           text check (type in (
+                   'friend', 'enemy', 'rival', 'family',
+                   'romantic', 'ally', 'mentor', 'neutral'
+                 )),
+  description    text,
+  created_at     timestamptz default now(),
+  check (character_a_id < character_b_id)
+);
+
+-- events
+create table events (
+  id            uuid primary key default gen_random_uuid(),
+  title         text not null,
+  summary       text,
+  content       text,
+  type          text check (type in (
+                  'war', 'crime', 'political',
+                  'social', 'accident', 'other'
+                )),
+  thumbnail_url text,
+  occurred_at   timestamptz,
+  is_published  boolean default false,
+  created_at    timestamptz default now(),
+  updated_at    timestamptz default now()
+);
+
+-- event_participants
+create table event_participants (
+  id           uuid primary key default gen_random_uuid(),
+  event_id     uuid references events(id) on delete cascade,
+  character_id uuid references characters(id) on delete cascade,
+  role         text,
+  unique (event_id, character_id)
+);
+
+-- event_clips
+create table event_clips (
+  id          uuid primary key default gen_random_uuid(),
+  event_id    uuid references events(id) on delete cascade,
+  streamer_id uuid references streamers(id),
+  clip_url    text not null,
+  label       text,
+  sort_order  int default 0
+);
+
+-- reports
+create table reports (
+  id            uuid primary key default gen_random_uuid(),
+  type          text check (type in (
+                  'new_character', 'new_event', 'correction', 'other'
+                )),
+  title         text not null,
+  content       text not null,
+  contact       text,
+  reference_url text,
+  status        text default 'pending'
+                check (status in ('pending', 'reviewing', 'applied', 'rejected')),
+  created_at    timestamptz default now()
+);
+
+-- 인덱스
+create index on characters(streamer_id);
+create index on characters(status);
+create index on organization_members(organization_id);
+create index on event_participants(event_id);
+create index on event_participants(character_id);
+create index on events(occurred_at desc);
+create index on events(is_published);
+create index on reports(status);
+
+-- updated_at 자동 갱신 트리거
+create or replace function update_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger streamers_updated_at before update on streamers
+  for each row execute function update_updated_at();
+create trigger characters_updated_at before update on characters
+  for each row execute function update_updated_at();
+create trigger organizations_updated_at before update on organizations
+  for each row execute function update_updated_at();
+create trigger events_updated_at before update on events
+  for each row execute function update_updated_at();
+
+-- RLS (Row Level Security) - 공개 읽기, 서비스 롤만 쓰기
+alter table streamers enable row level security;
+alter table characters enable row level security;
+alter table organizations enable row level security;
+alter table organization_members enable row level security;
+alter table character_relationships enable row level security;
+alter table events enable row level security;
+alter table event_participants enable row level security;
+alter table event_clips enable row level security;
+alter table reports enable row level security;
+
+-- 공개 읽기 정책
+create policy "public read streamers" on streamers for select using (true);
+create policy "public read characters" on characters for select using (true);
+create policy "public read organizations" on organizations for select using (true);
+create policy "public read organization_members" on organization_members for select using (true);
+create policy "public read character_relationships" on character_relationships for select using (true);
+create policy "public read events" on events for select using (is_published = true);
+create policy "public read event_participants" on event_participants for select using (true);
+create policy "public read event_clips" on event_clips for select using (true);
+
+-- 제보는 누구나 insert 가능
+create policy "public insert reports" on reports for insert with check (true);

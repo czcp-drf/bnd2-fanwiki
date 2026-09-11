@@ -1,0 +1,170 @@
+'use client'
+
+import { useActionState, useEffect, useRef } from 'react'
+import { submitReport, type ReportFormState } from '@/app/report/actions'
+import { cn } from '@/lib/utils'
+import { CheckCircle, AlertCircle, Send } from 'lucide-react'
+
+const typeOptions = [
+  { value: 'new_character', label: '새 캐릭터 정보', desc: '위키에 없는 캐릭터 추가 요청' },
+  { value: 'new_event', label: '새 사건 제보', desc: '아카이브에 없는 사건 제보' },
+  { value: 'correction', label: '정보 수정', desc: '잘못된 정보 수정 요청' },
+  { value: 'other', label: '기타', desc: '그 외 문의 및 제보' },
+]
+
+const initialState: ReportFormState = { status: 'idle' }
+
+export default function ReportForm() {
+  const [state, action, isPending] = useActionState(submitReport, initialState)
+  const formRef = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    if (state.status === 'success') {
+      formRef.current?.reset()
+    }
+  }, [state])
+
+  return (
+    <form ref={formRef} action={action} className="space-y-6">
+      {/* 유형 선택 */}
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-semibold text-zinc-300">
+          제보 유형 <span className="text-red-400">*</span>
+        </legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {typeOptions.map((opt) => (
+            <label
+              key={opt.value}
+              className="group relative flex cursor-pointer gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition-colors has-[:checked]:border-amber-400/50 has-[:checked]:bg-amber-400/5"
+            >
+              <input
+                type="radio"
+                name="type"
+                value={opt.value}
+                required
+                className="peer sr-only"
+              />
+              <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-zinc-600 peer-checked:border-amber-400 peer-checked:bg-amber-400 transition-colors">
+                <div className="h-1.5 w-1.5 rounded-full bg-zinc-900 opacity-0 peer-checked:opacity-100 transition-opacity" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-200 group-has-[:checked]:text-amber-400 transition-colors">
+                  {opt.label}
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-500">{opt.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {/* 제목 */}
+      <div className="space-y-1.5">
+        <label htmlFor="title" className="text-sm font-semibold text-zinc-300">
+          제목 <span className="text-red-400">*</span>
+        </label>
+        <input
+          id="title"
+          name="title"
+          type="text"
+          required
+          maxLength={100}
+          placeholder="제보 내용을 한 줄로 요약해주세요"
+          className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none transition-colors"
+        />
+      </div>
+
+      {/* 내용 */}
+      <div className="space-y-1.5">
+        <label htmlFor="content" className="text-sm font-semibold text-zinc-300">
+          내용 <span className="text-red-400">*</span>
+        </label>
+        <textarea
+          id="content"
+          name="content"
+          required
+          maxLength={2000}
+          rows={6}
+          placeholder={`최대한 자세히 작성해주세요.\n관련 링크가 여러 개라면 이곳에 함께 작성해주세요.\n\n예) 캐릭터 이름, 담당 스트리머, 직업, 소속 조직 등`}
+          className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none transition-colors"
+        />
+        <p className="text-xs text-zinc-600 text-right">최대 2000자</p>
+      </div>
+
+      {/* 참고 URL */}
+      <div className="space-y-1.5">
+        <label htmlFor="reference_url" className="text-sm font-semibold text-zinc-300">
+          참고 링크 <span className="text-zinc-600 font-normal">(선택)</span>
+        </label>
+        <input
+          id="reference_url"
+          name="reference_url"
+          type="url"
+          placeholder="관련 방송 클립, 영상 링크 등"
+          className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none transition-colors"
+        />
+      </div>
+
+      {/* 연락처 */}
+      <div className="space-y-3">
+        <p className="text-sm font-semibold text-zinc-300">
+          연락처 <span className="text-zinc-600 font-normal">(선택) — 추가 확인이 필요할 때 연락드립니다</span>
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <label htmlFor="contact_method" className="text-xs font-medium text-zinc-500">연락 방법</label>
+            <input
+              id="contact_method"
+              name="contact_method"
+              type="text"
+              placeholder="예: 디스코드, 트위터, 이메일"
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none transition-colors"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="contact" className="text-xs font-medium text-zinc-500">연락처</label>
+            <input
+              id="contact"
+              name="contact"
+              type="text"
+              placeholder="예: username#1234"
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none transition-colors"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 결과 메시지 */}
+      {state.status === 'success' && (
+        <div className="flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3">
+          <CheckCircle size={16} className="shrink-0 text-green-400" />
+          <p className="text-sm text-green-400">
+            제보가 접수됐습니다. 검토 후 반영하겠습니다. 감사합니다!
+          </p>
+        </div>
+      )}
+
+      {state.status === 'error' && (
+        <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
+          <AlertCircle size={16} className="shrink-0 text-red-400" />
+          <p className="text-sm text-red-400">{state.message}</p>
+        </div>
+      )}
+
+      {/* 제출 버튼 */}
+      <button
+        type="submit"
+        disabled={isPending}
+        className={cn(
+          'flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-colors',
+          isPending
+            ? 'cursor-not-allowed bg-zinc-800 text-zinc-500'
+            : 'bg-amber-400 text-zinc-900 hover:bg-amber-300'
+        )}
+      >
+        <Send size={15} />
+        {isPending ? '제출 중...' : '제보 제출하기'}
+      </button>
+    </form>
+  )
+}
