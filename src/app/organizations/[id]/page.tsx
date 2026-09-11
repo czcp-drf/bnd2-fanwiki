@@ -3,7 +3,7 @@ export const revalidate = 300
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ChevronLeft, User, Building2, Skull, Swords } from 'lucide-react'
+import { ChevronLeft, User, Building2, Skull, Swords, MapPin, ArrowUpRight } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { Organization } from '@/types/database'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
@@ -256,6 +256,14 @@ export default async function OrganizationDetailPage({ params }: Props) {
           </div>
         </div>
 
+        {org.is_active && !org.is_disbanded && org.hq_x !== null && org.hq_y !== null && (
+          <Link href={`/map?org=${encodeURIComponent(org.id)}`}
+            className="flex items-center gap-3 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-sm text-amber-400 transition-colors hover:bg-amber-400/10">
+            <MapPin size={18} className="shrink-0" />
+            <span className="flex-1"><span className="block font-semibold">지도에서 거점 보기</span>{org.hq_label && <span className="text-xs text-zinc-400">{org.hq_label}</span>}</span>
+            <ArrowUpRight size={16} />
+          </Link>
+        )}
         {org.description && (
           <p className="text-sm text-zinc-400 leading-relaxed border-t border-zinc-800 pt-4">
             {org.description}

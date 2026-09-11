@@ -2,6 +2,7 @@ export const revalidate = 300
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import MapView from './MapView'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import type { OrgMarker, LocationMarker } from './LeafletMap'
 
@@ -11,7 +12,7 @@ async function getOrgsWithHq(): Promise<OrgMarker[]> {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('organizations')
-    .select('id, name, color, category, hq_x, hq_y, hq_label')
+    .select('id, name, color, category, hq_x, hq_y, hq_label, description, logo_url')
     .eq('is_active', true)
     .eq('is_disbanded', false)
     .not('hq_x', 'is', null)
@@ -32,5 +33,5 @@ async function getLocations(): Promise<LocationMarker[]> {
 
 export default async function MapPage() {
   const [orgs, locations] = await Promise.all([getOrgsWithHq(), getLocations()])
-  return <MapView orgs={orgs} locations={locations} />
+  return <Suspense fallback={<div className="p-10 text-zinc-400">지도를 불러오는 중입니다.</div>}><MapView orgs={orgs} locations={locations} /></Suspense>
 }

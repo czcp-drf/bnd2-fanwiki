@@ -89,7 +89,7 @@ export default function AdminLeafletMap({
       maxZoom={MAP_MAX_ZOOM}
       maxBounds={MAP_MAX_BOUNDS}
       maxBoundsViscosity={1}
-      style={{ height: '100%', width: '100%', background: '#153E6A', cursor: isPlacing ? 'crosshair' : 'grab' }}
+      style={{ height: '100%', width: '100%', background: '#0FA8D2', cursor: isPlacing ? 'crosshair' : 'grab' }}
     >
       <MapBaseLayers />
       <MapClickHandler active={isPlacing} onMapClick={onMapClick} />

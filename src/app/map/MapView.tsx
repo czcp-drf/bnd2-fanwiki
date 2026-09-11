@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from '@/lib/map/constants'
 import type { OrgMarker, LocationMarker } from './LeafletMap'
 
@@ -13,6 +14,7 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
 const CATEGORIES = ['city_hall', 'public_service', 'gang', 'business', 'illegal'] as const
 
 export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locations: LocationMarker[] }) {
+  const focusOrgId = useSearchParams().get('org')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [showLocations, setShowLocations] = useState(true)
 
@@ -72,6 +74,8 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
 
       <div className="flex-1 overflow-hidden rounded-xl border border-zinc-800">
         <LeafletMap
+          key={focusOrgId ?? 'all'}
+          focusOrgId={focusOrgId}
           orgs={orgs}
           locations={locations}
           activeCategory={activeCategory}

@@ -6,6 +6,8 @@ import MapBaseLayers from '@/components/map/MapBaseLayers'
 import L from 'leaflet'
 import { useState } from 'react'
 import Link from 'next/link'
+import { MapPin, ArrowUpRight, X } from 'lucide-react'
+import AppImage from '@/components/ui/AppImage'
 import {
   MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
   MAP_MAX_BOUNDS, GTA_CRS_CONFIG, CATEGORY_COLOR, CATEGORY_LABEL,
@@ -19,6 +21,8 @@ export type OrgMarker = {
   hq_x: number
   hq_y: number
   hq_label: string | null
+  description: string | null
+  logo_url: string | null
 }
 
 export type LocationMarker = {
@@ -64,13 +68,18 @@ export default function LeafletMap({
   locations,
   activeCategory,
   showLocations,
+  focusOrgId,
 }: {
   orgs: OrgMarker[]
   locations: LocationMarker[]
   activeCategory: string | null
   showLocations: boolean
+  focusOrgId: string | null
 }) {
-  const [selected, setSelected] = useState<Selected | null>(null)
+  const focusedOrg = orgs.find((org) => org.id === focusOrgId)
+  const [selected, setSelected] = useState<Selected | null>(
+    focusedOrg ? { type: 'org', data: focusedOrg } : null
+  )
 
   const visibleOrgs = activeCategory
     ? orgs.filter((o) => o.category === activeCategory)
@@ -81,13 +90,13 @@ export default function LeafletMap({
       <MapContainer
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         crs={GTA_CRS as any}
-        center={[0, 0]}
-        zoom={MAP_DEFAULT_ZOOM}
+        center={focusedOrg ? [focusedOrg.hq_y, focusedOrg.hq_x] : [0, 0]}
+        zoom={focusedOrg ? 4 : MAP_DEFAULT_ZOOM}
         minZoom={MAP_MIN_ZOOM}
         maxZoom={MAP_MAX_ZOOM}
         maxBounds={MAP_MAX_BOUNDS}
         maxBoundsViscosity={1}
-        style={{ height: '100%', width: '100%', background: '#153E6A' }}
+        style={{ height: '100%', width: '100%', background: '#0FA8D2' }}
       >
         <MapBaseLayers />
         <MapClickClose onClose={() => setSelected(null)} />
@@ -97,7 +106,8 @@ export default function LeafletMap({
           <CircleMarker
             key={`org-${org.id}`}
             center={[org.hq_y, org.hq_x]}
-            radius={10}
+            radius={selected?.type === 'org' && selected.data.id === org.id ? 13 : 10}
+            bubblingMouseEvents={false}
             pathOptions={{ fillColor: getOrgColor(org), color: '#fff', fillOpacity: 0.9, weight: 2 }}
             eventHandlers={{
               click: (e) => {
@@ -137,25 +147,28 @@ export default function LeafletMap({
 
       {/* 선택 카드 */}
       {selected && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] w-72 rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-sm p-4 shadow-xl">
-          <button onClick={() => setSelected(null)}
-            className="absolute right-3 top-3 text-zinc-600 hover:text-zinc-300 text-xs cursor-pointer leading-none">✕</button>
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] w-80 max-w-[calc(100%-2rem)] max-h-[70%] overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-md p-5 shadow-2xl">
+          <button onClick={() => setSelected(null)} aria-label="설명 카드 닫기"
+            className="absolute right-3 top-3 rounded-lg p-1 text-zinc-500 hover:bg-zinc-800 hover:text-white cursor-pointer"><X size={16} /></button>
 
           {selected.type === 'org' && (() => {
             const org = selected.data
             return (
               <>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: getOrgColor(org) }} />
-                  <p className="text-sm font-bold text-white pr-4">{org.name}</p>
+                <div className="flex items-center gap-3 pr-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800 text-xl font-black" style={{ color: getOrgColor(org) }}>
+                    {org.logo_url ? <AppImage src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : org.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0 space-y-1.5">
+                    {org.category && <span className="inline-block rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold" style={{ color: getOrgColor(org) }}>{CATEGORY_LABEL[org.category] ?? org.category}</span>}
+                    <p className="text-base font-bold text-white break-words">{org.name}</p>
+                  </div>
                 </div>
-                {org.category && (
-                  <p className="text-xs text-zinc-500 ml-5">{CATEGORY_LABEL[org.category] ?? org.category}</p>
-                )}
-                {org.hq_label && <p className="text-xs text-zinc-400 ml-5 mt-0.5">{org.hq_label}</p>}
+                <div className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-800/70 px-3 py-2 text-xs text-zinc-300"><MapPin size={14} className="shrink-0 text-amber-400" />{org.hq_label || '조직 거점'}</div>
+                {org.description && <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-zinc-400">{org.description}</p>}
                 <Link href={`/organizations/${org.id}`}
-                  className="mt-3 block text-center text-xs text-amber-400 hover:text-amber-300 transition-colors">
-                  조직 상세 보기 →
+                  className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2.5 text-xs font-semibold text-amber-400 hover:bg-amber-400/20 transition-colors">
+                  조직 상세 보기 <ArrowUpRight size={14} />
                 </Link>
               </>
             )
