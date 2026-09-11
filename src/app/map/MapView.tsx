@@ -35,25 +35,49 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
           <p className="text-xs text-zinc-500 mt-0.5">마커를 클릭하면 상세 정보를 볼 수 있습니다</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* 조직 거점 토글 */}
-          <button
-            onClick={() => {
-              setShowOrgs((v) => !v)
-              if (showOrgs) setActiveCategory(null)
-            }}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer border ${
-              showOrgs
-                ? 'border-zinc-600 bg-zinc-800 text-zinc-300'
-                : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            조직 거점 {showOrgs ? '표시 중' : '숨김'}
-          </button>
+        <div className="flex flex-wrap items-start gap-4">
+          {/* 조직 거점 그룹 */}
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={() => {
+                setShowOrgs((v) => !v)
+                if (showOrgs) setActiveCategory(null)
+              }}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer border ${
+                showOrgs
+                  ? 'border-zinc-600 bg-zinc-800 text-zinc-300'
+                  : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              조직 거점 {showOrgs ? '표시 중' : '숨김'}
+            </button>
+            <div className={`flex flex-wrap gap-1.5 pl-0.5 transition-opacity ${showOrgs ? '' : 'invisible'}`}>
+              <button
+                onClick={() => setActiveCategory(null)}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                  activeCategory === null ? 'bg-zinc-200 text-zinc-900' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                }`}
+              >
+                전체 ({orgs.length})
+              </button>
+              {CATEGORIES.filter((c) => counts[c] > 0).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                    activeCategory === cat ? 'text-zinc-900' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                  }`}
+                  style={activeCategory === cat ? { backgroundColor: CATEGORY_COLOR[cat] } : {}}
+                >
+                  {CATEGORY_LABEL[cat]} ({counts[cat]})
+                </button>
+              ))}
+            </div>
+          </div>
 
-          {/* 주요 장소 토글 + label 필터 */}
+          {/* 주요 장소 그룹 */}
           {locations.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-col gap-1.5">
               <button
                 onClick={() => {
                   setShowLocations((v) => !v)
@@ -67,8 +91,8 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
               >
                 주요 장소 {showLocations ? '표시 중' : '숨김'}
               </button>
-              {showLocations && locationLabels.length > 0 && (
-                <>
+              {locationLabels.length > 0 && (
+                <div className={`flex flex-wrap gap-1.5 pl-0.5 transition-opacity ${showLocations ? '' : 'invisible'}`}>
                   <button
                     onClick={() => setActiveLocationLabel(null)}
                     className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
@@ -92,34 +116,8 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
                       {label}
                     </button>
                   ))}
-                </>
+                </div>
               )}
-            </div>
-          )}
-
-          {/* 카테고리 필터 (조직 거점 표시 중일 때만) */}
-          {showOrgs && (
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setActiveCategory(null)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                  activeCategory === null ? 'bg-zinc-200 text-zinc-900' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                }`}
-              >
-                전체 ({orgs.length})
-              </button>
-              {CATEGORIES.filter((c) => counts[c] > 0).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                    activeCategory === cat ? 'text-zinc-900' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                  }`}
-                  style={activeCategory === cat ? { backgroundColor: CATEGORY_COLOR[cat] } : {}}
-                >
-                  {CATEGORY_LABEL[cat]} ({counts[cat]})
-                </button>
-              ))}
             </div>
           )}
         </div>
