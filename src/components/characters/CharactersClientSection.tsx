@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import AppImage from '@/components/ui/AppImage'
+import { useRedPill } from '@/lib/context/RedPillContext'
 import type { Character, Streamer, Organization } from '@/types/database'
 import type { OrganizationFilterOption } from '@/lib/data/organizations'
 
@@ -77,6 +78,7 @@ export default function CharactersClientSection({
   const router = useRouter()
   const searchParams = useSearchParams()
   const [search, setSearch] = useState('')
+  const { isRedPill } = useRedPill()
 
   const org = searchParams.get('org') ?? ''
   const sort = searchParams.get('sort') ?? 'name'
@@ -107,11 +109,12 @@ export default function CharactersClientSection({
     // search filter
     const q = search.trim().toLowerCase()
     if (q) {
-      result = result.filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          c.alias?.some((a) => a.toLowerCase().includes(q))
-      )
+      result = result.filter((c) => {
+        if (c.name.toLowerCase().includes(q)) return true
+        if (c.alias?.some((a) => a.toLowerCase().includes(q))) return true
+        if (isRedPill && c.streamers?.display_name.toLowerCase().includes(q)) return true
+        return false
+      })
     }
 
     // sort
@@ -122,7 +125,7 @@ export default function CharactersClientSection({
     else sorted.sort((a, b) => a.name.localeCompare(b.name, 'ko'))
 
     return sorted
-  }, [allCharacters, org, sort, search])
+  }, [allCharacters, org, sort, search, isRedPill])
 
   const orgOptions = useMemo(() => buildOrgOptions(organizations), [organizations])
 
@@ -137,7 +140,7 @@ export default function CharactersClientSection({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="이름 또는 별명 검색..."
+            placeholder={isRedPill ? '이름, 별명 또는 스트리머 검색...' : '이름 또는 별명 검색...'}
             className="w-full rounded-lg border border-zinc-800 bg-zinc-900 py-2 pl-8 pr-8 text-sm text-white placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
           />
           {search && (

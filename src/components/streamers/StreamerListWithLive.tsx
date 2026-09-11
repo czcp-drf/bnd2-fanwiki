@@ -235,14 +235,18 @@ export default function StreamerListWithLive({
   onlineOnly?: boolean
 }) {
   const [search, setSearch] = useState('')
+  const { isRedPill } = useRedPill()
 
   const matchSearch = (s: StreamerItem) => {
     if (!search.trim()) return true
     const q = search.trim().toLowerCase()
-    return (
-      s.display_name.toLowerCase().includes(q) ||
-      s.characters.some((c) => c.name.toLowerCase().includes(q))
-    )
+    if (isRedPill) {
+      return (
+        s.display_name.toLowerCase().includes(q) ||
+        s.characters.some((c) => c.name.toLowerCase().includes(q))
+      )
+    }
+    return s.display_name.toLowerCase().includes(q)
   }
 
   const allActive = streamers.filter((s) => s.is_active)
@@ -262,7 +266,7 @@ export default function StreamerListWithLive({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="이름 또는 캐릭터 검색..."
+            placeholder={isRedPill ? '스트리머 또는 캐릭터명 검색...' : '스트리머 이름 검색...'}
             className="w-full rounded-lg border border-zinc-800 bg-zinc-900 py-2 pl-8 pr-8 text-sm text-white placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
           />
           {search && (
