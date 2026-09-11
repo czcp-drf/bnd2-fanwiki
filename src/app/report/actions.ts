@@ -58,6 +58,9 @@ export async function submitReport(
   const reference_url = getString(formData, 'reference_url')
   const map_x = getString(formData, 'map_x')
   const map_y = getString(formData, 'map_y')
+  const streamer_report = getString(formData, 'streamer_report')
+  const character_reports = (formData.getAll('character_report') as string[]).filter(Boolean)
+  const clip_reports = (formData.getAll('clip_report') as string[]).map(u => u.trim()).filter(Boolean)
 
   if (!type || !title || !content) {
     return { status: 'error', message: '유형, 제목, 내용은 필수 항목입니다.' }
@@ -95,9 +98,27 @@ export async function submitReport(
     return { status: 'error', message: '참고 링크는 500자 이내로 입력해주세요.' }
   }
 
+  const extras: string[] = []
+
+  if (type === 'new_character' && streamer_report.trim()) {
+    extras.push(`[담당 스트리머] ${streamer_report.trim()}`)
+  }
+  if (type === 'new_event') {
+    if (character_reports.length > 0) {
+      extras.push(`[참여 인물] ${character_reports.join(', ')}`)
+    }
+    if (clip_reports.length > 0) {
+      extras.push(`[클립 링크]\n${clip_reports.map(u => `- ${u}`).join('\n')}`)
+    }
+  }
+
   const hasCoords = map_x && map_y && !isNaN(Number(map_x)) && !isNaN(Number(map_y))
-  const fullContent = hasCoords
-    ? `${content.trim()}\n\n[지도 좌표] X: ${Number(map_x).toFixed(1)}, Y: ${Number(map_y).toFixed(1)}`
+  if (hasCoords) {
+    extras.push(`[지도 좌표] X: ${Number(map_x).toFixed(1)}, Y: ${Number(map_y).toFixed(1)}`)
+  }
+
+  const fullContent = extras.length > 0
+    ? `${content.trim()}\n\n${extras.join('\n')}`
     : content.trim()
 
   const payload = {

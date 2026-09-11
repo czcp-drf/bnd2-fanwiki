@@ -1,6 +1,9 @@
+export const revalidate = 300
+
 import type { Metadata } from 'next'
 import { FileText, Clock, CheckCheck, MessageSquare } from 'lucide-react'
 import ReportForm from '@/components/report/ReportForm'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const metadata: Metadata = {
   title: '제보하기',
@@ -8,24 +11,32 @@ export const metadata: Metadata = {
 }
 
 const processSteps = [
-  {
-    icon: FileText,
-    label: '제출',
-    desc: '아래 양식을 작성해 제보합니다',
-  },
-  {
-    icon: Clock,
-    label: '검토',
-    desc: '관리자가 내용을 확인합니다',
-  },
-  {
-    icon: CheckCheck,
-    label: '반영',
-    desc: '검토 완료 후 위키에 반영됩니다',
-  },
+  { icon: FileText, label: '제출', desc: '아래 양식을 작성해 제보합니다' },
+  { icon: Clock, label: '검토', desc: '관리자가 내용을 확인합니다' },
+  { icon: CheckCheck, label: '반영', desc: '검토 완료 후 위키에 반영됩니다' },
 ]
 
-export default function ReportPage() {
+async function getFormOptions() {
+  const supabase = createAdminClient()
+  const [{ data: streamersData }, { data: charactersData }] = await Promise.all([
+    supabase.from('streamers').select('id, display_name').eq('is_active', true).order('display_name'),
+    supabase.from('characters').select('id, name, streamers(display_name)').eq('status', 'active').order('name'),
+  ])
+
+  const streamers = (streamersData ?? []) as { id: string; display_name: string }[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const characters = (charactersData ?? []).map((c: any) => ({
+    id: c.id as string,
+    name: c.name as string,
+    streamer_name: (c.streamers as { display_name: string } | null)?.display_name ?? null,
+  }))
+
+  return { streamers, characters }
+}
+
+export default async function ReportPage() {
+  const { streamers, characters } = await getFormOptions()
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 space-y-10">
       {/* 헤더 */}
@@ -70,7 +81,7 @@ export default function ReportPage() {
       </div>
 
       {/* 폼 */}
-      <ReportForm />
+      <ReportForm streamers={streamers} characters={characters} />
     </div>
   )
 }

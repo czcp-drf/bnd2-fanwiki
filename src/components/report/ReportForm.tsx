@@ -4,12 +4,230 @@ import { useActionState, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { submitReport, type ReportFormState } from '@/app/report/actions'
 import { cn } from '@/lib/utils'
-import { CheckCircle, AlertCircle, Send, MapPin, X } from 'lucide-react'
+import { CheckCircle, AlertCircle, Send, MapPin, X, Plus, Search } from 'lucide-react'
+import { useRedPill } from '@/lib/context/RedPillContext'
 
 const MapPinPicker = dynamic(() => import('./MapPinPicker'), {
   ssr: false,
   loading: () => <div className="h-full w-full animate-pulse bg-zinc-800" />,
 })
+
+export type StreamerOption = { id: string; display_name: string }
+export type CharacterOption = { id: string; name: string; streamer_name: string | null }
+
+// ── 스트리머 드롭다운 검색 ──────────────────────────────
+
+function StreamerSelector({ streamers, resetKey }: { streamers: StreamerOption[]; resetKey: number }) {
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<StreamerOption | null>(null)
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // resetKey 변경 시 상태 초기화
+  useEffect(() => { setSelected(null); setSearch(''); setOpen(false) }, [resetKey])
+
+  useEffect(() => {
+    if (!open) return
+    function handler(e: MouseEvent) {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const filtered = streamers.filter(s =>
+    s.display_name.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div ref={containerRef} className="relative">
+      {selected ? (
+        <div className="flex items-center gap-2">
+          <input type="hidden" name="streamer_report" value={selected.display_name} />
+          <span className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-sm text-amber-400">
+            {selected.display_name}
+            <button type="button" onClick={() => setSelected(null)} className="cursor-pointer hover:text-amber-300 transition-colors">
+              <X size={11} />
+            </button>
+          </span>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+            <Search size={14} className="shrink-0 text-zinc-600" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setOpen(true) }}
+              onFocus={() => setOpen(true)}
+              placeholder="스트리머 이름 검색"
+              className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
+            />
+          </div>
+          {open && filtered.length > 0 && (
+            <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
+              <div className="max-h-48 overflow-y-auto">
+                {filtered.map(s => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => { setSelected(s); setSearch(''); setOpen(false) }}
+                    className="w-full cursor-pointer px-4 py-2.5 text-left text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                  >
+                    {s.display_name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {open && filtered.length === 0 && search && (
+            <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
+              <p className="px-4 py-3 text-sm text-zinc-600">검색 결과가 없습니다.</p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── 캐릭터 복수 선택 ────────────────────────────────────
+
+function CharacterMultiSelect({ characters, resetKey }: { characters: CharacterOption[]; resetKey: number }) {
+  const { isRedPill } = useRedPill()
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<CharacterOption[]>([])
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setSelected([]); setSearch(''); setOpen(false) }, [resetKey])
+
+  useEffect(() => {
+    if (!open) return
+    function handler(e: MouseEvent) {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  function getLabel(c: CharacterOption) {
+    return isRedPill && c.streamer_name ? `${c.name} (${c.streamer_name})` : c.name
+  }
+
+  const filtered = characters
+    .filter(c => !selected.find(s => s.id === c.id))
+    .filter(c => getLabel(c).toLowerCase().includes(search.toLowerCase()))
+
+  function add(c: CharacterOption) {
+    setSelected(prev => [...prev, c])
+    setSearch('')
+    setOpen(false)
+  }
+
+  function remove(id: string) {
+    setSelected(prev => prev.filter(c => c.id !== id))
+  }
+
+  return (
+    <div className="space-y-2">
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map(c => (
+            <span key={c.id} className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs text-amber-400">
+              <input type="hidden" name="character_report" value={getLabel(c)} />
+              {getLabel(c)}
+              <button type="button" onClick={() => remove(c.id)} className="cursor-pointer hover:text-amber-300 transition-colors">
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div ref={containerRef} className="relative">
+        <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+          <Search size={14} className="shrink-0 text-zinc-600" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => { setSearch(e.target.value); setOpen(true) }}
+            onFocus={() => setOpen(true)}
+            placeholder={isRedPill ? '캐릭터 또는 스트리머 이름 검색' : '캐릭터 이름 검색'}
+            className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
+          />
+          <Plus size={14} className="shrink-0 text-zinc-600" />
+        </div>
+        {open && filtered.length > 0 && (
+          <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
+            <div className="max-h-48 overflow-y-auto">
+              {filtered.slice(0, 30).map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => add(c)}
+                  className="w-full cursor-pointer px-4 py-2.5 text-left text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+                >
+                  {getLabel(c)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {open && filtered.length === 0 && search && (
+          <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
+            <p className="px-4 py-3 text-sm text-zinc-600">검색 결과가 없습니다.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── 클립 URL 다중 입력 ──────────────────────────────────
+
+function ClipUrlsInput({ resetKey }: { resetKey: number }) {
+  const [clips, setClips] = useState([''])
+
+  useEffect(() => { setClips(['']) }, [resetKey])
+
+  return (
+    <div className="space-y-2">
+      {clips.map((clip, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            name="clip_report"
+            type="url"
+            value={clip}
+            onChange={e => setClips(prev => prev.map((c, j) => j === i ? e.target.value : c))}
+            placeholder={`클립 링크 ${clips.length > 1 ? i + 1 : ''}`}
+            className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none transition-colors"
+          />
+          {clips.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setClips(prev => prev.filter((_, j) => j !== i))}
+              className="cursor-pointer text-zinc-600 transition-colors hover:text-red-400"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      ))}
+      {clips.length < 5 && (
+        <button
+          type="button"
+          onClick={() => setClips(prev => [...prev, ''])}
+          className="flex cursor-pointer items-center gap-1.5 text-xs text-zinc-500 transition-colors hover:text-amber-400"
+        >
+          <Plus size={12} />
+          클립 추가 (최대 5개)
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── 메인 폼 ─────────────────────────────────────────────
 
 const typeOptions = [
   { value: 'new_character', label: '새 캐릭터 정보', desc: '위키에 없는 캐릭터 추가 요청' },
@@ -20,23 +238,33 @@ const typeOptions = [
 
 const initialState: ReportFormState = { status: 'idle' }
 
-export default function ReportForm() {
+export default function ReportForm({
+  streamers,
+  characters,
+}: {
+  streamers: StreamerOption[]
+  characters: CharacterOption[]
+}) {
   const [state, action, isPending] = useActionState(submitReport, initialState)
   const formRef = useRef<HTMLFormElement>(null)
+  const [selectedType, setSelectedType] = useState('')
   const [showMap, setShowMap] = useState(false)
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [resetKey, setResetKey] = useState(0)
 
   useEffect(() => {
     if (state.status === 'success') {
       formRef.current?.reset()
+      setSelectedType('')
       setShowMap(false)
       setMapCoords(null)
+      setResetKey(k => k + 1)
     }
   }, [state])
 
   return (
     <form ref={formRef} action={action} className="space-y-6">
-      {/* 허니팟 — 봇 방지용 숨김 필드 */}
+      {/* 허니팟 */}
       <input type="text" name="_hp" defaultValue="" aria-hidden="true" tabIndex={-1} style={{ position: 'absolute', left: '-9999px' }} />
 
       {/* 유형 선택 */}
@@ -55,6 +283,7 @@ export default function ReportForm() {
                 name="type"
                 value={opt.value}
                 required
+                onChange={() => setSelectedType(opt.value)}
                 className="peer sr-only"
               />
               <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-zinc-600 peer-checked:border-amber-400 peer-checked:bg-amber-400 transition-colors">
@@ -103,6 +332,39 @@ export default function ReportForm() {
         />
         <p className="text-xs text-zinc-600 text-right">최대 2000자</p>
       </div>
+
+      {/* 새 캐릭터 — 담당 스트리머 선택 */}
+      {selectedType === 'new_character' && streamers.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-sm font-semibold text-zinc-300">
+            담당 스트리머{' '}
+            <span className="font-normal text-zinc-600">(선택)</span>
+          </p>
+          <StreamerSelector streamers={streamers} resetKey={resetKey} />
+        </div>
+      )}
+
+      {/* 새 사건 — 참여 인물 + 클립 */}
+      {selectedType === 'new_event' && (
+        <>
+          {characters.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-sm font-semibold text-zinc-300">
+                참여 인물{' '}
+                <span className="font-normal text-zinc-600">(선택, 복수 선택 가능)</span>
+              </p>
+              <CharacterMultiSelect characters={characters} resetKey={resetKey} />
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <p className="text-sm font-semibold text-zinc-300">
+              클립 링크{' '}
+              <span className="font-normal text-zinc-600">(선택, 최대 5개)</span>
+            </p>
+            <ClipUrlsInput resetKey={resetKey} />
+          </div>
+        </>
+      )}
 
       {/* 지도 위치 첨부 */}
       <div className="space-y-2">
