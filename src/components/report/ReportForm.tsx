@@ -337,7 +337,7 @@ export default function ReportForm({
       {selectedType === 'new_character' && streamers.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-sm font-semibold text-zinc-300">
-            담당 스트리머{' '}
+            빨간약{' '}
             <span className="font-normal text-zinc-600">(선택)</span>
           </p>
           <StreamerSelector streamers={streamers} resetKey={resetKey} />

@@ -101,7 +101,7 @@ export async function submitReport(
   const extras: string[] = []
 
   if (type === 'new_character' && streamer_report.trim()) {
-    extras.push(`[담당 스트리머] ${streamer_report.trim()}`)
+    extras.push(`[빨간약] ${streamer_report.trim()}`)
   }
   if (type === 'new_event') {
     if (character_reports.length > 0) {
