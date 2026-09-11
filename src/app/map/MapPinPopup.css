@@ -1,3 +1,7 @@
+.leaflet-fade-anim .leaflet-popup.map-pin-popup {
+  transition: none;
+}
+
 .map-pin-popup .leaflet-popup-content-wrapper {
   padding: 0;
   border-radius: 16px;
