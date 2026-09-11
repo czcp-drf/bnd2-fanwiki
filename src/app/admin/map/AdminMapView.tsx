@@ -144,6 +144,16 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
     <div className="flex h-full overflow-hidden">
       {/* 좌측: 조직 목록 */}
       <aside className="w-60 shrink-0 overflow-y-auto border-r border-zinc-800 p-3 space-y-4">
+        {/* 거점 / 사업체 모드 탭 */}
+        <div className="flex rounded-lg border border-zinc-800 overflow-hidden">
+          {(['hq', 'biz'] as const).map((m) => (
+            <button key={m} onClick={() => handleSetOrgMode(m)}
+              className={`flex-1 py-1.5 text-[11px] font-medium transition-colors cursor-pointer ${orgMode === m ? 'bg-amber-400/20 text-amber-400' : 'text-zinc-500 hover:text-zinc-300'}`}>
+              {m === 'hq' ? '조직 거점' : '불법 사업체'}
+            </button>
+          ))}
+        </div>
+
         {CATEGORY_ORDER.map((cat) => {
           const list = grouped[cat]
           if (!list?.length) return null
@@ -181,16 +191,6 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
         <AdminLeafletMap orgs={orgs} locations={locations} mode="org" orgMode={orgMode}
           selectedOrgId={selectedOrgId} selectedLocationId={null}
           pendingCoords={pendingCoords} onMapClick={handleMapClick} />
-
-        {/* 거점 / 사업체 서브 모드 탭 */}
-        <div className="absolute top-3 right-3 z-[1000] flex rounded-lg border border-zinc-700 bg-zinc-900/90 backdrop-blur-sm overflow-hidden">
-          {(['hq', 'biz'] as const).map((m) => (
-            <button key={m} onClick={() => handleSetOrgMode(m)}
-              className={`px-3 py-1.5 text-[11px] font-medium transition-colors cursor-pointer ${orgMode === m ? 'bg-amber-400/20 text-amber-400' : 'text-zinc-500 hover:text-zinc-300'}`}>
-              {m === 'hq' ? '조직 거점' : '불법 사업체'}
-            </button>
-          ))}
-        </div>
 
         {/* 선택 안내 */}
         {selectedOrgId && !pendingCoords && (
