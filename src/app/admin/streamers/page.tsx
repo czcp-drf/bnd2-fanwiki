@@ -50,7 +50,7 @@ export default async function AdminStreamersPage() {
           <input
             name="profile_image_url"
             placeholder="프로필 이미지 URL (선택)"
-            className="flex-1 min-w-64 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600"
+            className="flex-1 min-w-48 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600"
           />
           <button
             type="submit"
