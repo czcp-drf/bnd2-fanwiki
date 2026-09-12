@@ -237,6 +237,11 @@ export default async function CharacterDetailPage({ params }: Props) {
               <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusColor[character.status]}`}>
                 {statusLabel[character.status]}
               </span>
+              {character.job === '가이드' && (
+                <span className="rounded-full border border-teal-400/30 bg-teal-400/10 px-2.5 py-0.5 text-xs font-medium text-teal-400">
+                  가이드
+                </span>
+              )}
             </div>
 
             {character.alias && character.alias.length > 0 && (

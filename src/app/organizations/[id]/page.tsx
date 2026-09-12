@@ -440,6 +440,11 @@ function MemberRow({
           <span className="text-sm font-semibold text-white group-hover:text-amber-400 transition-colors">
             {c.name}
           </span>
+          {c.job === '가이드' && (
+            <span className="rounded-full border border-teal-400/30 bg-teal-400/10 px-1.5 py-0.5 text-[10px] font-medium text-teal-400">
+              가이드
+            </span>
+          )}
           {c.alias && c.alias.length > 0 && (
             <span className="text-xs text-zinc-500">{c.alias.join(', ')}</span>
           )}

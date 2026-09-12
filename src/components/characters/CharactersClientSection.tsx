@@ -247,6 +247,11 @@ export default function CharactersClientSection({
                     <p className="font-bold text-white group-hover:text-amber-400 transition-colors truncate">
                       {c.name}
                     </p>
+                    {c.job === '가이드' && (
+                      <span className="shrink-0 rounded-full border border-teal-400/30 bg-teal-400/10 px-1.5 py-0.5 text-[10px] font-medium text-teal-400">
+                        가이드
+                      </span>
+                    )}
                   </div>
                   {c.alias && c.alias.length > 0 && (
                     <p className="text-xs text-zinc-500 truncate pl-9">
