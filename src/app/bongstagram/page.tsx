@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import AppImage from '@/components/ui/AppImage'
 import BongstagramVideoPlayer from './BongstagramVideoPlayer'
+import BongstagramDisplayName from './BongstagramDisplayName'
+import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 import MediaCarousel from './MediaCarousel'
 import { createClient } from '@/lib/supabase/server'
 import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
@@ -49,11 +51,13 @@ type FeedPost = {
   profile_avatar_url: string | null
   character_name: string
   character_avatar_url: string | null
+  streamer_name: string | null
+  streamer_avatar_url: string | null
 }
 
 async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[] }> {
   const supabase = await createClient()
-  const [{ data: posts, error: postsError }, { data: profiles }, { data: characters }] = await Promise.all([
+  const [{ data: posts, error: postsError }, { data: profiles }, { data: characters }, { data: streamers }] = await Promise.all([
     supabase
       .from('bongstagram_posts')
       .select('id, character_id, post_type, content, posted_at, story_expires_at, bongstagram_post_media ( id, media_type, media_url, sort_order )')
@@ -63,7 +67,10 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
       .select('character_id, profile_name, avatar_url'),
     supabase
       .from('characters')
-      .select('id, name, avatar_url'),
+      .select('id, streamer_id, name, avatar_url'),
+    supabase
+      .from('streamers')
+      .select('id, display_name, profile_image_url'),
   ])
 
   if (postsError && postsError.code !== 'PGRST205') {
@@ -72,9 +79,11 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
 
   type PostRow = { id: string; character_id: string; post_type: 'post' | 'story'; content: string; posted_at: string; story_expires_at: string | null; bongstagram_post_media: FeedMedia[] }
   type ProfileRow = { character_id: string; profile_name: string; avatar_url: string | null }
-  type CharacterRow = { id: string; name: string; avatar_url: string | null }
+  type CharacterRow = { id: string; streamer_id: string | null; name: string; avatar_url: string | null }
+  type StreamerRow = { id: string; display_name: string; profile_image_url: string | null }
   const profilesByCharacterId = new Map(((profiles ?? []) as ProfileRow[]).map((profile) => [profile.character_id, profile]))
   const charactersById = new Map(((characters ?? []) as CharacterRow[]).map((character) => [character.id, character]))
+  const streamersById = new Map(((streamers ?? []) as StreamerRow[]).map((streamer) => [streamer.id, streamer]))
 
   const feedPosts = ((posts ?? []) as PostRow[]).flatMap((post) => {
     const profile = profilesByCharacterId.get(post.character_id)
@@ -92,6 +101,8 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
       profile_avatar_url: profile.avatar_url,
       character_name: character.name,
       character_avatar_url: character.avatar_url,
+      streamer_name: character.streamer_id ? streamersById.get(character.streamer_id)?.display_name ?? null : null,
+      streamer_avatar_url: character.streamer_id ? streamersById.get(character.streamer_id)?.profile_image_url ?? null : null,
     }]
   })
 
@@ -104,14 +115,18 @@ function StoryBubble({
   mark,
   tone,
   avatarUrl,
+  streamerAvatarUrl,
   href,
+  streamerName,
   mine = false,
 }: {
   label: string
   mark: string
   tone?: string
   avatarUrl?: string | null
+  streamerAvatarUrl?: string | null
   href?: string
+  streamerName?: string | null
   mine?: boolean
 }) {
   const bubble = (
@@ -119,7 +134,14 @@ function StoryBubble({
       <div className={`relative rounded-full ${mine ? '' : 'bg-gradient-to-tr p-[2px] from-zinc-800 to-zinc-700'}`}>
         {tone && <div className={`absolute inset-0 rounded-full bg-gradient-to-tr ${tone}`} />}
         <div className={`bongstagram-story-avatar relative flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full text-xl font-bold text-zinc-200 ${mine ? '' : 'border-2 border-zinc-950'}`}>
-          {avatarUrl ? <AppImage src={avatarUrl} alt={label} className="h-full w-full rounded-full object-cover" /> : mark}
+          <BongstagramProfileAvatar
+            profileAvatarUrl={avatarUrl}
+            streamerAvatarUrl={streamerAvatarUrl}
+            profileName={label}
+            streamerName={streamerName}
+            fallbackText={mark}
+            className="h-full w-full rounded-full object-cover"
+          />
         </div>
         {mine && (
           <span className="bongstagram-story-add absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full">
@@ -127,7 +149,7 @@ function StoryBubble({
           </span>
         )}
       </div>
-      <span className="max-w-[4.5rem] truncate text-[11px] text-zinc-400">{label}</span>
+      <span className="max-w-[4.5rem] truncate text-[11px] text-zinc-400"><BongstagramDisplayName profileName={label} streamerName={streamerName} /></span>
     </div>
   )
   return href ? <Link href={href}>{bubble}</Link> : bubble
@@ -173,7 +195,7 @@ function PostCaption({ post }: { post: FeedPost }) {
   const parts = post.content.split(/(#[^\s#]+)/g)
   return (
     <p className="whitespace-pre-wrap break-words text-sm text-zinc-300">
-      <Link href={`/bongstagram/${post.character_id}`} className="font-bold text-zinc-200 transition-colors hover:text-fuchsia-300">{post.profile_name}</Link>{' '}
+      <Link href={`/bongstagram/${post.character_id}`} className="font-bold text-zinc-200 transition-colors hover:text-fuchsia-300"><BongstagramDisplayName profileName={post.profile_name} streamerName={post.streamer_name} /></Link>{' '}
       {parts.map((part, index) => part.startsWith('#')
         ? <span key={`${part}-${index}`} className="text-sky-400">{part}</span>
         : <span key={`${part}-${index}`}>{part}</span>)}
@@ -182,16 +204,22 @@ function PostCaption({ post }: { post: FeedPost }) {
 }
 
 function FeedPostCard({ post }: { post: FeedPost }) {
-  const avatarUrl = post.profile_avatar_url ?? post.character_avatar_url
   return (
     <article className="border-b border-zinc-800">
       <header className="flex items-center justify-between px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-bold text-zinc-200">
-            {avatarUrl ? <AppImage src={avatarUrl} alt={post.profile_name} className="h-full w-full object-cover" /> : post.profile_name.slice(0, 1)}
+            <BongstagramProfileAvatar
+              profileAvatarUrl={post.profile_avatar_url}
+              streamerAvatarUrl={post.streamer_avatar_url}
+              fallbackAvatarUrl={post.character_avatar_url}
+              profileName={post.profile_name}
+              streamerName={post.streamer_name}
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="min-w-0">
-            <Link href={`/bongstagram/${post.character_id}`} className="truncate text-sm font-semibold text-zinc-200 transition-colors hover:text-fuchsia-300">{post.profile_name}</Link>
+            <Link href={`/bongstagram/${post.character_id}`} className="truncate text-sm font-semibold text-zinc-200 transition-colors hover:text-fuchsia-300"><BongstagramDisplayName profileName={post.profile_name} streamerName={post.streamer_name} /></Link>
           </div>
         </div>
         <button type="button" className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-bold !text-white transition-colors hover:bg-sky-400">
@@ -272,7 +300,7 @@ export default async function BongstagramPage() {
           <StoryBubble label="내 스토리" mark="D" mine />
           {stories.length > 0
             ? stories.map((story) => (
-              <StoryBubble key={story.id} label={story.profile_name} mark={story.profile_name.slice(0, 1)} avatarUrl={story.profile_avatar_url ?? story.character_avatar_url} href={`/bongstagram/${story.character_id}`} tone="from-amber-300 via-pink-500 to-fuchsia-600" />
+              <StoryBubble key={story.id} label={story.profile_name} mark={story.profile_name.slice(0, 1)} streamerName={story.streamer_name} streamerAvatarUrl={story.streamer_avatar_url} avatarUrl={story.profile_avatar_url ?? story.character_avatar_url} href={`/bongstagram/${story.character_id}`} tone="from-amber-300 via-pink-500 to-fuchsia-600" />
             ))
             : storyPreviews.map((story) => <StoryBubble key={story.label} {...story} />)}
         </section>
