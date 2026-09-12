@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>캐릭터 관계도 샘플</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #09090b;
+      color: #e4e4e7;
+      font-family: -apple-system, 'Pretendard', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 10;
+      padding: 14px 20px;
+      background: #09090b;
+      border-bottom: 1px solid #27272a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #header h1 { font-size: 15px; font-weight: 800; color: #fff; }
+    #header p  { font-size: 12px; color: #71717a; margin-top: 1px; }
+
+    #legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: #a1a1aa;
+    }
+
+    .legend-line {
+      width: 24px;
+      height: 2px;
+      border-radius: 1px;
+    }
+
+    #canvas { width: 100vw; height: 100vh; }
+
+    .node circle {
+      stroke-width: 2.5;
+      cursor: grab;
+      transition: r 0.15s;
+    }
+
+    .node circle:active { cursor: grabbing; }
+
+    .node text {
+      font-size: 11px;
+      font-weight: 700;
+      fill: #fff;
+      pointer-events: none;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .node .alias {
+      font-size: 9.5px;
+      font-weight: 400;
+      fill: #a1a1aa;
+    }
+
+    .link {
+      stroke-opacity: 0.6;
+      fill: none;
+    }
+
+    .link-label {
+      font-size: 9px;
+      fill: #71717a;
+      pointer-events: none;
+    }
+
+    #tooltip {
+      position: fixed;
+      z-index: 100;
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      max-width: 200px;
+    }
+
+    #tooltip .tt-name { font-weight: 800; color: #fff; margin-bottom: 4px; }
+    #tooltip .tt-row  { color: #a1a1aa; margin-top: 2px; }
+    #tooltip .tt-row span { color: #e4e4e7; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>캐릭터 관계도</h1>
+    <p>드래그로 이동 · 스크롤로 줌 · 노드 클릭으로 연결 강조</p>
+  </div>
+  <div id="legend"></div>
+</div>
+
+<svg id="canvas"></svg>
+<div id="tooltip"></div>
+
+<script>
+const REL_TYPES = {
+  friend:   { label: '친구',   color: '#60a5fa' },
+  ally:     { label: '동맹',   color: '#34d399' },
+  family:   { label: '가족',   color: '#a78bfa' },
+  romantic: { label: '연인',   color: '#f472b6' },
+  mentor:   { label: '사제',   color: '#fb923c' },
+  rival:    { label: '라이벌', color: '#facc15' },
+  enemy:    { label: '적대',   color: '#f87171' },
+  neutral:  { label: '중립',   color: '#71717a' },
+}
+
+// 샘플 캐릭터
+const nodes = [
+  { id: 'c1', name: '김진우', alias: '독사', org: '블랙 바이퍼스', color: '#f97316' },
+  { id: 'c2', name: '이수현', alias: '새벽',  org: '블랙 바이퍼스', color: '#f97316' },
+  { id: 'c3', name: '박민서', alias: '폭풍',  org: '블랙 바이퍼스', color: '#f97316' },
+  { id: 'c4', name: '최재혁', alias: '그림자', org: '레드 울브즈',  color: '#ef4444' },
+  { id: 'c5', name: '정하은', alias: '여우',   org: '레드 울브즈',  color: '#ef4444' },
+  { id: 'c6', name: '한도현', alias: '철벽',   org: '경찰',         color: '#3b82f6' },
+  { id: 'c7', name: '오지훈', alias: '천사',   org: 'EMS',          color: '#10b981' },
+  { id: 'c8', name: '윤서아', alias: '달빛',   org: '무소속',       color: '#a1a1aa' },
+  { id: 'c9', name: '강민준', alias: '얼음',   org: '블랙 바이퍼스', color: '#f97316' },
+]
+
+// 샘플 관계
+const links = [
+  { source: 'c1', target: 'c2', type: 'friend',   label: '소꿉친구' },
+  { source: 'c1', target: 'c3', type: 'ally',     label: '부하' },
+  { source: 'c1', target: 'c9', type: 'mentor',   label: '스승' },
+  { source: 'c2', target: 'c3', type: 'friend',   label: '' },
+  { source: 'c3', target: 'c9', type: 'rival',    label: '라이벌' },
+  { source: 'c1', target: 'c4', type: 'enemy',    label: '숙적' },
+  { source: 'c4', target: 'c5', type: 'ally',     label: '동생' },
+  { source: 'c5', target: 'c1', type: 'rival',    label: '접선' },
+  { source: 'c6', target: 'c1', type: 'enemy',    label: '수배' },
+  { source: 'c6', target: 'c4', type: 'enemy',    label: '수배' },
+  { source: 'c7', target: 'c2', type: 'romantic', label: '연인' },
+  { source: 'c7', target: 'c6', type: 'friend',   label: '동료' },
+  { source: 'c8', target: 'c1', type: 'neutral',  label: '거래처' },
+  { source: 'c8', target: 'c6', type: 'friend',   label: '친구' },
+  { source: 'c8', target: 'c5', type: 'friend',   label: '지인' },
+]
+
+// 범례
+const legendEl = document.getElementById('legend')
+Object.entries(REL_TYPES).forEach(([, v]) => {
+  legendEl.innerHTML += `
+    <div class="legend-item">
+      <div class="legend-line" style="background:${v.color}"></div>
+      ${v.label}
+    </div>`
+})
+
+const svg = d3.select('#canvas')
+const W = window.innerWidth, H = window.innerHeight
+
+const g = svg.append('g')
+
+// 줌
+svg.call(
+  d3.zoom()
+    .scaleExtent([0.3, 3])
+    .on('zoom', (e) => g.attr('transform', e.transform))
+)
+
+// 링크 레이블용 defs
+svg.append('defs')
+
+// force simulation
+const sim = d3.forceSimulation(nodes)
+  .force('link', d3.forceLink(links).id(d => d.id).distance(130))
+  .force('charge', d3.forceManyBody().strength(-400))
+  .force('center', d3.forceCenter(W / 2, H / 2))
+  .force('collision', d3.forceCollide(50))
+
+// 링크
+const link = g.append('g')
+  .selectAll('line')
+  .data(links)
+  .join('line')
+  .attr('class', 'link')
+  .attr('stroke', d => REL_TYPES[d.type].color)
+  .attr('stroke-width', d => d.type === 'enemy' ? 2.5 : 1.8)
+  .attr('stroke-dasharray', d =>
+    d.type === 'neutral' ? '5,4' :
+    d.type === 'rival'   ? '8,3' : null
+  )
+
+// 링크 레이블
+const linkLabel = g.append('g')
+  .selectAll('text')
+  .data(links.filter(l => l.label))
+  .join('text')
+  .attr('class', 'link-label')
+  .attr('text-anchor', 'middle')
+  .text(d => d.label)
+
+// 노드
+const node = g.append('g')
+  .selectAll('g')
+  .data(nodes)
+  .join('g')
+  .attr('class', 'node')
+  .call(
+    d3.drag()
+      .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y })
+      .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y })
+      .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null })
+  )
+
+// 노드 글로우 배경
+node.append('circle')
+  .attr('r', 28)
+  .attr('fill', d => d.color + '18')
+  .attr('stroke', 'none')
+
+// 노드 원
+node.append('circle')
+  .attr('r', 22)
+  .attr('fill', '#18181b')
+  .attr('stroke', d => d.color)
+
+// 이름 텍스트
+node.append('text')
+  .attr('y', -4)
+  .text(d => d.name)
+
+// 별칭
+node.append('text')
+  .attr('class', 'alias')
+  .attr('y', 8)
+  .text(d => d.alias ? `"${d.alias}"` : '')
+
+// 툴팁
+const tooltip = document.getElementById('tooltip')
+
+node
+  .on('mouseover', (e, d) => {
+    const connectedLinks = links.filter(l =>
+      (l.source.id || l.source) === d.id || (l.target.id || l.target) === d.id
+    )
+    const rels = connectedLinks.map(l => {
+      const isSource = (l.source.id || l.source) === d.id
+      const other = isSource ? (l.target.name || nodes.find(n => n.id === l.target)?.name) : (l.source.name || nodes.find(n => n.id === l.source)?.name)
+      return `<div class="tt-row">${REL_TYPES[l.type].label} · <span>${other}</span>${l.label ? ` <span style="color:#71717a">(${l.label})</span>` : ''}</div>`
+    }).join('')
+
+    tooltip.innerHTML = `
+      <div class="tt-name">${d.name}${d.alias ? ` <span style="color:#71717a;font-weight:400">"${d.alias}"</span>` : ''}</div>
+      <div class="tt-row">소속: <span>${d.org}</span></div>
+      ${rels}
+    `
+    tooltip.style.opacity = 1
+  })
+  .on('mousemove', (e) => {
+    tooltip.style.left = (e.clientX + 14) + 'px'
+    tooltip.style.top  = (e.clientY + 14) + 'px'
+  })
+  .on('mouseout', () => { tooltip.style.opacity = 0 })
+
+// 클릭: 연결 강조
+let selected = null
+node.on('click', (e, d) => {
+  e.stopPropagation()
+  if (selected === d.id) {
+    selected = null
+    link.attr('stroke-opacity', 0.6)
+    node.selectAll('circle:nth-child(2)').attr('stroke-width', 2.5)
+  } else {
+    selected = d.id
+    link.attr('stroke-opacity', l =>
+      (l.source.id || l.source) === d.id || (l.target.id || l.target) === d.id ? 1 : 0.1
+    )
+    node.selectAll('circle:nth-child(2)').attr('stroke-width', (n) => {
+      if (n.id === d.id) return 3
+      const connected = links.some(l =>
+        ((l.source.id || l.source) === d.id && (l.target.id || l.target) === n.id) ||
+        ((l.target.id || l.target) === d.id && (l.source.id || l.source) === n.id)
+      )
+      return connected ? 2.5 : 1
+    })
+  }
+})
+
+svg.on('click', () => {
+  selected = null
+  link.attr('stroke-opacity', 0.6)
+  node.selectAll('circle:nth-child(2)').attr('stroke-width', 2.5)
+})
+
+// tick
+sim.on('tick', () => {
+  link
+    .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+    .attr('x2', d => d.target.x).attr('y2', d => d.target.y)
+
+  linkLabel
+    .attr('x', d => (d.source.x + d.target.x) / 2)
+    .attr('y', d => (d.source.y + d.target.y) / 2 - 5)
+
+  node.attr('transform', d => `translate(${d.x},${d.y})`)
+})
+
+window.addEventListener('resize', () => {
+  sim.force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2))
+  sim.alpha(0.1).restart()
+})
+</script>
+</body>
+</html>

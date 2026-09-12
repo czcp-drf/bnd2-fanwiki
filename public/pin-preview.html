@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>핀 스타일 미리보기</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0FA8D2; font-family: 'Segoe UI', sans-serif; padding: 40px; }
+  h1 { color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 32px; }
+  .section { margin-bottom: 48px; }
+  .section-title { color: #a1a1aa; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 20px; }
+  .row { display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-end; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .label { color: #e4e4e7; font-size: 11px; text-align: center; line-height: 1.4; }
+  .canvas { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; position: relative; }
+  hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin-bottom: 48px; }
+
+  /* ── 원형 핀 스타일 ── */
+  .pin-current {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #ef4444; border: 2px solid #fff;
+  }
+  .pin-glow {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #ef4444; border: 2px solid #fff;
+    filter: drop-shadow(0 0 6px #ef4444) drop-shadow(0 0 12px #ef4444aa);
+  }
+  .pin-glow-subtle {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #ef4444; border: 2px solid #fff;
+    filter: drop-shadow(0 0 4px #ef4444cc);
+  }
+  .pin-ring {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #ef4444; border: 2px solid #fff;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.35);
+  }
+  .pin-ring-pulse {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #ef4444; border: 2px solid #fff;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.25), 0 0 0 7px rgba(239,68,68,0.1);
+  }
+  .pin-glow-ring {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #ef4444; border: 2px solid #fff;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.3);
+    filter: drop-shadow(0 0 5px #ef4444bb);
+  }
+
+  /* ── 조직 전용: 크고 강조된 원형 ── */
+  .pin-org-current {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #3b82f6; border: 2px solid #fff;
+  }
+  .pin-org-large {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #3b82f6; border: 3px solid #fff;
+    filter: drop-shadow(0 0 5px #3b82f6cc);
+  }
+
+  /* ── 삼각/드롭 핀 ── */
+  .pin-drop {
+    position: relative;
+    width: 24px; height: 32px;
+  }
+  .pin-drop::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    width: 24px; height: 24px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    background: #3b82f6;
+    border: 2.5px solid #fff;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.3), 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .pin-drop::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%;
+    background: rgba(0,0,0,0.2);
+    box-shadow: 0 0 4px 4px rgba(0,0,0,0.1);
+  }
+
+  .pin-drop-glow {
+    position: relative;
+    width: 24px; height: 32px;
+  }
+  .pin-drop-glow::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 24px; height: 24px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    background: #3b82f6;
+    border: 2.5px solid #fff;
+    filter: drop-shadow(0 0 6px #3b82f6) drop-shadow(0 0 12px #3b82f688);
+  }
+
+  /* 작은 삼각핀 (현재 원형 크기와 비슷) */
+  .pin-teardrop-sm {
+    position: relative;
+    width: 20px; height: 28px;
+  }
+  .pin-teardrop-sm::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 20px; height: 20px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    background: #3b82f6;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2.5px rgba(59,130,246,0.35);
+  }
+
+  /* 별 모양 */
+  .pin-star {
+    width: 0; height: 0;
+    position: relative;
+  }
+  .pin-star svg {
+    width: 28px; height: 28px;
+    filter: drop-shadow(0 0 4px #f59e0b) drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+
+  /* 다이아몬드 */
+  .pin-diamond svg {
+    width: 24px; height: 24px;
+    filter: drop-shadow(0 0 5px #3b82f6cc) drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+
+  /* 헥사곤 */
+  .pin-hex svg {
+    width: 28px; height: 28px;
+    filter: drop-shadow(0 0 5px #8b5cf6cc);
+  }
+
+  /* 추천 배지 */
+  .badge { background: #facc15; color: #1c1917; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 99px; position: absolute; top: -10px; right: -14px; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<h1>핀 스타일 미리보기 — 봉누도2 위키</h1>
+
+<!-- ─────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">A. 원형 핀 — 하이라이트 방식 비교 (현재: 조직 거점 / 주요 장소)</div>
+  <div class="row">
+
+    <div class="item">
+      <div class="canvas"><div class="pin-current"></div></div>
+      <div class="label">현재<br>(테두리만)</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas"><div class="pin-glow-subtle"></div></div>
+      <div class="label">글로우 (subtle)<br>은은하게</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas"><div class="pin-glow"></div></div>
+      <div class="label">글로우 (strong)<br>확실하게</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas"><div class="pin-ring"></div></div>
+      <div class="label">이중 테두리<br>(링 1겹)</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas"><div class="pin-ring-pulse"></div></div>
+      <div class="label">이중 테두리<br>(링 2겹)</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas" style="position:relative">
+        <div class="pin-glow-ring"></div>
+        <span class="badge">추천</span>
+      </div>
+      <div class="label">글로우 + 링<br>조합</div>
+    </div>
+
+  </div>
+</div>
+
+<hr>
+
+<!-- ─────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">B. 조직 거점 핀 — 모양 변형 비교 (원형 vs 드롭핀 vs 기타)</div>
+  <div class="row">
+
+    <div class="item">
+      <div class="canvas"><div class="pin-org-current"></div></div>
+      <div class="label">현재 원형</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas"><div class="pin-org-large"></div></div>
+      <div class="label">원형 + 크기 업<br>+ 글로우</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas"><div class="pin-teardrop-sm"></div></div>
+      <div class="label">티어드롭<br>(소형)</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas"><div class="pin-drop"></div></div>
+      <div class="label">드롭핀<br>(지도앱 스타일)</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas"><div class="pin-drop-glow"></div></div>
+      <div class="label">드롭핀<br>+ 글로우</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas">
+        <div class="pin-diamond">
+          <svg viewBox="0 0 24 24" fill="#3b82f6" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="12,2 22,12 12,22 2,12" stroke="white" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="label">다이아몬드</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas">
+        <div class="pin-hex">
+          <svg viewBox="0 0 28 28" fill="#8b5cf6" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="14,2 25,8 25,20 14,26 3,20 3,8" stroke="white" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="label">헥사곤</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas">
+        <div class="pin-star">
+          <svg viewBox="0 0 28 28" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="14,2 17.5,10.5 27,11 20,17.5 22.5,26 14,21.5 5.5,26 8,17.5 1,11 10.5,10.5" stroke="white" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+      <div class="label">별 (중요 거점)</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas">
+        <div style="width:22px;height:22px;background:#3b82f6;border:2.5px solid #fff;border-radius:4px;box-shadow:0 0 0 3px rgba(59,130,246,0.35);filter:drop-shadow(0 0 5px #3b82f6cc)"></div>
+      </div>
+      <div class="label">네모 + 링<br>+ 글로우</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas">
+        <div style="width:22px;height:22px;background:#3b82f6;border:2.5px solid #fff;border-radius:3px;transform:rotate(45deg);box-shadow:0 0 0 3px rgba(59,130,246,0.3);filter:drop-shadow(0 0 5px #3b82f6cc)"></div>
+      </div>
+      <div class="label">네모 45° 회전<br>(다이아 대안)</div>
+    </div>
+
+  </div>
+</div>
+
+<hr>
+
+<!-- ─────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">C. 추천 조합 — 조직(드롭핀) vs 주요장소(원형) 같이 보기</div>
+  <div class="row" style="align-items:center; background:rgba(0,0,0,0.15); padding:24px 28px; border-radius:16px;">
+
+    <div class="item">
+      <div class="canvas"><div class="pin-drop"></div></div>
+      <div class="label" style="color:#93c5fd">조직 거점<br>드롭핀</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas">
+        <div style="width:14px;height:14px;border-radius:50%;background:#facc15;border:2px solid #fff;box-shadow:0 0 0 2.5px rgba(250,204,21,0.3);filter:drop-shadow(0 0 4px #facc15bb)"></div>
+      </div>
+      <div class="label" style="color:#fde68a">주요 장소<br>소형 원형 + 글로우</div>
+    </div>
+
+    <div style="color:rgba(255,255,255,0.3);font-size:20px">vs</div>
+
+    <div class="item">
+      <div class="canvas"><div class="pin-teardrop-sm"></div></div>
+      <div class="label" style="color:#93c5fd">조직 거점<br>티어드롭</div>
+    </div>
+
+    <div class="item">
+      <div class="canvas">
+        <div style="width:14px;height:14px;border-radius:50%;background:#facc15;border:2px solid #fff;box-shadow:0 0 0 2.5px rgba(250,204,21,0.3);filter:drop-shadow(0 0 4px #facc15bb)"></div>
+      </div>
+      <div class="label" style="color:#fde68a">주요 장소<br>소형 원형 + 글로우</div>
+    </div>
+
+  </div>
+  <div style="display:flex;gap:48px;margin-top:28px;align-items:center">
+    <div class="item">
+      <div class="canvas">
+        <div style="width:22px;height:22px;background:#3b82f6;border:2.5px solid #fff;border-radius:4px;box-shadow:0 0 0 3px rgba(59,130,246,0.35);filter:drop-shadow(0 0 5px #3b82f6cc)"></div>
+      </div>
+      <div class="label" style="color:#93c5fd">조직 거점<br>네모 + 글로우</div>
+    </div>
+    <div class="item">
+      <div class="canvas">
+        <div style="width:22px;height:22px;background:#3b82f6;border:2.5px solid #fff;border-radius:3px;transform:rotate(45deg);box-shadow:0 0 0 3px rgba(59,130,246,0.3);filter:drop-shadow(0 0 5px #3b82f6cc)"></div>
+      </div>
+      <div class="label" style="color:#93c5fd">조직 거점<br>네모 45°</div>
+    </div>
+    <div class="item">
+      <div class="canvas">
+        <div style="width:14px;height:14px;border-radius:50%;background:#facc15;border:2px solid #fff;box-shadow:0 0 0 2.5px rgba(250,204,21,0.3);filter:drop-shadow(0 0 4px #facc15bb)"></div>
+      </div>
+      <div class="label" style="color:#fde68a">주요 장소<br>소형 원형 + 글로우</div>
+    </div>
+  </div>
+  <p style="color:#71717a;font-size:11px;margin-top:14px;">→ 조직 거점은 모양으로, 주요 장소는 색+글로우로 역할 구분 가능</p>
+</div>
+
+</body>
+</html>
