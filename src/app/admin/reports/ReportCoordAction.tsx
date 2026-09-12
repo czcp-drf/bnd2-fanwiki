@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAdminMutation } from '@/lib/admin/useAdminMutation'
+import { unwrapMutation } from '@/lib/admin/mutation'
 import { MapPin, Plus, Check } from 'lucide-react'
 import { addMapLocation } from '../map/actions'
 
@@ -20,7 +22,7 @@ export default function ReportCoordAction({ content, title }: { content: string;
   const [label, setLabel] = useState('')
   const [color, setColor] = useState('#facc15')
   const [done, setDone] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const [isPending, startTransition, error] = useAdminMutation()
 
   if (!parsed) return null
   const coords = parsed
@@ -28,7 +30,7 @@ export default function ReportCoordAction({ content, title }: { content: string;
   function handleAdd() {
     if (!name.trim()) return
     startTransition(async () => {
-      await addMapLocation({ name: name.trim(), label: label.trim() || null, description: null, color, x: coords.x, y: coords.y })
+      await unwrapMutation(addMapLocation({ name: name.trim(), label: label.trim() || null, description: null, color, x: coords.x, y: coords.y }))
       setDone(true)
       setOpen(false)
     })
@@ -45,6 +47,7 @@ export default function ReportCoordAction({ content, title }: { content: string;
 
   return (
     <div className="space-y-2">
+      {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-xs text-amber-400">
           <MapPin size={10} />

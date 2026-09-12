@@ -1,9 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { updateStreamer, deleteStreamer } from './actions'
+import { useAdminMutation } from '@/lib/admin/useAdminMutation'
+import { unwrapMutation } from '@/lib/admin/mutation'
+import * as actions from './actions'
 import { Check, Pencil, Trash2, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
+
+const updateStreamer = (...args: Parameters<typeof actions.updateStreamer>) => unwrapMutation(actions.updateStreamer(...args))
+const deleteStreamer = (...args: Parameters<typeof actions.deleteStreamer>) => unwrapMutation(actions.deleteStreamer(...args))
 
 type Streamer = {
   id: string
@@ -21,25 +26,25 @@ export default function StreamerEditRow({ streamer }: { streamer: Streamer }) {
   const [displayName, setDisplayName] = useState(streamer.display_name)
   const [profileImageUrl, setProfileImageUrl] = useState(streamer.profile_image_url ?? '')
   const [isActive, setIsActive] = useState(streamer.is_active)
-  const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const [saving, runSave, saveError] = useAdminMutation()
+  const [deleting, runDelete, deleteError] = useAdminMutation()
 
-  async function save() {
-    setSaving(true)
-    await updateStreamer(streamer.id, {
-      chzzk_channel_id: channelId.trim() || streamer.chzzk_channel_id,
-      display_name: displayName.trim() || streamer.display_name,
-      profile_image_url: profileImageUrl.trim() || null,
-      is_active: isActive,
+  function save() {
+    runSave(async () => {
+      await updateStreamer(streamer.id, {
+        chzzk_channel_id: channelId.trim() || streamer.chzzk_channel_id,
+        display_name: displayName.trim() || streamer.display_name,
+        profile_image_url: profileImageUrl.trim() || null,
+        is_active: isActive,
+      })
+      setEditing(false)
     })
-    setSaving(false)
-    setEditing(false)
   }
 
-  async function handleDelete() {
-    setDeleting(true)
-    await deleteStreamer(streamer.id)
-    setDeleting(false)
+  function handleDelete() {
+    runDelete(async () => {
+      await deleteStreamer(streamer.id)
+    })
   }
 
   function cancel() {
@@ -121,8 +126,9 @@ export default function StreamerEditRow({ streamer }: { streamer: Streamer }) {
               </button>
             )}
           </div>
+          {(saveError || deleteError) && <p role="alert" className="mt-2 text-xs text-red-400">{saveError || deleteError}</p>}
         </td>
-      </tr>
+    </tr>
     )
   }
 

@@ -1,11 +1,19 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useAdminMutation } from '@/lib/admin/useAdminMutation'
+import { unwrapMutation } from '@/lib/admin/mutation'
 import { useRouter } from 'next/navigation'
-import { updateOrgHq, updateOrgBiz, addMapLocation, updateMapLocation, deleteMapLocation } from './actions'
+import * as actions from './actions'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from '@/lib/map/constants'
 import type { AdminOrg, AdminLocation } from './AdminLeafletMap'
+
+const updateOrgHq = (...args: Parameters<typeof actions.updateOrgHq>) => unwrapMutation(actions.updateOrgHq(...args))
+const updateOrgBiz = (...args: Parameters<typeof actions.updateOrgBiz>) => unwrapMutation(actions.updateOrgBiz(...args))
+const addMapLocation = (...args: Parameters<typeof actions.addMapLocation>) => unwrapMutation(actions.addMapLocation(...args))
+const updateMapLocation = (...args: Parameters<typeof actions.updateMapLocation>) => unwrapMutation(actions.updateMapLocation(...args))
+const deleteMapLocation = (...args: Parameters<typeof actions.deleteMapLocation>) => unwrapMutation(actions.deleteMapLocation(...args))
 
 const AdminLeafletMap = dynamic(() => import('./AdminLeafletMap'), {
   ssr: false,
@@ -54,7 +62,7 @@ function CoordInputs({
 
 function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocation[] }) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [isPending, startTransition, mutationError] = useAdminMutation()
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
   const [orgMode, setOrgMode] = useState<'hq' | 'biz'>('hq')
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -141,7 +149,8 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
   }, {} as Record<string, AdminOrg[]>)
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="relative flex h-full overflow-hidden">
+      {mutationError && <p role="alert" className="absolute bottom-3 left-3 right-3 z-[1100] rounded-lg border border-red-500/30 bg-zinc-950 px-4 py-3 text-sm text-red-400">{mutationError}</p>}
       {/* 좌측: 조직 목록 */}
       <aside className="w-60 shrink-0 overflow-y-auto border-r border-zinc-800 p-3 space-y-4">
         {/* 거점 / 사업체 모드 탭 */}
@@ -249,7 +258,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
 
 function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocation[] }) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [isPending, startTransition, mutationError] = useAdminMutation()
 
   // 새 위치 추가 폼
   const [addingNew, setAddingNew] = useState(false)
@@ -379,7 +388,8 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
     : locations
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="relative flex h-full overflow-hidden">
+      {mutationError && <p role="alert" className="absolute bottom-3 left-3 right-3 z-[1100] rounded-lg border border-red-500/30 bg-zinc-950 px-4 py-3 text-sm text-red-400">{mutationError}</p>}
       {/* 좌측: 위치 목록 */}
       <aside className="w-64 shrink-0 overflow-y-auto border-r border-zinc-800 p-3 space-y-3">
         <button onClick={startAddNew}
