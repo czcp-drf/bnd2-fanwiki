@@ -39,18 +39,18 @@ export default async function AdminStreamersPage() {
             name="display_name"
             placeholder="표시 이름"
             required
-            className="rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600"
+            className="w-32 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600"
           />
           <input
             name="chzzk_channel_id"
             placeholder="치지직 채널 ID"
             required
-            className="rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 font-mono text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600 w-72"
+            className="w-72 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 font-mono text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600"
           />
           <input
             name="profile_image_url"
             placeholder="프로필 이미지 URL (선택)"
-            className="rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600 w-64"
+            className="flex-1 min-w-64 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600"
           />
           <button
             type="submit"

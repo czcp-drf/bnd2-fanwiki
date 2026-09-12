@@ -50,14 +50,21 @@ export default function AdminStreamersClient({ streamers }: { streamers: Streame
 
       {/* 목록 */}
       <div className="rounded-xl border border-zinc-800 overflow-hidden">
-        <table className="w-full">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col className="w-36" />
+            <col className="w-72" />
+            <col />
+            <col className="w-16" />
+            <col className="w-12" />
+          </colgroup>
           <thead>
             <tr className="bg-zinc-900">
               <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">이름</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">채널 ID</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 w-24">프로필 이미지</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 w-16">상태</th>
-              <th className="px-4 py-3 w-12" />
+              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">프로필 이미지 URL</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">상태</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>

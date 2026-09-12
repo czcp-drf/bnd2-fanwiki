@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { updateStreamer, deleteStreamer } from './actions'
 import { Check, Pencil, Trash2, X } from 'lucide-react'
-import Image from 'next/image'
+import AppImage from '@/components/ui/AppImage'
 
 type Streamer = {
   id: string
@@ -131,12 +131,10 @@ export default function StreamerEditRow({ streamer }: { streamer: Streamer }) {
       <td className="px-4 py-2.5">
         <div className="flex items-center gap-2.5">
           {streamer.profile_image_url ? (
-            <Image
+            <AppImage
               src={streamer.profile_image_url}
               alt={streamer.display_name}
-              width={24}
-              height={24}
-              className="rounded-full object-cover"
+              className="h-6 w-6 rounded-full object-cover"
             />
           ) : (
             <div className="h-6 w-6 rounded-full bg-zinc-700" />
@@ -147,12 +145,10 @@ export default function StreamerEditRow({ streamer }: { streamer: Streamer }) {
         </div>
       </td>
       <td className="px-4 py-2.5 font-mono text-xs text-zinc-500">{streamer.chzzk_channel_id}</td>
-      <td className="px-4 py-2.5 text-xs text-zinc-500 max-w-xs truncate">
-        {streamer.profile_image_url ? (
-          <span className="text-zinc-400">설정됨</span>
-        ) : (
-          <span className="text-zinc-700">없음</span>
-        )}
+      <td className="px-4 py-2.5 text-xs text-zinc-500 truncate">
+        {streamer.profile_image_url
+          ? <span className="text-zinc-400 truncate">{streamer.profile_image_url}</span>
+          : <span className="text-zinc-700">없음</span>}
       </td>
       <td className="px-4 py-2.5">
         <span className={`text-xs ${streamer.is_active ? 'text-green-400' : 'text-zinc-600'}`}>
