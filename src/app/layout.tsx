@@ -3,6 +3,8 @@ import { Geist } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import { RedPillProvider } from '@/lib/context/RedPillContext'
+import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const geist = Geist({
   variable: '--font-geist-sans',
@@ -40,6 +42,8 @@ export default function RootLayout({
           <Header />
           <main className="flex-1">{children}</main>
         </RedPillProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
