@@ -2,7 +2,6 @@ export const revalidate = 300
 
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { ChevronLeft, User, Building2, Skull, Swords, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -10,8 +9,7 @@ import type { Organization } from '@/types/database'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import { typeLabel as eventTypeLabel, typeColor as eventTypeColor } from '@/lib/events'
 import AppImage from '@/components/ui/AppImage'
-
-const OrgMiniMap = dynamic(() => import('./OrgMiniMap'), { ssr: false })
+import OrgMiniMapWrapper from './OrgMiniMapWrapper'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -273,7 +271,7 @@ export default async function OrganizationDetailPage({ params }: Props) {
             <MapPin size={15} className="text-zinc-500" />
             위치
           </h2>
-          <OrgMiniMap org={{
+          <OrgMiniMapWrapper org={{
             id: org.id,
             name: orgName,
             color: org.color ?? null,
