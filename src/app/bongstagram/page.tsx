@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import AppImage from '@/components/ui/AppImage'
+import { createClient } from '@/lib/supabase/server'
+import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
 import {
   Heart,
   Image as ImageIcon,
@@ -23,23 +26,96 @@ const storyPreviews = [
   { label: '차수진', mark: '차', tone: 'from-pink-400 via-red-400 to-orange-300' },
 ]
 
+type FeedMedia = {
+  id: string
+  media_type: 'image' | 'video'
+  media_url: string
+  sort_order: number
+}
+
+type FeedPost = {
+  id: string
+  character_id: string
+  post_type: 'post' | 'story'
+  content: string
+  posted_at: string
+  story_expires_at: string | null
+  media: FeedMedia[]
+  profile_name: string
+  profile_avatar_url: string | null
+  character_name: string
+  character_avatar_url: string | null
+}
+
+async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[] }> {
+  const supabase = await createClient()
+  const [{ data: posts, error: postsError }, { data: profiles }, { data: characters }] = await Promise.all([
+    supabase
+      .from('bongstagram_posts')
+      .select('id, character_id, post_type, content, posted_at, story_expires_at, bongstagram_post_media ( id, media_type, media_url, sort_order )')
+      .order('posted_at', { ascending: false }),
+    supabase
+      .from('bongstagram_profiles')
+      .select('character_id, profile_name, avatar_url'),
+    supabase
+      .from('characters')
+      .select('id, name, avatar_url'),
+  ])
+
+  if (postsError && postsError.code !== 'PGRST205') {
+    console.error('Bongstagram feed lookup failed:', postsError.code, postsError.message)
+  }
+
+  type PostRow = { id: string; character_id: string; post_type: 'post' | 'story'; content: string; posted_at: string; story_expires_at: string | null; bongstagram_post_media: FeedMedia[] }
+  type ProfileRow = { character_id: string; profile_name: string; avatar_url: string | null }
+  type CharacterRow = { id: string; name: string; avatar_url: string | null }
+  const profilesByCharacterId = new Map(((profiles ?? []) as ProfileRow[]).map((profile) => [profile.character_id, profile]))
+  const charactersById = new Map(((characters ?? []) as CharacterRow[]).map((character) => [character.id, character]))
+
+  const feedPosts = ((posts ?? []) as PostRow[]).flatMap((post) => {
+    const profile = profilesByCharacterId.get(post.character_id)
+    const character = charactersById.get(post.character_id)
+    if (!profile || !character) return []
+    return [{
+      id: post.id,
+      character_id: post.character_id,
+      post_type: post.post_type,
+      content: post.content,
+      posted_at: post.posted_at,
+      story_expires_at: post.story_expires_at,
+      media: post.bongstagram_post_media.sort((a, b) => a.sort_order - b.sort_order),
+      profile_name: profile.profile_name,
+      profile_avatar_url: profile.avatar_url,
+      character_name: character.name,
+      character_avatar_url: character.avatar_url,
+    }]
+  })
+
+  const stories = feedPosts.filter((post) => post.post_type === 'story' && isStoryVisible(post.story_expires_at))
+  return { posts: feedPosts.filter((post) => post.post_type === 'post'), stories }
+}
+
 function StoryBubble({
   label,
   mark,
   tone,
+  avatarUrl,
+  href,
   mine = false,
 }: {
   label: string
   mark: string
   tone?: string
+  avatarUrl?: string | null
+  href?: string
   mine?: boolean
 }) {
-  return (
+  const bubble = (
     <div className="flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5">
       <div className={`relative rounded-full ${mine ? '' : 'bg-gradient-to-tr p-[2px] from-zinc-800 to-zinc-700'}`}>
         {tone && <div className={`absolute inset-0 rounded-full bg-gradient-to-tr ${tone}`} />}
         <div className={`bongstagram-story-avatar relative flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full text-xl font-bold text-zinc-200 ${mine ? '' : 'border-2 border-zinc-950'}`}>
-          {mark}
+          {avatarUrl ? <AppImage src={avatarUrl} alt={label} className="h-full w-full rounded-full object-cover" /> : mark}
         </div>
         {mine && (
           <span className="bongstagram-story-add absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full">
@@ -50,6 +126,7 @@ function StoryBubble({
       <span className="max-w-[4.5rem] truncate text-[11px] text-zinc-400">{label}</span>
     </div>
   )
+  return href ? <Link href={href}>{bubble}</Link> : bubble
 }
 
 function FilledHomeIcon({ size = 23 }: { size?: number }) {
@@ -57,6 +134,58 @@ function FilledHomeIcon({ size = 23 }: { size?: number }) {
     <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
       <path d="M2.3 10.3 12 2.5l9.7 7.8v10.2h-6.2v-6.4H8.5v6.4H2.3V10.3Z" />
     </svg>
+  )
+}
+
+function FeedMedia({ media, label }: { media: FeedMedia; label: string }) {
+  return media.media_type === 'video'
+    ? <video controls preload="metadata" src={media.media_url} className="aspect-[4/5] w-full bg-zinc-950 object-cover" aria-label={`${label} 동영상`} />
+    : <AppImage src={media.media_url} alt={`${label} 게시물`} width={540} height={675} className="aspect-[4/5] w-full object-cover" />
+}
+
+function FeedPostCard({ post }: { post: FeedPost }) {
+  const avatarUrl = post.profile_avatar_url ?? post.character_avatar_url
+  return (
+    <article className="border-b border-zinc-800">
+      <header className="flex items-center justify-between px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-bold text-zinc-200">
+            {avatarUrl ? <AppImage src={avatarUrl} alt={post.profile_name} className="h-full w-full object-cover" /> : post.profile_name.slice(0, 1)}
+          </div>
+          <div className="min-w-0">
+            <Link href={`/bongstagram/${post.character_id}`} className="truncate text-sm font-semibold text-zinc-200 transition-colors hover:text-fuchsia-300">{post.profile_name}</Link>
+            <p className="truncate text-[11px] text-zinc-500">{post.character_name}</p>
+          </div>
+        </div>
+        <button type="button" className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-bold !text-white transition-colors hover:bg-sky-400">
+          팔로우
+        </button>
+      </header>
+
+      {post.media.length > 0 ? (
+        <div className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {post.media.map((media) => (
+            <div key={media.id} className="min-w-full snap-center">
+              <FeedMedia media={media} label={post.profile_name} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex min-h-56 items-center justify-center bg-gradient-to-br from-zinc-900 via-zinc-950 to-fuchsia-950/20 px-6 py-12 text-center text-sm text-zinc-500">
+          이미지가 없는 게시물입니다.
+        </div>
+      )}
+
+      <div className="space-y-3 px-4 py-3">
+        <div className="flex items-center gap-4 text-zinc-300">
+          <Heart size={23} />
+          <MessageCircle size={23} />
+          <Send size={22} />
+        </div>
+        {post.media.length > 1 && <p className="text-[11px] text-zinc-600">{post.media.length}개의 미디어 · 좌우로 넘겨보기</p>}
+        {post.content && <p className="whitespace-pre-wrap break-words text-sm text-zinc-300">{post.content}</p>}
+      </div>
+    </article>
   )
 }
 
@@ -79,7 +208,9 @@ function BottomNav() {
   )
 }
 
-export default function BongstagramPage() {
+export default async function BongstagramPage() {
+  const { posts, stories } = await getFeedContent()
+
   return (
     <div className="bongstagram-theme">
       <div className="bongstagram-font min-h-[calc(100vh-3.5rem)] bg-zinc-950">
@@ -100,12 +231,15 @@ export default function BongstagramPage() {
 
         <section className="flex gap-3 overflow-x-auto border-b border-zinc-800 px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="스토리">
           <StoryBubble label="내 스토리" mark="D" mine />
-          {storyPreviews.map((story) => (
-            <StoryBubble key={story.label} {...story} />
-          ))}
+          {stories.length > 0
+            ? stories.map((story) => (
+              <StoryBubble key={story.id} label={story.profile_name} mark={story.profile_name.slice(0, 1)} avatarUrl={story.profile_avatar_url ?? story.character_avatar_url} href={`/bongstagram/${story.character_id}`} tone="from-amber-300 via-pink-500 to-fuchsia-600" />
+            ))
+            : storyPreviews.map((story) => <StoryBubble key={story.label} {...story} />)}
         </section>
 
         <main>
+          {posts.length > 0 ? posts.map((post) => <FeedPostCard key={post.id} post={post} />) : (
           <article className="border-b border-zinc-800">
             <header className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">
@@ -147,6 +281,7 @@ export default function BongstagramPage() {
               <p className="text-sm text-zinc-300">봉누도2의 소식과 일상을 Bongstagram에서 만나보세요.</p>
             </div>
           </article>
+          )}
         </main>
 
         <BottomNav />

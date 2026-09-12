@@ -81,7 +81,8 @@ src/
 │       ├── events/             # 사건 CRUD + 참여자/클립 편집
 │       ├── relationships/      # 캐릭터 관계 CRUD
 │       ├── streamers/          # 스트리머 CRUD (display_name, chzzk_channel_id, profile_image_url, is_active)
-│       ├── bongstagram/        # Bongstagram 프로필 등록·수정·삭제
+│       ├── bongstagram/        # Bongstagram 프로필·게시물 등록·수정·삭제
+│       │   └── posts/page.tsx  # Bongstagram 게시물·스토리 관리
 │       ├── map/                # 거점 지도 관리 (90vh 전체 화면)
 │       │   ├── page.tsx        # force-dynamic, 조직+주요 장소 fetch, 갱단 biz 좌표 병합
 │       │   ├── AdminMapView.tsx  # 사이드바 탭 UI (조직 거점·사업체 / 주요 장소)
@@ -245,6 +246,8 @@ src/
 | `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/colleague/neutral) |
 | `reports` | 제보 (type, status: pending/reviewing/applied/rejected, ip) |
 | `bongstagram_profiles` | 기존 `characters`와 1:1로 연결되는 Bongstagram 표시 닉네임 |
+| `bongstagram_posts` | Bongstagram 게시물·스토리 본체 (character_id, post_type, content, posted_at, story_expires_at) |
+| `bongstagram_post_media` | 게시물 미디어 (image/video URL, Storage 경로, sort_order) |
 | `blocked_ips` | 차단 IP 목록 (ip, reason) |
 
 ### 마이그레이션 파일 (supabase/migrations/)
@@ -260,6 +263,9 @@ src/
 | `017_atomic_creation.sql` | 캐릭터·스트리머와 연결 데이터 원자적 생성 RPC 추가 |
 | `018_bonstagram_profiles.sql` | 기존 캐릭터와 1:1 연결되는 Bongstagram 프로필 테이블 생성 |
 | `019_rename_bongstagram.sql` | 적용된 018의 테이블·제약조건·트리거·RLS 정책명을 Bongstagram으로 변경 |
+| `020_bongstagram_posts.sql` | Bongstagram 기본 게시물 테이블 생성 (RLS 포함) |
+| `021_bongstagram_media.sql` | 게시물·스토리 타입과 이미지·동영상 다중 미디어 테이블 추가, 기존 image_url 이관 |
+| `022_bongstagram_storage.sql` | Bongstagram 직접 업로드용 Storage 버킷과 미디어 storage_path 추가 |
 
 ---
 
@@ -301,7 +307,9 @@ src/
 - [x] `bongstagram_profiles` 1:1 계정 테이블·프로필 이름 제약 마이그레이션 작성 (`018_bonstagram_profiles.sql`, `019_rename_bongstagram.sql`)
 - [x] 기존 캐릭터 선택 기반의 Bongstagram 프로필 등록/수정/삭제 화면 (`/admin/bongstagram`)
 - [x] 관리자 캐릭터 선택 드롭다운 텍스트 검색, 조직 필터, Bongstagram 연결 상태 3단계 필터와 미연결 캐릭터 행의 프로필 수정
-- [ ] 게시물 피드·상세·댓글·좋아요 기능
+- [x] Bongstagram 게시물·스토리 등록·수정·삭제 관리자 화면과 공개 피드 연결 (이미지·동영상 여러 개, `/admin/bongstagram/posts`)
+- [x] 관리자 게시물 작성 시 Supabase Storage 직접 업로드 (이미지 10MB·동영상 100MB, 일회성 업로드 URL, 파일 삭제 시 Storage 정리)
+- [ ] 게시물 상세·댓글·좋아요 기능
 - [ ] 릴스 기능 — 범위에서 제외
 
 ---
@@ -313,6 +321,7 @@ src/
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 서비스 롤 key (어드민, 업로드 스크립트) |
+| `BONGSTAGRAM_SERVER_FINAL_DATE` | 서버 마지막 종료일 (`YYYY-MM-DD`, 해당일 오전 3시에 스토리 전체 종료) |
 | `ADMIN_PASSWORD` | 어드민 로그인 비밀번호 |
 | `ADMIN_TOKEN` | 어드민 쿠키 검증 토큰 |
 | `NEXT_PUBLIC_MAP_TILE_BASE` | 지도 타일 CDN 베이스 URL (Supabase Storage, 미설정 시 public/ 직접 서빙) |
@@ -352,6 +361,14 @@ src/
 - Bongstagram 명칭 통일 (`feat/bonstagram`): 공개 라우트를 `/bongstagram`으로 변경하고 기존 `/bonstagram`은 호환 리다이렉트로 유지했습니다. 코드·타입·스키마 스냅샷·테마 식별자를 `bongstagram` 기준으로 정리했으며, 이미 적용된 018을 변경하지 않고 `019_rename_bongstagram.sql`에서 테이블·제약조건·트리거·RLS 정책을 rename하도록 작성했습니다. 019는 사용자가 운영 DB에 적용 완료했고, `bongstagram_profiles` 조회 성공 및 기존 테이블명 미노출을 확인했습니다.
 
 - Bongstagram 관리자 필터 개선 (`72c5c83`): 캐릭터 선택과 조직 선택 드롭다운에 텍스트 검색을 추가하고, 조직별·무소속 캐릭터 필터와 Bongstagram 연결 상태 3단계(미연결자만·전체·연결자만) 필터를 추가했습니다. 미연결 캐릭터 행에서도 수정 버튼으로 프로필을 바로 연결할 수 있으며, 변경 파일 린트·`git diff --check`·프로덕션 빌드를 통과했습니다. `feat/bonstagram` 브랜치에 커밋합니다.
+
+- Bongstagram 게시물 기반 추가: `020_bongstagram_posts.sql`과 `021_bongstagram_media.sql` 마이그레이션, 데이터베이스 타입, 관리자 게시물·스토리 등록·수정·삭제, 공개 최신순 피드를 추가했습니다. 게시물은 기존 Bongstagram 프로필이 연결된 캐릭터만 작성할 수 있고, 이미지·동영상 여러 개와 본문·게시일을 지원합니다. 스토리는 다음 서버 종료 오전 3시까지 표시되며 프로필에 한국 시간 기준 일자별로 보관됩니다. `BONGSTAGRAM_SERVER_FINAL_DATE` 지정 시 해당일 오전 3시에 모든 스토리를 종료합니다. 사용자가 021 적용을 완료했으며 관련 린트·`git diff --check`·프로덕션 빌드를 통과했습니다. 아직 커밋하지 않은 작업입니다.
+
+- Bongstagram 관리자 메뉴 분리: 프로필 관리는 `/admin/bongstagram`, 게시물·스토리 등록 및 관리는 `/admin/bongstagram/posts`에서 별도로 접근하도록 구성했습니다. 아직 커밋하지 않은 작업입니다.
+
+- Bongstagram 직접 미디어 업로드: 관리자 화면에서 Supabase Storage 일회성 업로드 URL로 이미지·동영상을 직접 전송하고 게시물 미디어에 Storage 경로를 저장하도록 추가했습니다. 이미지 10MB·동영상 100MB 제한, 지원 MIME 형식 검증, 게시물 삭제·수정 시 이전 Storage 파일 정리를 포함합니다. `022_bongstagram_storage.sql` 적용 후 버킷·컬럼과 실제 게시글 업로드를 확인했습니다. 린트·`git diff --check`·프로덕션 빌드를 통과했으며 아직 커밋하지 않은 작업입니다.
+
+- Bongstagram 게시물 기능 커밋·푸시: 게시물·스토리 관리자 섹션, 다중 이미지·동영상, 예약 게시일, 스토리 보관·만료, Storage 직접 업로드를 `feat/bonstagram`에 커밋하고 `deploy/feat/bonstagram`으로 푸시했습니다. 운영 DB에서 migration 021·022와 실제 파일 업로드를 확인했으며, 변경 파일 린트·`git diff --check`·프로덕션 빌드를 통과했습니다. Vercel 배포 완료 여부는 별도 확인 대상입니다.
 
 - 사용자 전달 사항 반영: 마이그레이션 017 적용 완료 및 운영진과 논의한 ‘봉누도 따라가기’ 개발 의향을 기록했습니다. 공식 위키 준비 소식은 사용자 전달 기준이며, 새 콘텐츠 기능은 아직 기획·구현 미확정입니다.
 

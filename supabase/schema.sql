@@ -193,3 +193,55 @@ create trigger bongstagram_profiles_updated_at before update on bongstagram_prof
 
 alter table bongstagram_profiles enable row level security;
 create policy "public read Bongstagram profiles" on bongstagram_profiles for select using (true);
+
+-- bongstagram_posts
+-- Bongstagram 프로필에 연결되는 피드 게시물
+create table bongstagram_posts (
+  id               uuid primary key default gen_random_uuid(),
+  character_id     uuid not null references characters(id) on delete cascade,
+  post_type        text not null default 'post',
+  content          text not null default '',
+  posted_at        timestamptz not null default now(),
+  story_expires_at timestamptz,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now(),
+  constraint bongstagram_posts_type
+    check (post_type in ('post', 'story')),
+  constraint bongstagram_posts_content_length
+    check (char_length(content) <= 2200)
+);
+
+create index bongstagram_posts_character_posted_at_idx on bongstagram_posts(character_id, posted_at desc);
+create index bongstagram_posts_posted_at_idx on bongstagram_posts(posted_at desc);
+
+create trigger bongstagram_posts_updated_at before update on bongstagram_posts
+  for each row execute function update_updated_at();
+
+create table bongstagram_post_media (
+  id         uuid primary key default gen_random_uuid(),
+  post_id    uuid not null references bongstagram_posts(id) on delete cascade,
+  media_type text not null check (media_type in ('image', 'video')),
+  media_url  text not null check (media_url ~* '^https?://'),
+  storage_path text,
+  sort_order integer not null default 0 check (sort_order >= 0),
+  created_at timestamptz not null default now(),
+  unique (post_id, sort_order)
+);
+
+create index bongstagram_post_media_post_order_idx on bongstagram_post_media(post_id, sort_order);
+
+alter table bongstagram_posts enable row level security;
+alter table bongstagram_post_media enable row level security;
+create policy "public read Bongstagram posts" on bongstagram_posts for select using (
+  exists (
+    select 1 from bongstagram_profiles
+    where bongstagram_profiles.character_id = bongstagram_posts.character_id
+  )
+);
+create policy "public read Bongstagram post media" on bongstagram_post_media for select using (
+  exists (
+    select 1 from bongstagram_posts
+    join bongstagram_profiles on bongstagram_profiles.character_id = bongstagram_posts.character_id
+    where bongstagram_posts.id = bongstagram_post_media.post_id
+  )
+);
