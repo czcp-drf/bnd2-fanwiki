@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { logout } from './login/actions'
-import { LayoutDashboard, FileText, Users, Building2, LogOut, Swords, GitFork, ShieldOff, Tv2, Map } from 'lucide-react'
+import { LayoutDashboard, FileText, Users, Building2, LogOut, Swords, GitFork, ShieldOff, Tv2, Map, Camera } from 'lucide-react'
 
 const navItems = [
   { href: '/admin', label: '대시보드', icon: LayoutDashboard },
@@ -9,6 +9,7 @@ const navItems = [
   { href: '/admin/events', label: '사건 관리', icon: Swords },
   { href: '/admin/relationships', label: '관계 관리', icon: GitFork },
   { href: '/admin/streamers', label: '스트리머 관리', icon: Tv2 },
+  { href: '/admin/bongstagram', label: 'Bongstagram 관리', icon: Camera },
   { href: '/admin/map', label: '거점 지도', icon: Map },
   { href: '/admin/reports', label: '제보 관리', icon: FileText },
   { href: '/admin/blocked-ips', label: 'IP 차단', icon: ShieldOff },

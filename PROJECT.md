@@ -81,6 +81,7 @@ src/
 │       ├── events/             # 사건 CRUD + 참여자/클립 편집
 │       ├── relationships/      # 캐릭터 관계 CRUD
 │       ├── streamers/          # 스트리머 CRUD (display_name, chzzk_channel_id, profile_image_url, is_active)
+│       ├── bongstagram/        # Bongstagram 프로필 등록·수정·삭제
 │       ├── map/                # 거점 지도 관리 (90vh 전체 화면)
 │       │   ├── page.tsx        # force-dynamic, 조직+주요 장소 fetch, 갱단 biz 좌표 병합
 │       │   ├── AdminMapView.tsx  # 사이드바 탭 UI (조직 거점·사업체 / 주요 장소)
@@ -298,7 +299,8 @@ src/
 - [x] `/bongstagram` Instagram 스타일 모바일 피드 레이아웃과 Bongstagram 프로필 안내 UI
 - [x] 글로벌 네비게이션의 Bongstagram 다크/라이트 테마 토글 (Bongstagram 외 페이지에서는 비활성화)과 브라우저 저장
 - [x] `bongstagram_profiles` 1:1 계정 테이블·프로필 이름 제약 마이그레이션 작성 (`018_bonstagram_profiles.sql`, `019_rename_bongstagram.sql`)
-- [ ] 기존 캐릭터 선택 기반의 Bongstagram 프로필 등록/수정 화면
+- [x] 기존 캐릭터 선택 기반의 Bongstagram 프로필 등록/수정/삭제 화면 (`/admin/bongstagram`)
+- [x] 관리자 캐릭터 선택 드롭다운 텍스트 검색, 조직 필터, Bongstagram 연결 상태 3단계 필터와 미연결 캐릭터 행의 프로필 수정
 - [ ] 게시물 피드·상세·댓글·좋아요 기능
 - [ ] 릴스 기능 — 범위에서 제외
 
@@ -348,6 +350,8 @@ src/
 - Bongstagram 테마·브랜드 보정 (`feat/bonstagram`): 테마 토글을 글로벌 네비게이션의 빨간약 토글 우측으로 이동하고 Bongstagram에서만 활성화했습니다. `Bongstagram` 표기와 로고 비율을 통일했으며, 라이트·다크 호버 색상, 스토리 `+` 배지, 스토리 내부 회색 그라데이션 원을 조정했습니다. 관련 파일 린트와 프로덕션 빌드를 통과했으며 `git diff --check`를 확인했습니다. 이번 수정도 `deploy/feat/bonstagram`에 푸시합니다.
 
 - Bongstagram 명칭 통일 (`feat/bonstagram`): 공개 라우트를 `/bongstagram`으로 변경하고 기존 `/bonstagram`은 호환 리다이렉트로 유지했습니다. 코드·타입·스키마 스냅샷·테마 식별자를 `bongstagram` 기준으로 정리했으며, 이미 적용된 018을 변경하지 않고 `019_rename_bongstagram.sql`에서 테이블·제약조건·트리거·RLS 정책을 rename하도록 작성했습니다. 019는 사용자가 운영 DB에 적용 완료했고, `bongstagram_profiles` 조회 성공 및 기존 테이블명 미노출을 확인했습니다.
+
+- Bongstagram 관리자 필터 개선 (`72c5c83`): 캐릭터 선택과 조직 선택 드롭다운에 텍스트 검색을 추가하고, 조직별·무소속 캐릭터 필터와 Bongstagram 연결 상태 3단계(미연결자만·전체·연결자만) 필터를 추가했습니다. 미연결 캐릭터 행에서도 수정 버튼으로 프로필을 바로 연결할 수 있으며, 변경 파일 린트·`git diff --check`·프로덕션 빌드를 통과했습니다. `feat/bonstagram` 브랜치에 커밋합니다.
 
 - 사용자 전달 사항 반영: 마이그레이션 017 적용 완료 및 운영진과 논의한 ‘봉누도 따라가기’ 개발 의향을 기록했습니다. 공식 위키 준비 소식은 사용자 전달 기준이며, 새 콘텐츠 기능은 아직 기획·구현 미확정입니다.
 

@@ -15,19 +15,24 @@ export default function Select({
   onChange,
   options,
   placeholder = '선택',
+  searchPlaceholder = '검색',
   className,
   fullWidth = false,
   disabled = false,
+  searchable = false,
 }: {
   value: string
   onChange: (value: string) => void
   options: SelectOption[]
   placeholder?: string
+  searchPlaceholder?: string
   className?: string
   fullWidth?: boolean
   disabled?: boolean
+  searchable?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const ref = useRef<HTMLDivElement>(null)
   const listId = useId()
 
@@ -42,6 +47,11 @@ export default function Select({
   }, [listId])
 
   const selected = options.find((o): o is { value: string; label: string } => !o.separator && o.value === value)
+  const normalizedSearch = search.trim().toLocaleLowerCase()
+  const visibleOptions = options.filter((option) =>
+    option.separator || !normalizedSearch || option.label.toLocaleLowerCase().includes(normalizedSearch)
+  )
+  const hasSearchResults = visibleOptions.some((option) => !option.separator)
 
   return (
     <div ref={ref} className={cn('relative', className)}
@@ -54,7 +64,10 @@ export default function Select({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!open && searchable) setSearch('')
+          setOpen((v) => !v)
+        }}
         className={cn(
           `flex ${fullWidth ? 'w-full' : 'w-36'} items-center justify-between gap-2 rounded-lg border bg-zinc-900 px-3 py-1.5 text-xs transition-colors focus:outline-none`,
           open
@@ -72,7 +85,19 @@ export default function Select({
       {open && !disabled && (
         <DropdownPortal anchor={ref}>
         <div id={listId} role="listbox" aria-label={placeholder}>
-          {options.map((opt, i) =>
+          {searchable && (
+            <div className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900 p-2">
+              <input
+                autoFocus
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={searchPlaceholder}
+                aria-label={searchPlaceholder}
+                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/60 focus:outline-none"
+              />
+            </div>
+          )}
+          {visibleOptions.map((opt, i) =>
             opt.separator ? (
               <div
                 key={`sep-${i}`}
@@ -91,6 +116,7 @@ export default function Select({
                 onClick={() => {
                   onChange(opt.value)
                   setOpen(false)
+                  setSearch('')
                   ref.current?.querySelector<HTMLButtonElement>('[data-dropdown-trigger]')?.focus()
                 }}
                 className={cn(
@@ -103,6 +129,9 @@ export default function Select({
                 {opt.label}
               </button>
             )
+          )}
+          {searchable && normalizedSearch && !hasSearchResults && (
+            <p className="px-3 py-3 text-center text-xs text-zinc-600">검색 결과가 없습니다.</p>
           )}
         </div>
         </DropdownPortal>
