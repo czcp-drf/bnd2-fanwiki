@@ -308,6 +308,7 @@ src/
 
 | 커밋 | 작업 내용 |
 |---|---|
+| `0a3e5dd` | 404 페이지: 경로별 컨텍스트 버튼 (characters/organizations/events 등) |
 | `aa35cf6` | feat/clip-embed 머지: 클립 임베드 플레이어 + 사건 편집 순서 조정 |
 | `1ae7bd4` | OG 이미지 제거 (next/og 500 오류 미해결 — 환경 호환성 문제) |
 | `ec4eefa` | 조직 멤버 순서 직접 설정 (sort_order 컬럼, 어드민 드래그 앤 드롭 UI) |
