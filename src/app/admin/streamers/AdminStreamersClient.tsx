@@ -52,11 +52,11 @@ export default function AdminStreamersClient({ streamers }: { streamers: Streame
       <div className="rounded-xl border border-zinc-800 overflow-hidden">
         <table className="w-full table-fixed">
           <colgroup>
-            <col className="w-36" />
-            <col className="w-72" />
+            <col style={{ width: '9rem' }} />
+            <col style={{ width: '18rem' }} />
             <col />
-            <col className="w-16" />
-            <col className="w-12" />
+            <col style={{ width: '4rem' }} />
+            <col style={{ width: '11rem' }} />
           </colgroup>
           <thead>
             <tr className="bg-zinc-900">
@@ -64,7 +64,7 @@ export default function AdminStreamersClient({ streamers }: { streamers: Streame
               <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">채널 ID</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">프로필 이미지 URL</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">상태</th>
-              <th className="px-4 py-3" />
+              <th className="px-4 py-3" style={{ width: '11rem' }} />
             </tr>
           </thead>
           <tbody>

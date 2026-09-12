@@ -89,7 +89,7 @@ export default function StreamerEditRow({ streamer }: { streamer: Streamer }) {
           </label>
         </td>
         <td className="px-4 py-2.5">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 whitespace-nowrap">
             <button onClick={save} disabled={saving} className="cursor-pointer rounded bg-amber-400 p-1 text-zinc-900 hover:bg-amber-300 disabled:opacity-50">
               <Check size={12} />
             </button>
