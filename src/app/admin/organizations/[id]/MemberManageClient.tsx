@@ -238,7 +238,7 @@ export default function MemberManageClient({
             !activeMemberIds.has(c.id) &&
             !pastMemberIds.has(c.id) &&
             !pendingIds.has(c.id) &&
-            c.name.toLowerCase().includes(q)
+            (c.name.toLowerCase().includes(q) || (c.streamer_name?.toLowerCase().includes(q) ?? false))
         )
         .slice(0, 20)
     : []
@@ -487,7 +487,7 @@ export default function MemberManageClient({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="캐릭터 이름으로 검색 후 클릭해 대기열에 추가…"
+            placeholder="캐릭터명 또는 스트리머명으로 검색 후 클릭해 대기열에 추가…"
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
           />
           {searchResults.length > 0 && (
