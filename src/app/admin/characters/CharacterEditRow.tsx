@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { saveCharacter } from './actions'
+import { saveCharacter, renameCharacter } from './actions'
 import { Check, Pencil, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Select from '@/components/ui/Select'
@@ -50,6 +50,11 @@ export default function CharacterEditRow({ character: c, organizations }: Props)
   const [saved, setSaved] = useState(false)
   const inFlight = useRef(false)
 
+  const [nameEditing, setNameEditing] = useState(false)
+  const [quickName, setQuickName] = useState(c.name)
+  const [nameSaving, setNameSaving] = useState(false)
+  const [nameError, setNameError] = useState<string | null>(null)
+
   const orgOptions = [
     { value: '', label: '무소속' },
     ...organizations.map((o) => ({ value: o.id, label: o.name })),
@@ -86,6 +91,24 @@ export default function CharacterEditRow({ character: c, organizations }: Props)
     setOrgId(c.org_id ?? '')
     setOrgRole(c.org_role ?? '')
     setEditing(false)
+  }
+
+  async function saveQuickName() {
+    const trimmed = quickName.trim()
+    if (!trimmed || trimmed === c.name) { setNameEditing(false); return }
+    setNameSaving(true)
+    setNameError(null)
+    const result = await renameCharacter(c.id, trimmed)
+    setNameSaving(false)
+    if (result?.error) { setNameError(result.error); return }
+    setName(trimmed)
+    setNameEditing(false)
+  }
+
+  function cancelQuickName() {
+    setQuickName(name)
+    setNameEditing(false)
+    setNameError(null)
   }
 
   if (editing) {
@@ -157,7 +180,29 @@ export default function CharacterEditRow({ character: c, organizations }: Props)
     <tr className="border-t border-zinc-800 hover:bg-zinc-800/20 transition-colors">
       <td className="px-4 py-2.5 text-xs text-zinc-400">{c.streamer_display_name}</td>
       <td className="px-4 py-2.5 text-xs font-medium text-white">
-        {c.name === '미정' ? <span className="text-zinc-600">미정</span> : c.name}
+        {nameEditing ? (
+          <div className="flex items-center gap-1">
+            <input
+              autoFocus
+              value={quickName}
+              onChange={(e) => setQuickName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') saveQuickName(); if (e.key === 'Escape') cancelQuickName() }}
+              onBlur={saveQuickName}
+              disabled={nameSaving}
+              className="w-full rounded border border-amber-400/50 bg-zinc-900 px-2 py-0.5 text-xs text-zinc-200 focus:outline-none"
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() => { if (!editing) { setQuickName(name); setNameEditing(true) } }}
+            className="group/name flex items-center gap-1.5 cursor-pointer text-left"
+            title="클릭하여 이름 수정"
+          >
+            <span className={name === '미정' ? 'text-zinc-600' : ''}>{name}</span>
+            <Pencil size={10} className="text-zinc-700 opacity-0 group-hover/name:opacity-100 transition-opacity" />
+          </button>
+        )}
+        {nameError && <p className="text-xs text-red-400 mt-0.5">{nameError}</p>}
       </td>
       <td className="px-4 py-2.5 text-xs text-zinc-500">{c.job ?? '—'}</td>
       <td className="px-4 py-2.5">

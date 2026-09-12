@@ -23,3 +23,13 @@ export async function saveCharacter(id: string, data: {
   revalidatePath('/', 'layout')
   return { success: true }
 }
+
+export async function renameCharacter(id: string, name: string) {
+  const trimmed = name.trim()
+  if (!trimmed) return { error: '이름을 입력해 주세요.' }
+  const supabase = await requireAdmin()
+  const { error } = await supabase.from('characters').update({ name: trimmed }).eq('id', id)
+  if (error) return { error: '저장하지 못했습니다.' }
+  revalidatePath('/', 'layout')
+  return { success: true }
+}
