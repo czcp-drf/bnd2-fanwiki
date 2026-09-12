@@ -3,7 +3,7 @@ export const revalidate = 300
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ChevronLeft, ExternalLink, Users, Calendar, Swords, MapPin } from 'lucide-react'
+import { ChevronLeft, ExternalLink, Calendar, Swords, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import { typeLabel, typeColor } from '@/lib/events'
@@ -260,14 +260,6 @@ export default async function CharacterDetailPage({ params }: Props) {
                   <Calendar size={11} />
                   {new Date(character.first_appeared).toLocaleDateString('ko-KR')} 첫 등장
                 </span>
-              )}
-              {character.streamers && (
-                <StreamerReveal>
-                  <span className="flex items-center gap-1">
-                    <Users size={11} />
-                    {character.streamers.display_name}
-                  </span>
-                </StreamerReveal>
               )}
             </div>
           </div>
