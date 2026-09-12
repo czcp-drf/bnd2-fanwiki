@@ -55,7 +55,7 @@ function StreamerCard({
   const organizationLabel = organizations.length > 0
     ? organizations.map((organization) => organization.name).join(' · ')
     : '무소속'
-  const directoryHeading = isRedPill && primaryCharacter ? primaryCharacter.name : streamer.display_name
+  const directoryHeading = streamer.display_name
   const liveHeading = isRedPill ? streamer.display_name : primaryCharacter?.name ?? '캐릭터 미등록'
   const heading = liveDisplay ? liveHeading : directoryHeading
   const displayedTitle = liveTitle && !isRedPill && primaryCharacter
