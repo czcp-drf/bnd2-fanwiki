@@ -100,15 +100,15 @@ export default function ClipPlayer({
 
         {/* 클립 정보 바 */}
         <div className="flex items-center gap-3 bg-zinc-900 border-t border-zinc-800 px-4 py-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-zinc-200 truncate">
+          <div className="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
+            <p className="text-sm font-medium text-zinc-200 truncate shrink-0 max-w-[60%]">
               <ClipLabel
                 label={active.label ?? '클립'}
                 streamerToChar={streamerNameToChar}
               />
             </p>
             {active.streamers && (
-              <p className="text-xs text-zinc-500 mt-0.5">
+              <p className="text-xs text-zinc-500 truncate shrink min-w-0">
                 {activeCharName
                   ? `${activeCharName} 시점`
                   : `${active.streamers.display_name} 시점`}
@@ -132,13 +132,13 @@ export default function ClipPlayer({
         <div className="relative">
           <button
             onClick={() => scroll('left')}
-            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all shadow-lg ${canLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all shadow-lg ${canLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
             <ChevronLeft size={16} />
           </button>
           <button
             onClick={() => scroll('right')}
-            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all shadow-lg ${canRight ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all shadow-lg ${canRight ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           >
             <ChevronRight size={16} />
           </button>
