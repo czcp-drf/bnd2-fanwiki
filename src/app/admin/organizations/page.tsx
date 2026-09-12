@@ -64,11 +64,7 @@ export default async function AdminOrganizationsPage() {
                   <tr className="bg-zinc-900">
                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 w-10">색상</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">명칭</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 w-24">분류</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">설명</th>
-                    {cat === 'illegal' && (
-                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 w-32">운영 갱단</th>
-                    )}
                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 w-16">상태</th>
                     <th className="px-4 py-3 w-12" />
                   </tr>

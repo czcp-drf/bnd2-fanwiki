@@ -6,21 +6,6 @@ import { updateOrganization, deleteOrganization } from './actions'
 import { Check, Pencil, Trash2, Users, X } from 'lucide-react'
 import Select from '@/components/ui/Select'
 
-const categoryLabel: Record<string, string> = {
-  city_hall: '시청',
-  public_service: '공무직',
-  gang: '갱단',
-  business: '사업체',
-  illegal: '불법 사업체',
-}
-
-const categoryColor: Record<string, string> = {
-  city_hall: 'text-indigo-400',
-  public_service: 'text-blue-400',
-  gang: 'text-orange-400',
-  business: 'text-emerald-400',
-  illegal: 'text-red-400',
-}
 
 type GangOption = { id: string; name: string }
 
@@ -119,19 +104,25 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
               autoFocus
               className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none"
             />
-            <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={nameConfirmed}
-                onChange={(e) => setNameConfirmed(e.target.checked)}
-                className="accent-amber-400"
-              />
-              명칭 확정
-            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={nameConfirmed}
+                  onChange={(e) => setNameConfirmed(e.target.checked)}
+                  className="accent-amber-400"
+                />
+                명칭 확정
+              </label>
+              {isIllegal && (
+                <Select
+                  value={gangId}
+                  onChange={setGangId}
+                  options={gangOptions}
+                />
+              )}
+            </div>
           </div>
-        </td>
-        <td className="px-4 py-2.5 text-xs text-zinc-500">
-          {org.category ? categoryLabel[org.category] : '—'}
         </td>
         <td className="px-4 py-2.5">
           <input
@@ -141,16 +132,6 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
             className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none"
           />
         </td>
-        {isIllegal && (
-          <td className="px-4 py-2.5">
-            <Select
-              value={gangId}
-              onChange={setGangId}
-              options={gangOptions}
-              fullWidth
-            />
-          </td>
-        )}
         <td className="px-4 py-2.5">
           <div className="space-y-1.5">
             <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
@@ -239,23 +220,17 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
             <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-600">비활성</span>
           )}
         </div>
-      </td>
-      <td className="px-4 py-2.5">
-        <span className={`text-xs font-medium ${org.category ? categoryColor[org.category] : 'text-zinc-500'}`}>
-          {org.category ? categoryLabel[org.category] : '—'}
-        </span>
+        {isIllegal && (
+          <div className="mt-0.5 text-[10px] text-zinc-600">
+            {gangName
+              ? <span className="text-orange-400/70">{gangName}</span>
+              : <span>미연결</span>}
+          </div>
+        )}
       </td>
       <td className="px-4 py-2.5 text-xs text-zinc-500 max-w-xs truncate">
         {org.description ?? '—'}
       </td>
-      {isIllegal && (
-        <td className="px-4 py-2.5 text-xs text-zinc-500">
-          {gangName
-            ? <span className="text-orange-400/80">{gangName}</span>
-            : <span className="text-zinc-700">미연결</span>
-          }
-        </td>
-      )}
       <td className="px-4 py-2.5">
         <span className={`text-xs ${org.is_disbanded ? 'text-red-500' : org.is_active ? 'text-green-400' : 'text-zinc-600'}`}>
           {org.is_disbanded ? '해체' : org.is_active ? '활성' : '비활성'}
