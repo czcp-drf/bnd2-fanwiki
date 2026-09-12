@@ -14,7 +14,7 @@ async function getData(id: string) {
   const [{ data: event }, { data: participants }, { data: clips }, { data: characters }, { data: streamers }] =
     await Promise.all([
       supabase.from('events').select('*').eq('id', id).single(),
-      supabase.from('event_participants').select('id, role, characters(id, name)').eq('event_id', id),
+      supabase.from('event_participants').select('id, role, sort_order, characters(id, name)').eq('event_id', id).order('sort_order'),
       supabase.from('event_clips').select('id, clip_url, label, sort_order, streamers(display_name)').eq('event_id', id).order('sort_order'),
       supabase.from('characters').select('id, name, streamers(id, display_name)').order('name'),
       supabase.from('streamers').select('id, display_name').order('display_name'),
@@ -40,7 +40,7 @@ export default async function EditEventPage({ params }: Props) {
     .map((c) => ({ name: c.name, streamer_id: c.streamers!.id }))
 
   type ClipRow = { id: string; clip_url: string; label: string | null; sort_order: number; streamers: { display_name: string } | null }
-  type ParticipantRow = { id: string; role: string | null; characters: { id: string; name: string } | null }
+  type ParticipantRow = { id: string; sort_order: number; role: string | null; characters: { id: string; name: string } | null }
 
   return (
     <div className="p-8 space-y-6">

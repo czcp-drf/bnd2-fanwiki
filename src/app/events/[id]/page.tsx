@@ -22,6 +22,7 @@ type EventDetail = {
   thumbnail_url: string | null
   occurred_at: string | null
   event_participants: Array<{
+    sort_order: number
     role: string | null
     characters: {
       id: string
@@ -55,7 +56,7 @@ async function getEvent(id: string): Promise<EventDetail | null> {
     .select(`
       id, title, summary, content, type, thumbnail_url, occurred_at,
       event_participants (
-        role,
+        sort_order, role,
         characters (
           id, name, alias, job, status,
           streamers ( id, display_name )
@@ -94,6 +95,7 @@ export default async function EventDetailPage({ params }: Props) {
   if (!event) notFound()
 
   const clips = [...(event.event_clips ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+  const participants = [...(event.event_participants ?? [])].sort((a, b) => a.sort_order - b.sort_order)
 
   // 스트리머 ID → 캐릭터명 맵 (클립 시점 표시용)
   const streamerToChar: Record<string, string> = {}
@@ -191,15 +193,15 @@ export default async function EventDetailPage({ params }: Props) {
           <Users size={16} className="text-zinc-500" />
           참여 인물
           <span className="text-sm font-normal text-zinc-500">
-            ({event.event_participants?.length ?? 0}명)
+            ({participants.length}명)
           </span>
         </h2>
 
-        {!event.event_participants?.length ? (
+        {!participants.length ? (
           <p className="text-sm text-zinc-600">등록된 참여 인물이 없습니다.</p>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
-            {event.event_participants.map((p, i) => {
+            {participants.map((p, i) => {
               const c = p.characters
               if (!c) return null
               return (

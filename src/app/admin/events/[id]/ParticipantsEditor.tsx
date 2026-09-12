@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { addParticipant, updateParticipant, removeParticipant } from '../actions'
-import { Plus, Trash2, Search, X, Check, Pencil } from 'lucide-react'
+import React, { useState, useRef, useEffect, useTransition } from 'react'
+import { addParticipant, updateParticipant, removeParticipant, reorderParticipants } from '../actions'
+import { Plus, Trash2, Search, X, Check, Pencil, GripVertical, Save } from 'lucide-react'
 
 type Character = { id: string; name: string; streamer_display_name: string }
-type Participant = { id: string; role: string | null; characters: { id: string; name: string } | null }
+type Participant = { id: string; sort_order: number; role: string | null; characters: { id: string; name: string } | null }
 
 function ParticipantRow({ p, eventId }: { p: Participant; eventId: string }) {
   const [editing, setEditing] = useState(false)
@@ -103,6 +103,52 @@ export default function ParticipantsEditor({
   participants: Participant[]
   characters: Character[]
 }) {
+  const [orderedParticipants, setOrderedParticipants] = useState<Participant[]>(participants)
+  const [orderDirty, setOrderDirty] = useState(false)
+  const [orderMsg, setOrderMsg] = useState('')
+  const [isPending, startTransition] = useTransition()
+  const dragIndex = useRef<number | null>(null)
+  const dragOverIndex = useRef<number | null>(null)
+
+  useEffect(() => { setOrderedParticipants(participants) }, [participants])
+
+  function handleDragStart(i: number) { dragIndex.current = i }
+  function handleDragOver(e: React.DragEvent, i: number) {
+    e.preventDefault()
+    dragOverIndex.current = i
+  }
+  function handleDrop() {
+    const from = dragIndex.current
+    const to = dragOverIndex.current
+    if (from === null || to === null || from === to) return
+    const next = [...orderedParticipants]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    setOrderedParticipants(next)
+    setOrderDirty(true)
+    setOrderMsg('')
+    dragIndex.current = null
+    dragOverIndex.current = null
+  }
+  function handleDragEnd() {
+    dragIndex.current = null
+    dragOverIndex.current = null
+  }
+
+  function saveOrder() {
+    startTransition(async () => {
+      const orders = orderedParticipants.map((p, i) => ({ id: p.id, sortOrder: i }))
+      const result = await reorderParticipants(eventId, orders)
+      if (result?.error) {
+        setOrderMsg('저장 실패: ' + result.error)
+      } else {
+        setOrderDirty(false)
+        setOrderMsg('순서 저장 완료')
+        setTimeout(() => setOrderMsg(''), 2000)
+      }
+    })
+  }
+
   const [query, setQuery] = useState('')
   const [charId, setCharId] = useState('')
   const [charName, setCharName] = useState('')
@@ -169,15 +215,43 @@ export default function ParticipantsEditor({
 
   return (
     <div className="space-y-3">
-      {participants.length > 0 ? (
+      {orderedParticipants.length > 0 ? (
         <div className="space-y-1.5">
-          {participants.map((p) => (
-            <ParticipantRow key={p.id} p={p} eventId={eventId} />
+          {orderedParticipants.map((p, i) => (
+            <div
+              key={p.id}
+              draggable
+              onDragStart={() => handleDragStart(i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
+              className="flex items-center gap-1.5"
+            >
+              <GripVertical size={14} className="shrink-0 cursor-grab text-zinc-600 hover:text-zinc-400" />
+              <div className="flex-1 min-w-0">
+                <ParticipantRow p={p} eventId={eventId} />
+              </div>
+            </div>
           ))}
         </div>
       ) : (
         <p className="text-xs text-zinc-600 py-2">등록된 참여자가 없습니다.</p>
       )}
+
+      {orderDirty && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={saveOrder}
+            disabled={isPending}
+            className="flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-amber-300 disabled:opacity-50 cursor-pointer transition-colors"
+          >
+            <Save size={12} />
+            순서 저장
+          </button>
+          {orderMsg && <span className="text-xs text-zinc-400">{orderMsg}</span>}
+        </div>
+      )}
+      {!orderDirty && orderMsg && <p className="text-xs text-zinc-400">{orderMsg}</p>}
 
       {available.length > 0 && (
         <div className="space-y-1.5">

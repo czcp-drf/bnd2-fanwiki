@@ -127,3 +127,31 @@ export async function removeClip(eventId: string, clipId: string) {
   revalidatePath(`/events/${eventId}`)
   return { success: true }
 }
+
+export async function reorderClips(eventId: string, orders: { id: string; sortOrder: number }[]) {
+  const supabase = await requireAdmin()
+  const results = await Promise.all(
+    orders.map(({ id, sortOrder }) =>
+      supabase.from('event_clips').update({ sort_order: sortOrder }).eq('id', id)
+    )
+  )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) return { error: failed.error.message }
+  revalidatePath(`/admin/events/${eventId}/edit`)
+  revalidatePath(`/events/${eventId}`)
+  return { success: true }
+}
+
+export async function reorderParticipants(eventId: string, orders: { id: string; sortOrder: number }[]) {
+  const supabase = await requireAdmin()
+  const results = await Promise.all(
+    orders.map(({ id, sortOrder }) =>
+      supabase.from('event_participants').update({ sort_order: sortOrder }).eq('id', id)
+    )
+  )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) return { error: failed.error.message }
+  revalidatePath(`/admin/events/${eventId}/edit`)
+  revalidatePath(`/events/${eventId}`)
+  return { success: true }
+}
