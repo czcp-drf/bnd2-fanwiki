@@ -205,9 +205,9 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
           style={{ backgroundColor: org.color ?? '#52525b' }}
         />
       </td>
-      <td className="px-4 py-2.5">
-        <div className="flex items-center gap-1.5">
-          <span className={`text-xs font-medium ${org.is_disbanded ? 'text-zinc-600 line-through' : 'text-white'}`}>
+      <td className="px-4 py-2.5 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`text-xs font-medium truncate ${org.is_disbanded ? 'text-zinc-600 line-through' : 'text-white'}`}>
             {org.name}
           </span>
           {!org.name_confirmed && !org.is_disbanded && (
