@@ -1,0 +1,489 @@
+'use client'
+
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { Check, X, UserMinus, UserPlus, ChevronDown, ChevronUp, Pencil, RotateCcw } from 'lucide-react'
+import { addOrgMembers, updateOrgMember, setMembersLeft, restoreMember } from './actions'
+
+export type MemberRow = {
+  character_id: string
+  character_name: string
+  character_status: string
+  streamer_name: string | null
+  role: string | null
+  is_primary: boolean
+  joined_at: string | null
+  left_at: string | null
+}
+
+export type CharOption = {
+  id: string
+  name: string
+  job: string | null
+  streamer_name: string | null
+}
+
+const statusLabel: Record<string, string> = {
+  active: '활동', dead: '사망', retired: '은퇴', hiatus: '휴식',
+}
+const statusColor: Record<string, string> = {
+  active: 'text-green-400', dead: 'text-red-400', retired: 'text-zinc-500', hiatus: 'text-yellow-400',
+}
+
+export default function MemberManageClient({
+  orgId,
+  members,
+  characters,
+}: {
+  orgId: string
+  members: MemberRow[]
+  characters: CharOption[]
+}) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  const activeMembers = members.filter((m) => !m.left_at)
+  const pastMembers = members.filter((m) => m.left_at)
+
+  // Bulk selection for departure
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [leaveMsg, setLeaveMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+
+  // Inline role editing
+  const [editing, setEditing] = useState<string | null>(null)
+  const [editRole, setEditRole] = useState('')
+  const [editIsPrimary, setEditIsPrimary] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  // Pending additions
+  const [pendingAdds, setPendingAdds] = useState<
+    { id: string; name: string; role: string; isPrimary: boolean }[]
+  >([])
+  const [search, setSearch] = useState('')
+  const [addMsg, setAddMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+
+  // Past members toggle
+  const [showPast, setShowPast] = useState(false)
+
+  // --- Inline edit ---
+  function startEdit(m: MemberRow) {
+    setEditing(m.character_id)
+    setEditRole(m.role ?? '')
+    setEditIsPrimary(m.is_primary)
+    setEditError(null)
+  }
+
+  function cancelEdit() {
+    setEditing(null)
+    setEditError(null)
+  }
+
+  function saveEdit(characterId: string) {
+    startTransition(async () => {
+      const res = await updateOrgMember(orgId, characterId, {
+        role: editRole.trim() || null,
+        isPrimary: editIsPrimary,
+      })
+      if (res.error) { setEditError(res.error); return }
+      setEditing(null)
+      router.refresh()
+    })
+  }
+
+  // --- Bulk departure ---
+  const allSelected =
+    activeMembers.length > 0 && selected.size === activeMembers.length
+
+  function toggleAll(checked: boolean) {
+    setSelected(checked ? new Set(activeMembers.map((m) => m.character_id)) : new Set())
+  }
+
+  function toggleOne(id: string, checked: boolean) {
+    const next = new Set(selected)
+    checked ? next.add(id) : next.delete(id)
+    setSelected(next)
+  }
+
+  function handleBulkLeave() {
+    const ids = Array.from(selected)
+    if (!ids.length) return
+    setLeaveMsg(null)
+    startTransition(async () => {
+      const res = await setMembersLeft(orgId, ids)
+      if (res.error) { setLeaveMsg({ type: 'err', text: res.error }); return }
+      setSelected(new Set())
+      setLeaveMsg({ type: 'ok', text: `${ids.length}명 퇴장 처리 완료` })
+      router.refresh()
+    })
+  }
+
+  // --- Pending adds ---
+  function addToPending(c: CharOption) {
+    if (pendingAdds.some((p) => p.id === c.id)) return
+    setPendingAdds((prev) => [...prev, { id: c.id, name: c.name, role: '', isPrimary: false }])
+    setSearch('')
+    setAddMsg(null)
+  }
+
+  function removePending(id: string) {
+    setPendingAdds((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  function updatePendingField(
+    id: string,
+    field: 'role' | 'isPrimary',
+    value: string | boolean
+  ) {
+    setPendingAdds((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, [field]: value } : p))
+    )
+  }
+
+  function submitAdds() {
+    if (!pendingAdds.length) return
+    const count = pendingAdds.length
+    setAddMsg(null)
+    startTransition(async () => {
+      const res = await addOrgMembers(
+        orgId,
+        pendingAdds.map((p) => ({
+          characterId: p.id,
+          role: p.role.trim() || null,
+          isPrimary: p.isPrimary,
+        }))
+      )
+      if (res.error) { setAddMsg({ type: 'err', text: res.error }); return }
+      setPendingAdds([])
+      setAddMsg({ type: 'ok', text: `${count}명 추가 완료` })
+      router.refresh()
+    })
+  }
+
+  // --- Restore ---
+  function handleRestore(characterId: string) {
+    startTransition(async () => {
+      await restoreMember(orgId, characterId)
+      router.refresh()
+    })
+  }
+
+  // Available characters for search
+  const activeMemberIds = new Set(activeMembers.map((m) => m.character_id))
+  const pastMemberIds = new Set(pastMembers.map((m) => m.character_id))
+  const pendingIds = new Set(pendingAdds.map((p) => p.id))
+  const q = search.trim().toLowerCase()
+  const searchResults = q
+    ? characters
+        .filter(
+          (c) =>
+            !activeMemberIds.has(c.id) &&
+            !pastMemberIds.has(c.id) &&
+            !pendingIds.has(c.id) &&
+            c.name.toLowerCase().includes(q)
+        )
+        .slice(0, 20)
+    : []
+
+  return (
+    <div className="space-y-10">
+      {/* ── 현재 멤버 ── */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-white">
+            현재 멤버{' '}
+            <span className="font-normal text-zinc-500">({activeMembers.length}명)</span>
+          </h2>
+          {selected.size > 0 && (
+            <button
+              onClick={handleBulkLeave}
+              disabled={isPending}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+            >
+              <UserMinus size={12} />
+              선택 {selected.size}명 퇴장 처리
+            </button>
+          )}
+        </div>
+
+        {leaveMsg && (
+          <p className={`text-xs ${leaveMsg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
+            {leaveMsg.text}
+          </p>
+        )}
+
+        <div className="overflow-hidden rounded-xl border border-zinc-800">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-zinc-900">
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={(e) => toggleAll(e.target.checked)}
+                    className="cursor-pointer accent-amber-400"
+                  />
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">캐릭터</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">스트리머</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">역할</th>
+                <th className="w-16 px-4 py-3 text-left text-xs font-medium text-zinc-500">주소속</th>
+                <th className="w-20 px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {activeMembers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center text-xs text-zinc-600">
+                    등록된 멤버가 없습니다.
+                  </td>
+                </tr>
+              ) : (
+                activeMembers.map((m) => {
+                  const isEditing = editing === m.character_id
+                  return (
+                    <tr
+                      key={m.character_id}
+                      className="border-t border-zinc-800 transition-colors hover:bg-zinc-800/20"
+                    >
+                      <td className="px-4 py-2.5">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(m.character_id)}
+                          onChange={(e) => toggleOne(m.character_id, e.target.checked)}
+                          className="cursor-pointer accent-amber-400"
+                        />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div className="text-xs font-medium text-white">{m.character_name}</div>
+                        <div className={`text-[10px] ${statusColor[m.character_status] ?? 'text-zinc-500'}`}>
+                          {statusLabel[m.character_status] ?? m.character_status}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-zinc-500">
+                        {m.streamer_name ?? '—'}
+                      </td>
+
+                      {isEditing ? (
+                        <>
+                          <td className="px-4 py-2" colSpan={2}>
+                            <div className="flex items-center gap-2">
+                              <input
+                                value={editRole}
+                                onChange={(e) => setEditRole(e.target.value)}
+                                placeholder="역할 (예: 부두목)"
+                                autoFocus
+                                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none"
+                              />
+                              <label className="flex cursor-pointer items-center gap-1 whitespace-nowrap text-xs text-zinc-400">
+                                <input
+                                  type="checkbox"
+                                  checked={editIsPrimary}
+                                  onChange={(e) => setEditIsPrimary(e.target.checked)}
+                                  className="accent-amber-400"
+                                />
+                                주소속
+                              </label>
+                            </div>
+                            {editError && (
+                              <p className="mt-1 text-xs text-red-400">{editError}</p>
+                            )}
+                          </td>
+                          <td className="px-4 py-2">
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => saveEdit(m.character_id)}
+                                disabled={isPending}
+                                className="cursor-pointer rounded bg-amber-400 p-1 text-zinc-900 hover:bg-amber-300 disabled:opacity-50"
+                              >
+                                <Check size={12} />
+                              </button>
+                              <button
+                                onClick={cancelEdit}
+                                disabled={isPending}
+                                className="cursor-pointer rounded bg-zinc-700 p-1 text-zinc-300 hover:bg-zinc-600 disabled:opacity-50"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="px-4 py-2.5 text-xs text-zinc-400">
+                            {m.role ?? <span className="text-zinc-700">—</span>}
+                          </td>
+                          <td className="px-4 py-2.5 text-xs">
+                            {m.is_primary ? (
+                              <span className="text-amber-400">✓</span>
+                            ) : (
+                              <span className="text-zinc-700">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <button
+                              onClick={() => startEdit(m)}
+                              className="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* ── 멤버 추가 ── */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold text-white">멤버 추가</h2>
+
+        {/* 대기열 */}
+        {pendingAdds.length > 0 && (
+          <div className="divide-y divide-zinc-800 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900/50">
+            {pendingAdds.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                <span className="flex-1 text-xs font-medium text-white">{p.name}</span>
+                <input
+                  value={p.role}
+                  onChange={(e) => updatePendingField(p.id, 'role', e.target.value)}
+                  placeholder="역할"
+                  className="w-28 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none"
+                />
+                <label className="flex cursor-pointer items-center gap-1 text-xs text-zinc-400">
+                  <input
+                    type="checkbox"
+                    checked={p.isPrimary}
+                    onChange={(e) => updatePendingField(p.id, 'isPrimary', e.target.checked)}
+                    className="accent-amber-400"
+                  />
+                  주소속
+                </label>
+                <button
+                  onClick={() => removePending(p.id)}
+                  className="cursor-pointer text-zinc-600 hover:text-red-400 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {addMsg && (
+          <p className={`text-xs ${addMsg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
+            {addMsg.text}
+          </p>
+        )}
+
+        {pendingAdds.length > 0 && (
+          <button
+            onClick={submitAdds}
+            disabled={isPending}
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-zinc-900 hover:bg-amber-300 disabled:opacity-50"
+          >
+            <UserPlus size={13} />
+            {pendingAdds.length}명 일괄 추가
+          </button>
+        )}
+
+        {/* 검색 */}
+        <div className="relative space-y-1">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="캐릭터 이름으로 검색 후 클릭해 대기열에 추가…"
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+          />
+          {searchResults.length > 0 && (
+            <div className="overflow-hidden rounded-xl border border-zinc-800">
+              {searchResults.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => addToPending(c)}
+                  className="flex w-full cursor-pointer items-center gap-3 border-t border-zinc-800 px-4 py-2.5 text-left transition-colors hover:bg-zinc-800 first:border-0"
+                >
+                  <div className="flex-1">
+                    <div className="text-xs font-medium text-white">{c.name}</div>
+                    {c.job && <div className="text-[10px] text-zinc-500">{c.job}</div>}
+                  </div>
+                  {c.streamer_name && (
+                    <span className="shrink-0 text-[10px] text-zinc-600">{c.streamer_name}</span>
+                  )}
+                  <UserPlus size={12} className="shrink-0 text-zinc-500" />
+                </button>
+              ))}
+            </div>
+          )}
+          {q && searchResults.length === 0 && (
+            <p className="px-1 text-xs text-zinc-600">검색 결과 없음</p>
+          )}
+        </div>
+      </section>
+
+      {/* ── 이전 멤버 ── */}
+      {pastMembers.length > 0 && (
+        <section className="space-y-3">
+          <button
+            onClick={() => setShowPast((v) => !v)}
+            className="flex cursor-pointer items-center gap-2 text-sm font-bold text-zinc-500 transition-colors hover:text-zinc-300"
+          >
+            이전 멤버{' '}
+            <span className="font-normal">({pastMembers.length}명)</span>
+            {showPast ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {showPast && (
+            <div className="overflow-hidden rounded-xl border border-zinc-800">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-zinc-900">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">캐릭터</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">역할</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">퇴장일</th>
+                    <th className="w-16 px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {pastMembers.map((m) => (
+                    <tr
+                      key={m.character_id}
+                      className="border-t border-zinc-800 opacity-50 transition-opacity hover:opacity-100"
+                    >
+                      <td className="px-4 py-2.5">
+                        <div className="text-xs font-medium text-zinc-300">{m.character_name}</div>
+                        {m.streamer_name && (
+                          <div className="text-[10px] text-zinc-600">{m.streamer_name}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-zinc-600">{m.role ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-xs text-zinc-600">
+                        {m.left_at
+                          ? new Date(m.left_at).toLocaleDateString('ko-KR')
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <button
+                          onClick={() => handleRestore(m.character_id)}
+                          disabled={isPending}
+                          className="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-[10px] text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+                        >
+                          <RotateCcw size={10} />
+                          복귀
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  )
+}

@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { updateOrganization, deleteOrganization } from './actions'
-import { Check, Pencil, Trash2, X } from 'lucide-react'
+import { Check, Pencil, Trash2, Users, X } from 'lucide-react'
 import Select from '@/components/ui/Select'
 
 const categoryLabel: Record<string, string> = {
@@ -261,9 +262,18 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
         </span>
       </td>
       <td className="px-4 py-2.5">
-        <button onClick={() => setEditing(true)} className="cursor-pointer rounded p-1 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300 transition-colors">
-          <Pencil size={12} />
-        </button>
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/admin/organizations/${org.id}`}
+            className="rounded p-1 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
+            title="멤버 관리"
+          >
+            <Users size={12} />
+          </Link>
+          <button onClick={() => setEditing(true)} className="cursor-pointer rounded p-1 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300 transition-colors">
+            <Pencil size={12} />
+          </button>
+        </div>
       </td>
     </tr>
   )
