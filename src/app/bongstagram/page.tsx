@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import AppImage from '@/components/ui/AppImage'
+import BongstagramVideoPlayer from './BongstagramVideoPlayer'
+import MediaCarousel from './MediaCarousel'
 import { createClient } from '@/lib/supabase/server'
 import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
 import {
@@ -41,6 +43,8 @@ type FeedPost = {
   posted_at: string
   story_expires_at: string | null
   media: FeedMedia[]
+  comment_count?: number
+  like_count?: number
   profile_name: string
   profile_avatar_url: string | null
   character_name: string
@@ -139,8 +143,30 @@ function FilledHomeIcon({ size = 23 }: { size?: number }) {
 
 function FeedMedia({ media, label }: { media: FeedMedia; label: string }) {
   return media.media_type === 'video'
-    ? <video controls preload="metadata" src={media.media_url} className="aspect-[4/5] w-full bg-zinc-950 object-cover" aria-label={`${label} 동영상`} />
-    : <AppImage src={media.media_url} alt={`${label} 게시물`} width={540} height={675} className="aspect-[4/5] w-full object-cover" />
+    ? <BongstagramVideoPlayer src={media.media_url} label={label} />
+    : <div className="relative w-full overflow-hidden bg-black" style={{ height: 'min(125vw, 675px)' }}>
+      <AppImage src={media.media_url} alt={`${label} 게시물`} width={540} height={675} className="h-full w-full object-contain" style={{ objectFit: 'contain', objectPosition: 'center' }} />
+    </div>
+}
+
+function formatPostTime(value: string) {
+  const date = new Date(value)
+  const elapsed = Date.now() - date.getTime()
+  const dayMs = 24 * 60 * 60 * 1000
+
+  if (elapsed < dayMs) {
+    const hours = Math.floor(Math.max(0, elapsed) / (60 * 60 * 1000))
+    return hours === 0 ? '방금 전' : `${hours}시간 전`
+  }
+
+  const dateParts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(date)
+  const month = dateParts.find((part) => part.type === 'month')?.value
+  const dayOfMonth = dateParts.find((part) => part.type === 'day')?.value
+  return `${month}월 ${dayOfMonth}일`
 }
 
 function PostCaption({ post }: { post: FeedPost }) {
@@ -174,13 +200,13 @@ function FeedPostCard({ post }: { post: FeedPost }) {
       </header>
 
       {post.media.length > 0 ? (
-        <div className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <MediaCarousel>
           {post.media.map((media) => (
-            <div key={media.id} className="min-w-full snap-center">
+            <div key={media.id} className="w-full min-w-0 max-w-full flex-none snap-center">
               <FeedMedia media={media} label={post.profile_name} />
             </div>
           ))}
-        </div>
+        </MediaCarousel>
       ) : (
         <div className="flex min-h-56 items-center justify-center bg-gradient-to-br from-zinc-900 via-zinc-950 to-fuchsia-950/20 px-6 py-12 text-center text-sm text-zinc-500">
           이미지가 없는 게시물입니다.
@@ -193,8 +219,10 @@ function FeedPostCard({ post }: { post: FeedPost }) {
           <MessageCircle size={23} />
           <Send size={22} />
         </div>
-        {post.media.length > 1 && <p className="text-[11px] text-zinc-600">{post.media.length}개의 미디어 · 좌우로 넘겨보기</p>}
+        {!!post.like_count && <p className="text-sm font-semibold text-zinc-200">좋아요 {post.like_count}개</p>}
         {post.content && <PostCaption post={post} />}
+        {!!post.comment_count && <p className="text-sm text-zinc-400">댓글 {post.comment_count}개 모두 보기</p>}
+        <p className="text-[11px] text-zinc-500">{formatPostTime(post.posted_at)}</p>
       </div>
     </article>
   )
@@ -202,7 +230,7 @@ function FeedPostCard({ post }: { post: FeedPost }) {
 
 function BottomNav() {
   return (
-    <nav className="flex items-center justify-around border-t border-zinc-800 bg-zinc-950/95 px-3 py-3 backdrop-blur" aria-label="Bongstagram 메뉴">
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-[540px] items-center justify-around border-x border-t border-zinc-800 bg-zinc-950/95 px-3 py-3 backdrop-blur" aria-label="Bongstagram 메뉴">
       <Link href="/bongstagram" aria-label="홈" className="text-white">
         <FilledHomeIcon />
       </Link>
@@ -225,7 +253,7 @@ export default async function BongstagramPage() {
   return (
     <div className="bongstagram-theme">
       <div className="bongstagram-font min-h-[calc(100vh-3.5rem)] bg-zinc-950">
-        <div className="mx-auto min-h-[calc(100vh-3.5rem)] w-full max-w-[540px] border-x border-zinc-900 bg-zinc-950">
+        <div className="mx-auto min-h-[calc(100vh-3.5rem)] w-full max-w-[540px] border-x border-zinc-900 bg-zinc-950 pb-20">
           <header className="flex h-16 items-center justify-between border-b border-zinc-800 px-5">
           <Link href="/bongstagram" className="inline-block origin-left scale-x-105 text-2xl font-medium leading-none tracking-tight text-white">
             Bongstagram
