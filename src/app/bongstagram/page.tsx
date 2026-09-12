@@ -143,6 +143,18 @@ function FeedMedia({ media, label }: { media: FeedMedia; label: string }) {
     : <AppImage src={media.media_url} alt={`${label} 게시물`} width={540} height={675} className="aspect-[4/5] w-full object-cover" />
 }
 
+function PostCaption({ post }: { post: FeedPost }) {
+  const parts = post.content.split(/(#[^\s#]+)/g)
+  return (
+    <p className="whitespace-pre-wrap break-words text-sm text-zinc-300">
+      <Link href={`/bongstagram/${post.character_id}`} className="font-bold text-zinc-200 transition-colors hover:text-fuchsia-300">{post.profile_name}</Link>{' '}
+      {parts.map((part, index) => part.startsWith('#')
+        ? <span key={`${part}-${index}`} className="text-sky-400">{part}</span>
+        : <span key={`${part}-${index}`}>{part}</span>)}
+    </p>
+  )
+}
+
 function FeedPostCard({ post }: { post: FeedPost }) {
   const avatarUrl = post.profile_avatar_url ?? post.character_avatar_url
   return (
@@ -154,7 +166,6 @@ function FeedPostCard({ post }: { post: FeedPost }) {
           </div>
           <div className="min-w-0">
             <Link href={`/bongstagram/${post.character_id}`} className="truncate text-sm font-semibold text-zinc-200 transition-colors hover:text-fuchsia-300">{post.profile_name}</Link>
-            <p className="truncate text-[11px] text-zinc-500">{post.character_name}</p>
           </div>
         </div>
         <button type="button" className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-bold !text-white transition-colors hover:bg-sky-400">
@@ -183,7 +194,7 @@ function FeedPostCard({ post }: { post: FeedPost }) {
           <Send size={22} />
         </div>
         {post.media.length > 1 && <p className="text-[11px] text-zinc-600">{post.media.length}개의 미디어 · 좌우로 넘겨보기</p>}
-        {post.content && <p className="whitespace-pre-wrap break-words text-sm text-zinc-300">{post.content}</p>}
+        {post.content && <PostCaption post={post} />}
       </div>
     </article>
   )
