@@ -3,11 +3,12 @@ export const revalidate = 300
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ExternalLink, ChevronLeft } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { Streamer } from '@/types/database'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import AppImage from '@/components/ui/AppImage'
+import BackButton from '@/components/ui/BackButton'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -95,13 +96,7 @@ export default async function StreamerDetailPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
       {/* 뒤로가기 */}
-      <Link
-        href="/streamers"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-      >
-        <ChevronLeft size={16} />
-        스트리머 목록
-      </Link>
+      <BackButton />
 
       {/* 프로필 */}
       <div className="flex flex-col gap-6 rounded-xl border border-zinc-800 bg-zinc-900 p-6 sm:flex-row sm:items-center">

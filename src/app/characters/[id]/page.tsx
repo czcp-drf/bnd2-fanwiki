@@ -3,12 +3,13 @@ export const revalidate = 300
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ChevronLeft, ExternalLink, Calendar, Swords, MapPin } from 'lucide-react'
+import { ExternalLink, Calendar, Swords, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import { typeLabel, typeColor } from '@/lib/events'
 import AppImage from '@/components/ui/AppImage'
 import OrgMiniMapWrapper from '@/app/organizations/[id]/OrgMiniMapWrapper'
+import BackButton from '@/components/ui/BackButton'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -213,13 +214,7 @@ export default async function CharacterDetailPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
       {/* 뒤로가기 */}
-      <Link
-        href="/characters"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-      >
-        <ChevronLeft size={16} />
-        캐릭터 위키
-      </Link>
+      <BackButton />
 
       {/* 프로필 헤더 */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
