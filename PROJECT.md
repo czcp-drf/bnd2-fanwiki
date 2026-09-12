@@ -36,6 +36,11 @@ src/
 │   ├── streamers/              # 스트리머 목록 / 상세 [ISR 60s]
 │   ├── characters/             # 캐릭터 목록 / 상세 [ISR 300s]
 │   ├── organizations/          # 조직 목록 / 상세 [ISR 300s]
+│   │   ├── page.tsx            # 목록 (갱단 카드에 연결된 불법 사업체 표시)
+│   │   └── [id]/
+│   │       ├── page.tsx        # 상세 (멤버, 운영 사업체, 관련 사건, 인라인 미니맵)
+│   │       ├── OrgMiniMap.tsx      # Leaflet 인라인 미니맵 (거점·사업체 마커, SSR 제외)
+│   │       └── OrgMiniMapWrapper.tsx  # Client Component 래퍼 (ssr:false dynamic import)
 │   ├── events/                 # 사건 목록 / 상세 / 연대표 [ISR 300s]
 │   ├── map/                    # 공개 거점 지도 [ISR 300s]
 │   │   ├── page.tsx            # 서버 컴포넌트 (orgs + locations 패치)
@@ -58,12 +63,12 @@ src/
 │       ├── relationships/      # 캐릭터 관계 CRUD
 │       ├── streamers/          # 스트리머 CRUD (display_name, chzzk_channel_id, profile_image_url, is_active)
 │       ├── map/                # 거점 지도 관리 (90vh 전체 화면)
-│       │   ├── page.tsx
-│       │   ├── AdminMapView.tsx  # 탭 UI (조직 거점 / 작업 위치)
-│       │   ├── AdminLeafletMap.tsx  # 어드민 전용 Leaflet 지도
-│       │   └── actions.ts      # updateOrgHq, addMapLocation, updateMapLocation, deleteMapLocation
-│       ├── reports/            # 제보 관리 (상태 필터, 상태 변경, IP 차단, 좌표 → 작업 위치 추가)
-│       │   └── ReportCoordAction.tsx  # 좌표 제보 파싱 → 작업 위치 직접 추가 클라이언트 컴포넌트
+│       │   ├── page.tsx        # force-dynamic, 조직+주요 장소 fetch, 갱단 biz 좌표 병합
+│       │   ├── AdminMapView.tsx  # 사이드바 탭 UI (조직 거점·사업체 / 주요 장소)
+│       │   ├── AdminLeafletMap.tsx  # 어드민 전용 Leaflet 지도 (거점/사업체 모드 전환)
+│       │   └── actions.ts      # updateOrgHq, updateOrgBiz, addMapLocation, updateMapLocation, deleteMapLocation
+│       ├── reports/            # 제보 관리 (상태 필터, 상태 변경, IP 차단, 좌표 → 주요 장소 추가)
+│       │   └── ReportCoordAction.tsx  # 좌표 제보 파싱 → 주요 장소 직접 추가 클라이언트 컴포넌트
 │       └── blocked-ips/        # 차단 IP 목록 + 해제
 │
 ├── components/
@@ -158,11 +163,19 @@ src/
 - **GTA V 커스텀 CRS**: `L.CRS.Simple` 기반, `src/lib/map/constants.ts`의 `GTA_CRS_CONFIG` 파라미터 사용
   - `centerX: 117.3, centerY: 172.8, scaleX: 0.02072, scaleY: 0.0205`
   - `new L.Transformation(scaleX, centerX, -scaleY, centerY)`
-- **좌표 저장 규칙**: `hq_x` = GTA X축 (Leaflet lng), `hq_y` = GTA Y축 (Leaflet lat)
-- Leaflet 컴포넌트는 항상 `dynamic(() => import(...), { ssr: false })`로 로드
+- **좌표 저장 규칙**: `hq_x/hq_y` = 조직 거점 (GTA X/Y축), `biz_x/biz_y` = 불법 사업체 위치
+- **마커 종류**:
+  - 조직 거점: SVG 드롭핀 (teardrop) + 글로우 — `createDropIcon(color, selected)`
+  - 불법 사업체: SVG 다이아몬드 + 글로우 — `createBizIcon(color, selected)`
+  - 주요 장소: SVG 원형 + 글로우·외곽 링 — `createLocationIcon(color, selected)`
+- **갱단 불법 사업체 biz 마커**: `organizations.biz_x/biz_y` 수동 설정이 우선, 없으면 `gang_id`로 연결된 illegal org의 `hq_x/hq_y`를 자동 사용 (page.tsx 서버단 병합)
+- Leaflet 컴포넌트는 항상 `'use client'` 래퍼 안에서 `dynamic(() => import(...), { ssr: false })`로 로드
+  - Server Component에서 직접 `dynamic(..., { ssr: false })` 불가 — Client Component 래퍼 필요
 - 공개 지도 팝업: 선택한 핀 위 Leaflet Popup (지도 이동 따라감, Escape/빈 영역 클릭으로 닫기)
-- 어드민 지도: 클릭으로 좌표 찍기 → 저장 패널 → Server Action으로 저장 + revalidatePath
-- 조직 상세 `/organizations/[id]`에서 `/map?org=<ID>`로 이동하면 해당 핀 자동 선택·확대
+- 지도 필터 UX: "조직 위치" 그룹(토글+카테고리 서브필터) / "주요 장소" 그룹(토글+라벨 서브필터) — `invisible`로 레이아웃 고정
+- 어드민 지도: 사이드바 상단 거점/사업체 모드 탭 → 클릭으로 좌표 찍기 → 저장 패널 → Server Action + revalidatePath
+- 조직 상세 `/organizations/[id]`에 인라인 미니맵 표시 (거점+사업체 마커, Atlas 고정)
+- `/map?org=<ID>`로 이동하면 해당 핀 자동 선택·확대
 
 ### 타일 Storage
 - Supabase Storage 공개 버킷: `map-tiles`
@@ -193,8 +206,8 @@ src/
 | `streamers` | 스트리머 (chzzk_channel_id, display_name, profile_image_url, is_active) |
 | `characters` | RP 캐릭터 (name, alias[], job, status, avatar_url) |
 | `organization_members` | 캐릭터↔조직 N:M (role, is_primary, joined_at, left_at) |
-| `organizations` | 조직 (category, color, hq_x, hq_y, hq_label, is_active, is_disbanded) |
-| `map_locations` | 작업 위치 핀 (name, label, description, color, x, y) |
+| `organizations` | 조직 (category, color, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label, gang_id, is_active, is_disbanded) |
+| `map_locations` | 주요 장소 핀 (name, label, description, color, x, y) |
 | `events` | 사건 아카이브 (type, occurred_at, is_published) |
 | `event_participants` | 사건↔캐릭터 N:M (role) |
 | `event_clips` | 사건 클립 (clip_url, label, streamer_id, sort_order) |
@@ -208,6 +221,7 @@ src/
 | 001~009 | 초기 스키마, 조직 카테고리, 연락처, 해산, 원자적 저장, IP 신고·차단 |
 | `010_org_hq.sql` | organizations 테이블에 hq_x, hq_y, hq_label 컬럼 추가 |
 | `011_map_locations.sql` | map_locations 테이블 생성 (RLS 포함) |
+| `013_org_business_location.sql` | organizations 테이블에 biz_x, biz_y, biz_label 컬럼 추가 |
 
 ---
 
@@ -220,9 +234,9 @@ src/
 - [x] `/streamers/[id]` — 스트리머 상세
 - [x] `/characters` — 목록 + 필터
 - [x] `/characters/[id]` — 상세 (소속 조직, 인물 관계, 참여 사건)
-- [x] `/organizations` — 목록 (갱단/공무직/사업체 등)
-- [x] `/organizations/[id]` — 상세 (멤버, 운영 사업체, 관련 사건, 지도 바로가기)
-- [x] `/map` — GTA V 거점 지도 (조직 핀 + 작업 위치 핀, Atlas/위성 전환, 카테고리 필터)
+- [x] `/organizations` — 목록 (갱단/공무직/사업체 등, 갱단 카드에 연결된 불법 사업체 표시)
+- [x] `/organizations/[id]` — 상세 (멤버, 운영 사업체, 관련 사건, 인라인 미니맵)
+- [x] `/map` — GTA V 거점 지도 (조직 드롭핀·사업체 다이아몬드·주요 장소 원형 마커, Atlas/위성 전환, 그룹 필터 UI)
 - [x] `/events` — 목록 + 타입 필터
 - [x] `/events/[id]` — 상세 (참여자, 클립)
 - [x] `/events/timeline` — 연대표 (가로/세로, 캐릭터/조직/전체 필터)
@@ -234,8 +248,8 @@ src/
 - [x] 캐릭터/조직/사건/관계 CRUD
 - [x] 사건 인라인 삭제 (2단계 확인)
 - [x] 스트리머 관리 — 추가/수정/삭제, 치지직 채널 ID·프로필 이미지 관리
-- [x] 거점 지도 관리 — 조직 거점 클릭 배치, 작업 위치 추가/수정/이동/삭제
-- [x] 제보 관리 — 상태 필터, 상태 변경, IP 차단 버튼, 좌표 제보 시 작업 위치 직접 추가
+- [x] 거점 지도 관리 — 조직 거점/사업체 모드 탭, 클릭 배치, 주요 장소 추가/수정/이동/삭제
+- [x] 제보 관리 — 상태 필터, 상태 변경, IP 차단 버튼, 좌표 제보 시 주요 장소 직접 추가
 - [x] IP 차단 관리 — 차단 목록 확인, 차단 해제
 
 ---
@@ -272,14 +286,15 @@ src/
 
 | 커밋 | 작업 내용 |
 |---|---|
-| `f131609` | 제보 폼에 지도 핀 위치 첨부 기능 추가, 어드민 제보에서 좌표 → 작업 위치 직접 추가 |
-| `2829736` | 말풍선 꼬리표의 페이드 지연 제거 |
-| `6ef9dd5` | 하단 고정 카드를 선택한 핀 위 말풍선으로 변경 |
-| `95b9efb` | 지도와 조직 상세 연결, 핀 카드 디자인, 지도별 배경색 적용 |
-| `64aeaff` | 지도 전환 메뉴를 사이트 테마에 맞게 커스텀 |
-| `58e5c63` | 공개·관리자 Atlas ↔ 위성 전환, Atlas 기본값 |
-| `5eb3e59` | 홈 라이브 섹션·메뉴 숨김, 라이브 페이지 안내, API 503 반환 |
-| `58cb328` | 관리자 지도 높이 90vh 적용 |
-| `6674c19` | Storage 업로드 스크립트·연결 문서 추가, 지도 바다 배경 적용 |
-| `e08c3cd` | 지도를 위성 단일 스타일로 단순화, TILE_URL 상수 통합 |
-| `8b86e5f` | 지도·스트리머 관리·ISR·스팸 방지 기능 추가 |
+| `04465d1` | 조직 상세 인라인 미니맵: SSR 오류 수정 (Client Component 래퍼 적용) |
+| `1e58b9f` | 조직 상세 페이지에 Leaflet 인라인 미니맵 추가 (거점·사업체 마커, 전체 지도 이동 버튼) |
+| `fd84960` | 조직 목록 중첩 Link 제거 (React error #441 해결) |
+| `f5734c9` | 조직 목록: 갱단 카드에 연결된 불법 사업체 표시 개선 |
+| `ab2b720` | 어드민 지도: 조직 삭제/수정 시 즉시 반영 (force-dynamic + revalidatePath) |
+| `037d391` | 어드민 지도: 거점/사업체 모드 탭을 사이드바 상단으로 이동 |
+| `3f4ec2d` | 지도: gang_id 연결된 불법 사업체 org 좌표를 갱단 biz 마커로 자동 표시 |
+| `5172f30` | 조직 불법 사업체 위치 기능 추가 (biz_x/biz_y/biz_label 컬럼, 어드민 편집) |
+| `74f970a` | 지도 마커 스타일: 조직 드롭핀 + 주요 장소 글로우·링 |
+| `330f29b` | 지도 필터 UX: 조직/주요 장소 그룹 구조화, invisible로 레이아웃 고정 |
+| `74b8d68` | '작업 위치' 명칭을 '주요 장소'로 변경 |
+| `f131609` | 제보 폼에 지도 핀 위치 첨부 기능 추가, 어드민 제보에서 좌표 → 주요 장소 직접 추가 |
