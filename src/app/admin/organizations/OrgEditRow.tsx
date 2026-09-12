@@ -34,6 +34,7 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
   const [gangId, setGangId] = useState(org.gang_id ?? '')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const isIllegal = org.category === 'illegal'
 
@@ -61,9 +62,33 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
 
   async function handleDelete() {
     setDeleting(true)
-    await deleteOrganization(org.id)
-    setDeleting(false)
+    setDeleteError('')
+    try {
+      const result = await deleteOrganization(org.id)
+      if (result?.error) setDeleteError(result.error)
+    } catch {
+      setDeleteError('삭제하지 못했습니다. 다시 시도해주세요.')
+    } finally {
+      setDeleting(false)
+    }
   }
+
+  const deleteControls = confirmDelete ? (
+    <div className="flex items-center gap-1">
+      <button type="button" onClick={handleDelete} disabled={deleting || saving}
+        className="cursor-pointer whitespace-nowrap rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-500 disabled:opacity-50">
+        {deleting ? '삭제 중' : '삭제 확인'}
+      </button>
+      <button type="button" disabled={deleting} onClick={() => { setConfirmDelete(false); setDeleteError('') }}
+        className="cursor-pointer rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-600 disabled:opacity-50">취소</button>
+    </div>
+  ) : (
+    <button type="button" onClick={() => setConfirmDelete(true)} disabled={saving}
+      aria-label={`${org.name} 삭제`}
+      className="inline-flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-red-400 hover:bg-red-900/30 disabled:opacity-50">
+      <Trash2 size={13} /> 삭제
+    </button>
+  )
 
   function cancel() {
     setName(org.name)
@@ -167,31 +192,9 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
             <button onClick={cancel} className="cursor-pointer rounded bg-zinc-700 p-1 text-zinc-300 hover:bg-zinc-600">
               <X size={12} />
             </button>
-            {confirmDelete ? (
-              <div className="flex items-center gap-1 ml-1">
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="rounded bg-red-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-red-500 disabled:opacity-50 cursor-pointer"
-                >
-                  {deleting ? '삭제 중' : '확인'}
-                </button>
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  className="rounded bg-zinc-700 px-2 py-1 text-[10px] text-zinc-400 hover:bg-zinc-600 cursor-pointer"
-                >
-                  취소
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="cursor-pointer rounded p-1 text-zinc-600 hover:bg-red-900/40 hover:text-red-400 transition-colors ml-1"
-              >
-                <Trash2 size={12} />
-              </button>
-            )}
+            {deleteControls}
           </div>
+          {deleteError && <p role="alert" className="mt-2 text-xs text-red-400 break-words">{deleteError}</p>}
         </td>
       </tr>
     )
@@ -245,10 +248,12 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
           >
             <Users size={12} />
           </Link>
-          <button onClick={() => setEditing(true)} className="cursor-pointer rounded p-1 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300 transition-colors">
+          <button aria-label={`${org.name} 편집`} disabled={deleting} onClick={() => { setConfirmDelete(false); setDeleteError(''); setEditing(true) }} className="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300 transition-colors">
             <Pencil size={12} />
           </button>
+          {deleteControls}
         </div>
+        {deleteError && <p role="alert" className="mt-2 text-xs text-red-400 break-words">{deleteError}</p>}
       </td>
     </tr>
   )
