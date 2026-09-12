@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, X } from 'lucide-react'
+import { Search, X, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
@@ -256,10 +256,10 @@ export default function CharactersClientSection({
                 {/* 스트리머 */}
                 {c.streamers && (
                   <StreamerReveal>
-                    <div className="mt-auto border-t border-zinc-800 pt-3">
+                    <div className="mt-auto border-t border-zinc-800 pt-3 flex items-center gap-2">
                       <Link
                         href={`/streamers/${c.streamers.id}`}
-                        className="relative z-10 inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-600 hover:text-white transition-colors"
+                        className="relative z-10 inline-flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-600 hover:text-white transition-colors"
                       >
                         {c.streamers.profile_image_url ? (
                           <AppImage
@@ -272,8 +272,17 @@ export default function CharactersClientSection({
                             {c.streamers.display_name.charAt(0)}
                           </div>
                         )}
-                        {c.streamers.display_name}
+                        <span className="truncate">{c.streamers.display_name}</span>
                       </Link>
+                      <a
+                        href={`https://chzzk.naver.com/${c.streamers.chzzk_channel_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative z-10 flex shrink-0 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-400 hover:border-amber-400/40 hover:text-amber-400 transition-colors"
+                      >
+                        <ExternalLink size={10} />
+                        치지직
+                      </a>
                     </div>
                   </StreamerReveal>
                 )}
