@@ -260,34 +260,35 @@ export default function CharactersClientSection({
                   )}
                 </div>
 
-                {/* 직업 / 직급 */}
-                {(primaryMember?.role || c.job) && (
-                  <p className="text-sm text-zinc-400">
-                    {primaryMember?.role ?? c.job}
-                  </p>
-                )}
-
                 {/* 설명 */}
                 {c.description && (
                   <p className="text-xs text-zinc-500 line-clamp-2">{c.description}</p>
                 )}
 
-                {/* 조직 */}
-                {allOrgs.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {allOrgs.map((o, i) =>
-                      o ? (
-                        <span
-                          key={i}
-                          className="rounded-full border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400"
-                          style={o.color ? { borderColor: `${o.color}50`, color: o.color } : {}}
-                        >
-                          {o.name}
+                {/* 조직 뱃지 + 직책 / 직업 */}
+                {allOrgs.length > 0 ? (
+                  <div className="flex flex-wrap gap-x-2 gap-y-1.5">
+                    {c.organization_members.map((m, i) => {
+                      const o = m.organizations
+                      if (!o) return null
+                      return (
+                        <span key={i} className="flex items-center gap-1.5">
+                          <span
+                            className="rounded-full border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400"
+                            style={o.color ? { borderColor: `${o.color}50`, color: o.color } : {}}
+                          >
+                            {o.name}
+                          </span>
+                          {m.role && (
+                            <span className="text-xs text-zinc-500">{m.role}</span>
+                          )}
                         </span>
-                      ) : null
-                    )}
+                      )
+                    })}
                   </div>
-                )}
+                ) : c.job && c.job !== '가이드' ? (
+                  <p className="text-sm text-zinc-400">{c.job}</p>
+                ) : null}
               </div>
             )
           })}
