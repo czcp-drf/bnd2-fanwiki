@@ -24,6 +24,41 @@ export async function saveCharacter(id: string, data: {
   return { success: true }
 }
 
+export async function createCharacter(data: {
+  name: string
+  streamerId: string | null
+  job: string | null
+  status: string
+  orgId: string | null
+  orgRole: string | null
+}) {
+  const supabase = await requireAdmin()
+  if (!['active', 'dead', 'retired', 'hiatus'].includes(data.status)) {
+    return { error: '올바른 상태를 선택해 주세요.' }
+  }
+  const { data: char, error } = await supabase
+    .from('characters')
+    .insert({
+      name: data.name.trim() || '미정',
+      streamer_id: data.streamerId || null,
+      job: data.job?.trim() || null,
+      status: data.status,
+    })
+    .select('id')
+    .single()
+  if (error || !char) return { error: '캐릭터 생성에 실패했습니다.' }
+  if (data.orgId) {
+    await supabase.from('organization_members').insert({
+      character_id: char.id,
+      organization_id: data.orgId,
+      role: data.orgRole?.trim() || null,
+      is_primary: true,
+    })
+  }
+  revalidatePath('/', 'layout')
+  return { success: true }
+}
+
 export async function renameCharacter(id: string, name: string) {
   const trimmed = name.trim()
   if (!trimmed) return { error: '이름을 입력해 주세요.' }

@@ -80,13 +80,20 @@ async function getOrganizations() {
   return (data ?? []) as { id: string; name: string; category: string | null }[]
 }
 
+async function getStreamers() {
+  const supabase = createAdminClient()
+  const { data } = await supabase.from('streamers').select('id, display_name').order('display_name')
+  return (data ?? []) as { id: string; display_name: string }[]
+}
+
 type Props = { searchParams: Promise<{ filter?: string; sort?: string; org?: string }> }
 
 export default async function AdminCharactersPage({ searchParams }: Props) {
   const { filter = '', sort = 'name', org = '' } = await searchParams
-  const [characters, organizations] = await Promise.all([
+  const [characters, organizations, streamers] = await Promise.all([
     getCharacters(filter, sort, org),
     getOrganizations(),
+    getStreamers(),
   ])
 
   return (
@@ -97,6 +104,7 @@ export default async function AdminCharactersPage({ searchParams }: Props) {
       <AdminCharactersClient
         characters={characters}
         organizations={organizations}
+        streamers={streamers}
         filter={filter}
         sort={sort}
         org={org}

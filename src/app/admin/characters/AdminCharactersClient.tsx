@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, X } from 'lucide-react'
+import { Search, X, UserPlus, ChevronDown, ChevronUp, Check } from 'lucide-react'
 import CharacterEditRow from './CharacterEditRow'
+import { createCharacter } from './actions'
+import Select from '@/components/ui/Select'
 
 const columns = [
   { key: 'streamer', field: 'streamer_display_name', label: '스트리머' },
@@ -35,16 +37,26 @@ type Character = {
 }
 
 type OrgOption = { id: string; name: string; category: string | null }
+type StreamerOption = { id: string; display_name: string }
+
+const statusOptions = [
+  { value: 'active', label: '활동' },
+  { value: 'dead', label: '사망' },
+  { value: 'retired', label: '은퇴' },
+  { value: 'hiatus', label: '휴식' },
+]
 
 export default function AdminCharactersClient({
   characters,
   organizations,
+  streamers,
   filter,
   sort,
   org,
 }: {
   characters: Character[]
   organizations: OrgOption[]
+  streamers: StreamerOption[]
   filter: string
   sort: string
   org: string
@@ -52,6 +64,51 @@ export default function AdminCharactersClient({
   const [search, setSearch] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // 캐릭터 추가 폼
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addName, setAddName] = useState('')
+  const [addStreamerId, setAddStreamerId] = useState('')
+  const [addJob, setAddJob] = useState('')
+  const [addStatus, setAddStatus] = useState('active')
+  const [addOrgId, setAddOrgId] = useState('')
+  const [addOrgRole, setAddOrgRole] = useState('')
+  const [addError, setAddError] = useState<string | null>(null)
+  const [addMsg, setAddMsg] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  const streamerOptions = [
+    { value: '', label: '스트리머 없음' },
+    ...streamers.map((s) => ({ value: s.id, label: s.display_name })),
+  ]
+  const addOrgOptions = [
+    { value: '', label: '무소속' },
+    ...organizations.map((o) => ({ value: o.id, label: o.name })),
+  ]
+
+  function resetAddForm() {
+    setAddName(''); setAddStreamerId(''); setAddJob('')
+    setAddStatus('active'); setAddOrgId(''); setAddOrgRole('')
+    setAddError(null)
+  }
+
+  function handleAdd() {
+    setAddError(null); setAddMsg(null)
+    startTransition(async () => {
+      const res = await createCharacter({
+        name: addName,
+        streamerId: addStreamerId || null,
+        job: addJob || null,
+        status: addStatus,
+        orgId: addOrgId || null,
+        orgRole: addOrgRole || null,
+      })
+      if (res.error) { setAddError(res.error); return }
+      setAddMsg('캐릭터가 추가되었습니다.')
+      resetAddForm()
+      router.refresh()
+    })
+  }
 
   function listHref(nextSort: string, nextFilter = filter, nextOrg = org) {
     const params = new URLSearchParams({ sort: nextSort })
@@ -85,6 +142,64 @@ export default function AdminCharactersClient({
 
   return (
     <div className="space-y-6">
+      {/* 캐릭터 추가 */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900">
+        <button
+          onClick={() => { setShowAddForm((v) => !v); setAddError(null); setAddMsg(null) }}
+          className="flex w-full cursor-pointer items-center gap-2 px-4 py-3 text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-colors"
+        >
+          <UserPlus size={13} />
+          캐릭터 추가
+          {showAddForm ? <ChevronUp size={13} className="ml-auto" /> : <ChevronDown size={13} className="ml-auto" />}
+        </button>
+
+        {showAddForm && (
+          <div className="border-t border-zinc-800 px-4 pb-4 pt-3 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <input
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                placeholder="RP명 (미입력 시 '미정')"
+                className="w-40 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+              />
+              <div className="w-40">
+                <Select value={addStreamerId} onChange={setAddStreamerId} options={streamerOptions} fullWidth />
+              </div>
+              <input
+                value={addJob}
+                onChange={(e) => setAddJob(e.target.value)}
+                placeholder="직업 (선택)"
+                className="w-32 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+              />
+              <div className="w-24">
+                <Select value={addStatus} onChange={setAddStatus} options={statusOptions} fullWidth />
+              </div>
+              <div className="w-36">
+                <Select value={addOrgId} onChange={(v) => { setAddOrgId(v); if (!v) setAddOrgRole('') }} options={addOrgOptions} fullWidth />
+              </div>
+              {addOrgId && (
+                <input
+                  value={addOrgRole}
+                  onChange={(e) => setAddOrgRole(e.target.value)}
+                  placeholder="직급 (선택)"
+                  className="w-28 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+                />
+              )}
+              <button
+                onClick={handleAdd}
+                disabled={isPending}
+                className="flex cursor-pointer items-center gap-1.5 rounded bg-amber-400 px-3 py-1.5 text-xs font-bold text-zinc-900 hover:bg-amber-300 disabled:opacity-50 transition-colors"
+              >
+                <Check size={12} />
+                추가
+              </button>
+            </div>
+            {addError && <p className="text-xs text-red-400">{addError}</p>}
+            {addMsg && <p className="text-xs text-green-400">{addMsg}</p>}
+          </div>
+        )}
+      </div>
+
       {/* 툴바 */}
       <div className="flex flex-wrap items-center gap-3">
         {/* 실시간 검색 */}

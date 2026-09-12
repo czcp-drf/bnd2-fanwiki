@@ -11,8 +11,18 @@ export async function addStreamer(formData: FormData) {
 
   if (!chzzk_channel_id || !display_name) return
 
-  await supabase.from('streamers').insert({ chzzk_channel_id, display_name, profile_image_url, is_active: true })
+  const { data: streamer } = await supabase
+    .from('streamers')
+    .insert({ chzzk_channel_id, display_name, profile_image_url, is_active: true })
+    .select('id')
+    .single()
+
+  if (streamer) {
+    await supabase.from('characters').insert({ name: '미정', streamer_id: streamer.id, status: 'active' })
+  }
+
   revalidatePath('/admin/streamers')
+  revalidatePath('/admin/characters')
 }
 
 export async function updateStreamer(
