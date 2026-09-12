@@ -16,6 +16,7 @@ const navItems = [
   { href: '/streamers', label: '스트리머' },
   { href: '/characters', label: '캐릭터' },
   { href: '/organizations', label: '조직' },
+  { href: '/bonstagram', label: 'Bonstagram' },
   { href: '/map', label: '지도' },
   { href: '/events', label: '사건' },
   { href: '/report', label: '제보' },

@@ -10,6 +10,16 @@
 GTA RP 서버 "봉누도2"의 팬 위키 사이트.
 스트리머, 캐릭터, 조직, 사건 아카이브를 제공하며 **빨간약 토글**로 스트리머 정보 공개 여부를 제어합니다.
 
+### 운영진 논의 현황: 방향·기능 범위 검토 대기
+
+- 사용자와 봉누도2 운영진의 대화에 따르면 운영진은 공식 위키를 준비 중입니다. 운영진으로부터 현 페이지에 인게임 기사·SNS 같은 콘텐츠를 함께 올리는 **‘봉누도 따라가기’** 컨셉으로 발전시키고 싶다는 의향을 전달받았습니다.
+- ‘봉누도 따라가기’는 논의 중인 컨셉이며 아직 구체적인 내용이나 개발 범위가 나온 상태는 아닙니다.
+- 공식 위키와 포지션이 겹치는 부분은 제거해야 할 필요성이 있을 수 있습니다. 운영진은 중복되는 부분과 조정 필요 여부를 확인한 뒤 사용자에게 알려주겠다고 답변한 상태입니다.
+- 현재는 운영진의 검토 결과를 기다립니다. 기존 캐릭터·조직·지도·사건 기능을 유지·확장하기로 확정하거나, 특정 기능을 제거하기로 확정한 상태가 아닙니다. 회신과 사용자 지시 전에는 이 논의를 근거로 기능을 추가·삭제·재편하지 않습니다.
+- 이는 전달받은 개발 방향이며, 현재 사이트가 공식 위키이거나 공식 서비스로 승인되었다는 의미는 아닙니다. 현재 구현은 기존 팬 위키 구조를 유지합니다.
+- 기사·SNS의 수집/등록 방식, 작성 주체와 출처 표기, 게시 권한·검수, 화면 구성, 기존 기능 유지 범위, 서비스명 변경 및 구현 일정은 아직 정하지 않았습니다. 자동 수집이나 새 게시 기능을 구현하기로 확정한 상태도 아닙니다.
+- 운영진 논의와 별개로 사용자가 인게임 SNS `Bonstagram`의 단계적 구현을 시작하도록 요청했습니다. 1단계는 임시 `feat/bonstagram` 브랜치에서 기존 캐릭터와 1:1로 연결되는 계정 구조와 기본 피드 화면을 구성하며, 릴스 기능은 범위에서 제외합니다. 실제 게시·팔로우·가입 연동은 후속 단계에서 확정합니다.
+
 ---
 
 ## 기술 스택
@@ -42,6 +52,7 @@ src/
 │   │       ├── OrgMiniMap.tsx      # Leaflet 인라인 미니맵 (거점·사업체 마커, SSR 제외)
 │   │       └── OrgMiniMapWrapper.tsx  # Client Component 래퍼 (ssr:false dynamic import)
 │   ├── events/                 # 사건 목록 / 상세 / 연대표 [ISR 300s]
+│   ├── bonstagram/page.tsx     # Bonstagram 기본 피드 화면 (1단계)
 │   ├── map/                    # 공개 거점 지도 [ISR 300s]
 │   │   ├── page.tsx            # 서버 컴포넌트 (orgs + locations 패치)
 │   │   ├── MapView.tsx         # 클라이언트 래퍼 (카테고리 필터, 위치 토글)
@@ -232,6 +243,7 @@ src/
 | `event_clips` | 사건 클립 (clip_url, label, streamer_id, sort_order) |
 | `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/colleague/neutral) |
 | `reports` | 제보 (type, status: pending/reviewing/applied/rejected, ip) |
+| `bonstagram_profiles` | 기존 `characters`와 1:1로 연결되는 SNS 표시 닉네임 |
 | `blocked_ips` | 차단 IP 목록 (ip, reason) |
 
 ### 마이그레이션 파일 (supabase/migrations/)
@@ -244,6 +256,8 @@ src/
 | `014_member_sort_order.sql` | organization_members 테이블에 sort_order 컬럼 추가 |
 | `015_event_sort_orders.sql` | event_participants 테이블에 sort_order 컬럼 추가 |
 | `016_relationship_add_colleague.sql` | character_relationships CHECK 제약에 'colleague' 추가 |
+| `017_atomic_creation.sql` | 캐릭터·스트리머와 연결 데이터 원자적 생성 RPC 추가 |
+| `018_bonstagram_profiles.sql` | 기존 캐릭터와 1:1 연결되는 Bonstagram 프로필 테이블 생성 |
 
 ---
 
@@ -278,6 +292,13 @@ src/
 - [x] 사건 편집 — 참여 캐릭터·클립 드래그 앤 드롭 순서 조정 + 순서 저장
 - [x] 캐릭터 추가 — 어드민 캐릭터 관리 페이지에서 스트리머 연결 없이 직접 추가 가능
 - [x] 스트리머 추가 시 '미정' 캐릭터 자동 생성·연결
+
+### Bonstagram (임시 브랜치 작업 중)
+- [x] `/bonstagram` 기본 피드 화면과 Bonstagram 프로필 안내 UI
+- [x] `bonstagram_profiles` 1:1 계정 테이블·프로필 이름 제약 마이그레이션 작성 (`018_bonstagram_profiles.sql`)
+- [ ] 기존 캐릭터 선택 기반의 Bonstagram 프로필 등록/수정 화면
+- [ ] 게시물 피드·상세·댓글·좋아요 기능
+- [ ] 릴스 기능 — 범위에서 제외
 
 ---
 
@@ -318,11 +339,15 @@ src/
 
 ## 최근 작업 기록
 
-- 3차 main 통합 대상: `8cd77e8` (생성 RPC·마이그레이션 017·격리 DB 테스트). 해당 변경을 main 병합 커밋에 포함합니다. 운영 DB 마이그레이션과 Vercel 배포 완료는 별도 확인 대상입니다.
+- Bonstagram 1단계 (`feat/bonstagram`): 기본 피드 페이지, 글로벌 메뉴, 캐릭터 1:1 프로필 타입과 마이그레이션 018을 추가했습니다. `profile_name`은 SNS에 표시되는 닉네임으로 사용하며 별도 username은 두지 않습니다. 운영 DB의 `bonstagram_profiles` 조회 성공과 등록 프로필 0개를 확인했습니다. 프로덕션 빌드는 통과했으며, 전체 린트는 기존 파일의 오류 6개·경고 8개로 실패했습니다. 이번 브랜치 커밋 후 원격 `deploy/feat/bonstagram`에 푸시합니다. Vercel 배포는 별도 확인 대상입니다.
 
-- 사용자 요청으로 3차까지 main 통합을 진행하며 **4차 이후 점검 수정은 재개 요청 전까지 중단**합니다. 3차 검증은 회귀 테스트 7개·변경 파일 린트·빌드 통과. 마이그레이션 017은 운영 DB 미적용 상태이므로 새 코드 배포 시 적용 전까지 캐릭터·스트리머 추가는 DB 업데이트 안내를 반환합니다.
+- 사용자 전달 사항 반영: 마이그레이션 017 적용 완료 및 운영진과 논의한 ‘봉누도 따라가기’ 개발 의향을 기록했습니다. 공식 위키 준비 소식은 사용자 전달 기준이며, 새 콘텐츠 기능은 아직 기획·구현 미확정입니다.
 
-- 3차 점검 수정 (`fix/project-audit`): 캐릭터+소속 생성은 `create_character_with_membership`, 스트리머+미정 캐릭터 생성은 `create_streamer_with_character` RPC로 처리합니다. 각 함수의 두 INSERT는 단일 트랜잭션이며 오류를 삼키지 않아 후속 INSERT 실패 시 전체 롤백됩니다. `017_atomic_creation.sql`은 함수 추가·실행 권한 제한만 수행하고 기존 행을 변경하지 않습니다. 운영 DB에는 아직 적용하지 않았습니다.
+- 3차 main 통합 완료: `8cd77e8`을 `41347a8`로 병합하고 `deploy/main`에 푸시했습니다. 마이그레이션 017은 사용자 확인으로 운영 DB 적용 완료입니다. 에이전트가 운영 DB를 재검증한 것은 아니며 Vercel 배포 완료는 별도 확인 대상입니다.
+
+- 사용자 요청으로 3차까지 main 통합을 진행하며 **4차 이후 점검 수정은 재개 요청 전까지 중단**합니다. 3차 검증은 회귀 테스트 7개·변경 파일 린트·빌드 통과. 마이그레이션 017은 사용자 확인으로 적용 완료했습니다.
+
+- 3차 점검 수정 (`fix/project-audit`): 캐릭터+소속 생성은 `create_character_with_membership`, 스트리머+미정 캐릭터 생성은 `create_streamer_with_character` RPC로 처리합니다. 각 함수의 두 INSERT는 단일 트랜잭션이며 오류를 삼키지 않아 후속 INSERT 실패 시 전체 롤백됩니다. `017_atomic_creation.sql`은 함수 추가·실행 권한 제한만 수행하고 기존 행을 변경하지 않습니다. 운영 DB 적용은 사용자가 완료했다고 확인했습니다.
 - **3차 배포 순서**: Supabase SQL Editor에서 `supabase/migrations/017_atomic_creation.sql` 적용 → 코드 배포. 기존 생성 코드는 새 함수 추가 후에도 동작합니다. 새 코드에서 함수가 없으면 DB 업데이트(017) 안내를 표시하며 이전 다단계 INSERT로 되돌아가지 않습니다. 실행 권한은 `service_role`만 허용합니다.
 - 3차 검증: 테스트용 개발 의존성 `@electric-sql/pglite`로 격리된 PostgreSQL에서 정상 생성, 없는 조직·스트리머 참조, 중복 채널, 두 번째 INSERT 강제 실패 시 롤백, 함수 실행 권한을 검증합니다. `node --experimental-strip-types --test tests/*.test.mjs`로 재현 가능. 운영 DB 쓰기 없음. 이전에 생긴 불완전한 데이터의 자동 정리는 포함하지 않습니다.
 
