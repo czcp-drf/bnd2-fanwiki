@@ -5,7 +5,10 @@ import BongstagramVideoPlayer from './BongstagramVideoPlayer'
 import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 import MediaCarousel from './MediaCarousel'
+import BongstagramPostInteractions from './BongstagramPostInteractions'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
 import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
 import {
   Heart,
@@ -53,6 +56,7 @@ type FeedPost = {
   character_avatar_url: string | null
   streamer_name: string | null
   streamer_avatar_url: string | null
+  liked_by_viewer?: boolean
 }
 
 async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[] }> {
@@ -106,8 +110,50 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
     }]
   })
 
+  const postIds = feedPosts.filter((post) => post.post_type === 'post').map((post) => post.id)
+  let likesByPostId = new Map<string, number>()
+  let commentsByPostId = new Map<string, number>()
+  let likedPostIds = new Set<string>()
+
+  if (postIds.length > 0) {
+    const adminSupabase = createAdminClient()
+    const ipHash = await getBongstagramIpHash()
+    const [likesResult, commentsResult, viewerLikesResult] = await Promise.all([
+      adminSupabase.from('bongstagram_post_likes').select('post_id').in('post_id', postIds),
+      adminSupabase.from('bongstagram_post_comments').select('post_id').in('post_id', postIds),
+      ipHash
+        ? adminSupabase.from('bongstagram_post_likes').select('post_id').in('post_id', postIds).eq('ip_hash', ipHash)
+        : Promise.resolve({ data: [], error: null }),
+    ])
+
+    if (likesResult.error && likesResult.error.code !== 'PGRST205') {
+      console.error('Bongstagram like count lookup failed:', likesResult.error.code, likesResult.error.message)
+    }
+    if (commentsResult.error && commentsResult.error.code !== 'PGRST205') {
+      console.error('Bongstagram comment count lookup failed:', commentsResult.error.code, commentsResult.error.message)
+    }
+
+    likesByPostId = new Map<string, number>()
+    for (const row of (likesResult.data ?? []) as { post_id: string }[]) {
+      likesByPostId.set(row.post_id, (likesByPostId.get(row.post_id) ?? 0) + 1)
+    }
+    commentsByPostId = new Map<string, number>()
+    for (const row of (commentsResult.data ?? []) as { post_id: string }[]) {
+      commentsByPostId.set(row.post_id, (commentsByPostId.get(row.post_id) ?? 0) + 1)
+    }
+    likedPostIds = new Set(((viewerLikesResult.data ?? []) as { post_id: string }[]).map((row) => row.post_id))
+  }
+
+  const visiblePosts = feedPosts
+    .filter((post) => post.post_type === 'post')
+    .map((post) => ({
+      ...post,
+      like_count: likesByPostId.get(post.id) ?? 0,
+      comment_count: commentsByPostId.get(post.id) ?? 0,
+      liked_by_viewer: likedPostIds.has(post.id),
+    }))
   const stories = feedPosts.filter((post) => post.post_type === 'story' && isStoryVisible(post.story_expires_at))
-  return { posts: feedPosts.filter((post) => post.post_type === 'post'), stories }
+  return { posts: visiblePosts, stories }
 }
 
 function StoryBubble({
@@ -242,12 +288,12 @@ function FeedPostCard({ post }: { post: FeedPost }) {
       )}
 
       <div className="space-y-3 px-4 py-3">
-        <div className="flex items-center gap-4 text-zinc-300">
-          <Heart size={23} />
-          <MessageCircle size={23} />
-          <Send size={22} />
-        </div>
-        {!!post.like_count && <p className="text-sm font-semibold text-zinc-200">좋아요 {post.like_count}개</p>}
+        <BongstagramPostInteractions
+          postId={post.id}
+          initialLikeCount={post.like_count}
+          initialCommentCount={post.comment_count}
+          initialLiked={post.liked_by_viewer}
+        />
         {post.content && <PostCaption post={post} />}
         {!!post.comment_count && <p className="text-sm text-zinc-400">댓글 {post.comment_count}개 모두 보기</p>}
         <p className="text-[11px] text-zinc-500">{formatPostTime(post.posted_at)}</p>

@@ -204,6 +204,27 @@ export type Database = {
         Insert: Omit<Database['public']['Tables']['bongstagram_post_media']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['bongstagram_post_media']['Insert']>
       }
+      bongstagram_post_likes: {
+        Row: {
+          id: string
+          post_id: string
+          ip_hash: string
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['bongstagram_post_likes']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['bongstagram_post_likes']['Insert']>
+      }
+      bongstagram_post_comments: {
+        Row: {
+          id: string
+          post_id: string
+          author_name: string
+          content: string
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['bongstagram_post_comments']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['bongstagram_post_comments']['Insert']>
+      }
     }
   }
 }
@@ -223,3 +244,5 @@ export type Report = Database['public']['Tables']['reports']['Row']
 export type BongstagramProfile = Database['public']['Tables']['bongstagram_profiles']['Row']
 export type BongstagramPost = Database['public']['Tables']['bongstagram_posts']['Row']
 export type BongstagramPostMedia = Database['public']['Tables']['bongstagram_post_media']['Row']
+export type BongstagramPostLike = Database['public']['Tables']['bongstagram_post_likes']['Row']
+export type BongstagramPostComment = Database['public']['Tables']['bongstagram_post_comments']['Row']
