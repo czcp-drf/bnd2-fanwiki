@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { Search, X, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Select, { type SelectOption } from '@/components/ui/Select'
-import { StreamerReveal } from '@/components/ui/StreamerMask'
 import AppImage from '@/components/ui/AppImage'
 import { useRedPill } from '@/lib/context/RedPillContext'
 import type { Character, Streamer, Organization } from '@/types/database'
@@ -226,10 +225,9 @@ export default function CharactersClientSection({
                     )}
                   </div>
 
-                  {/* 우: 스트리머 링크 + 치지직 (빨간약) */}
+                  {/* 우: 스트리머 링크 + 치지직 (빨간약) — invisible로 공간 유지 */}
                   {c.streamers && (
-                    <StreamerReveal>
-                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <div className={`flex shrink-0 flex-col items-end gap-1.5 ${isRedPill ? '' : 'invisible'}`}>
                         <Link
                           href={`/streamers/${c.streamers.id}`}
                           className="relative z-10 flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-600 hover:text-white transition-colors"
@@ -257,7 +255,6 @@ export default function CharactersClientSection({
                           치지직
                         </a>
                       </div>
-                    </StreamerReveal>
                   )}
                 </div>
 
