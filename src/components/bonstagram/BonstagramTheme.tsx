@@ -1,0 +1,56 @@
+'use client'
+
+import { useEffect, useSyncExternalStore } from 'react'
+import { Moon, Sun } from 'lucide-react'
+
+type BonstagramTheme = 'dark' | 'light'
+
+const THEME_STORAGE_KEY = 'bongstagram-theme'
+const LEGACY_THEME_STORAGE_KEY = 'bonstagram-theme'
+const THEME_CHANGE_EVENT = 'bongstagram-theme-change'
+
+function getStoredTheme(): BonstagramTheme {
+  if (typeof window === 'undefined') return 'dark'
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY)
+  return savedTheme === 'light' ? 'light' : 'dark'
+}
+
+function subscribeToTheme(onChange: () => void) {
+  window.addEventListener(THEME_CHANGE_EVENT, onChange)
+  return () => window.removeEventListener(THEME_CHANGE_EVENT, onChange)
+}
+
+function getServerTheme(): BonstagramTheme {
+  return 'dark'
+}
+
+export function BonstagramThemeToggle({ disabled = false }: { disabled?: boolean }) {
+  const theme = useSyncExternalStore(subscribeToTheme, getStoredTheme, getServerTheme)
+  const isLight = theme === 'light'
+
+  useEffect(() => {
+    document.documentElement.dataset.bonstagramTheme = theme
+  }, [theme])
+
+  function toggleTheme() {
+    if (disabled) return
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme)
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT))
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      disabled={disabled}
+      aria-label={disabled ? 'Bongstagram에서만 사용할 수 있는 테마 전환' : isLight ? '다크 모드로 전환' : '라이트 모드로 전환'}
+      title={disabled ? 'Bongstagram에서만 사용할 수 있습니다' : isLight ? '다크 모드' : '라이트 모드'}
+      className={disabled
+        ? 'cursor-not-allowed text-zinc-700'
+        : 'text-zinc-400 transition-colors hover:text-zinc-100'}
+    >
+      {isLight ? <Moon size={22} /> : <Sun size={22} />}
+    </button>
+  )
+}

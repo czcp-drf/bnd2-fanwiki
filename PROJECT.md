@@ -18,7 +18,7 @@ GTA RP 서버 "봉누도2"의 팬 위키 사이트.
 - 현재는 운영진의 검토 결과를 기다립니다. 기존 캐릭터·조직·지도·사건 기능을 유지·확장하기로 확정하거나, 특정 기능을 제거하기로 확정한 상태가 아닙니다. 회신과 사용자 지시 전에는 이 논의를 근거로 기능을 추가·삭제·재편하지 않습니다.
 - 이는 전달받은 개발 방향이며, 현재 사이트가 공식 위키이거나 공식 서비스로 승인되었다는 의미는 아닙니다. 현재 구현은 기존 팬 위키 구조를 유지합니다.
 - 기사·SNS의 수집/등록 방식, 작성 주체와 출처 표기, 게시 권한·검수, 화면 구성, 기존 기능 유지 범위, 서비스명 변경 및 구현 일정은 아직 정하지 않았습니다. 자동 수집이나 새 게시 기능을 구현하기로 확정한 상태도 아닙니다.
-- 운영진 논의와 별개로 사용자가 인게임 SNS `Bonstagram`의 단계적 구현을 시작하도록 요청했습니다. 1단계는 임시 `feat/bonstagram` 브랜치에서 기존 캐릭터와 1:1로 연결되는 계정 구조와 기본 피드 화면을 구성하며, 릴스 기능은 범위에서 제외합니다. 실제 게시·팔로우·가입 연동은 후속 단계에서 확정합니다.
+- 운영진 논의와 별개로 사용자가 인게임 SNS `Bongstagram`의 단계적 구현을 시작하도록 요청했습니다. 1단계는 임시 `feat/bonstagram` 브랜치에서 기존 캐릭터와 1:1로 연결되는 계정 구조와 기본 피드 화면을 구성하며, 릴스 기능은 범위에서 제외합니다. 실제 게시·팔로우·가입 연동은 후속 단계에서 확정합니다.
 
 ---
 
@@ -52,7 +52,7 @@ src/
 │   │       ├── OrgMiniMap.tsx      # Leaflet 인라인 미니맵 (거점·사업체 마커, SSR 제외)
 │   │       └── OrgMiniMapWrapper.tsx  # Client Component 래퍼 (ssr:false dynamic import)
 │   ├── events/                 # 사건 목록 / 상세 / 연대표 [ISR 300s]
-│   ├── bonstagram/page.tsx     # Bonstagram 기본 피드 화면 (1단계)
+│   ├── bonstagram/page.tsx     # Bongstagram 기본 피드 화면 (1단계)
 │   ├── map/                    # 공개 거점 지도 [ISR 300s]
 │   │   ├── page.tsx            # 서버 컴포넌트 (orgs + locations 패치)
 │   │   ├── MapView.tsx         # 클라이언트 래퍼 (카테고리 필터, 위치 토글)
@@ -243,7 +243,7 @@ src/
 | `event_clips` | 사건 클립 (clip_url, label, streamer_id, sort_order) |
 | `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/colleague/neutral) |
 | `reports` | 제보 (type, status: pending/reviewing/applied/rejected, ip) |
-| `bonstagram_profiles` | 기존 `characters`와 1:1로 연결되는 SNS 표시 닉네임 |
+| `bonstagram_profiles` | 기존 `characters`와 1:1로 연결되는 Bongstagram 표시 닉네임 |
 | `blocked_ips` | 차단 IP 목록 (ip, reason) |
 
 ### 마이그레이션 파일 (supabase/migrations/)
@@ -257,7 +257,7 @@ src/
 | `015_event_sort_orders.sql` | event_participants 테이블에 sort_order 컬럼 추가 |
 | `016_relationship_add_colleague.sql` | character_relationships CHECK 제약에 'colleague' 추가 |
 | `017_atomic_creation.sql` | 캐릭터·스트리머와 연결 데이터 원자적 생성 RPC 추가 |
-| `018_bonstagram_profiles.sql` | 기존 캐릭터와 1:1 연결되는 Bonstagram 프로필 테이블 생성 |
+| `018_bonstagram_profiles.sql` | 기존 캐릭터와 1:1 연결되는 Bongstagram 프로필 테이블 생성 |
 
 ---
 
@@ -293,10 +293,11 @@ src/
 - [x] 캐릭터 추가 — 어드민 캐릭터 관리 페이지에서 스트리머 연결 없이 직접 추가 가능
 - [x] 스트리머 추가 시 '미정' 캐릭터 자동 생성·연결
 
-### Bonstagram (임시 브랜치 작업 중)
-- [x] `/bonstagram` Instagram 스타일 모바일 피드 레이아웃과 Bonstagram 프로필 안내 UI
+### Bongstagram (임시 브랜치 작업 중)
+- [x] `/bonstagram` Instagram 스타일 모바일 피드 레이아웃과 Bongstagram 프로필 안내 UI
+- [x] 글로벌 네비게이션의 Bongstagram 다크/라이트 테마 토글 (Bongstagram 외 페이지에서는 비활성화)과 브라우저 저장
 - [x] `bonstagram_profiles` 1:1 계정 테이블·프로필 이름 제약 마이그레이션 작성 (`018_bonstagram_profiles.sql`)
-- [ ] 기존 캐릭터 선택 기반의 Bonstagram 프로필 등록/수정 화면
+- [ ] 기존 캐릭터 선택 기반의 Bongstagram 프로필 등록/수정 화면
 - [ ] 게시물 피드·상세·댓글·좋아요 기능
 - [ ] 릴스 기능 — 범위에서 제외
 
@@ -339,9 +340,11 @@ src/
 
 ## 최근 작업 기록
 
-- Bonstagram 1단계 (`feat/bonstagram`): 기본 피드 페이지, 글로벌 메뉴, 캐릭터 1:1 프로필 타입과 마이그레이션 018을 추가했습니다. `profile_name`은 SNS에 표시되는 닉네임으로 사용하며 별도 username은 두지 않습니다. 운영 DB의 `bonstagram_profiles` 조회 성공과 등록 프로필 0개를 확인했습니다. 프로덕션 빌드는 통과했으며, 전체 린트는 기존 파일의 오류 6개·경고 8개로 실패했습니다. 이번 브랜치 커밋 후 원격 `deploy/feat/bonstagram`에 푸시합니다. Vercel 배포는 별도 확인 대상입니다.
+- Bongstagram 1단계 (`feat/bonstagram`): 기본 피드 페이지, 글로벌 메뉴, 캐릭터 1:1 프로필 타입과 마이그레이션 018을 추가했습니다. `profile_name`은 SNS에 표시되는 닉네임으로 사용하며 별도 username은 두지 않습니다. 운영 DB의 `bonstagram_profiles` 조회 성공과 등록 프로필 0개를 확인했습니다. 프로덕션 빌드는 통과했으며, 전체 린트는 기존 파일의 오류 6개·경고 8개로 실패했습니다. 이번 브랜치 커밋 후 원격 `deploy/feat/bonstagram`에 푸시합니다. Vercel 배포는 별도 확인 대상입니다.
 
-- Bonstagram UI 보정 (`feat/bonstagram`): 참고 이미지에 맞춰 모바일 SNS 레이아웃의 로고 크기·가로 비율·고딕 폰트, 작성자 팔로우 버튼, 하단 홈·검색·만들기·프로필 네비게이션을 조정했습니다. 릴스·저장·더보기 버튼은 제외했으며, 홈은 출입구가 있는 채움형 아이콘, 만들기는 둥근 사각형 안의 `+` 아이콘으로 구성했습니다. 변경 파일 린트와 `git diff --check`를 통과했습니다. 이번 수정도 `deploy/feat/bonstagram`에 푸시합니다.
+- Bongstagram UI 보정 (`feat/bonstagram`): 참고 이미지에 맞춰 모바일 SNS 레이아웃의 로고 크기·가로 비율·고딕 폰트, 작성자 팔로우 버튼, 하단 홈·검색·만들기·프로필 네비게이션을 조정했습니다. 릴스·저장·더보기 버튼은 제외했으며, 홈은 출입구가 있는 채움형 아이콘, 만들기는 둥근 사각형 안의 `+` 아이콘으로 구성했습니다. 변경 파일 린트와 `git diff --check`를 통과했습니다. 이번 수정도 `deploy/feat/bonstagram`에 푸시합니다.
+
+- Bongstagram 테마·브랜드 보정 (`feat/bonstagram`): 테마 토글을 글로벌 네비게이션의 빨간약 토글 우측으로 이동하고 Bongstagram에서만 활성화했습니다. `Bongstagram` 표기와 로고 비율을 통일했으며, 라이트·다크 호버 색상, 스토리 `+` 배지, 스토리 내부 회색 그라데이션 원을 조정했습니다. 관련 파일 린트와 프로덕션 빌드를 통과했으며 `git diff --check`를 확인했습니다. 이번 수정도 `deploy/feat/bonstagram`에 푸시합니다.
 
 - 사용자 전달 사항 반영: 마이그레이션 017 적용 완료 및 운영진과 논의한 ‘봉누도 따라가기’ 개발 의향을 기록했습니다. 공식 위키 준비 소식은 사용자 전달 기준이며, 새 콘텐츠 기능은 아직 기획·구현 미확정입니다.
 

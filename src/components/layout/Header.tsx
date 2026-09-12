@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useRedPill } from '@/lib/context/RedPillContext'
 import { LIVE_ENABLED } from '@/lib/live/config'
+import { BonstagramThemeToggle } from '@/components/bonstagram/BonstagramTheme'
 
 const navItems = [
   { href: '/', label: '홈' },
@@ -16,7 +17,7 @@ const navItems = [
   { href: '/streamers', label: '스트리머' },
   { href: '/characters', label: '캐릭터' },
   { href: '/organizations', label: '조직' },
-  { href: '/bonstagram', label: 'Bonstagram' },
+  { href: '/bonstagram', label: 'Bongstagram' },
   { href: '/map', label: '지도' },
   { href: '/events', label: '사건' },
   { href: '/report', label: '제보' },
@@ -79,6 +80,7 @@ function RedPillToggle({ compact = false }: { compact?: boolean }) {
 
 export default function Header() {
   const pathname = usePathname()
+  const isBonstagramRoute = pathname === '/bonstagram' || pathname.startsWith('/bonstagram/')
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -155,6 +157,7 @@ export default function Header() {
           )}
 
           <RedPillToggle />
+          <BonstagramThemeToggle disabled={!isBonstagramRoute} />
 
           {/* 모바일 메뉴 */}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -173,7 +176,10 @@ export default function Header() {
                   봉누도<span className="text-amber-400">2</span>{' '}
                   <span className="text-zinc-500 font-medium text-sm">위키</span>
                 </span>
-                <RedPillToggle compact />
+                <div className="flex items-center gap-3">
+                  <RedPillToggle compact />
+                  <BonstagramThemeToggle disabled={!isBonstagramRoute} />
+                </div>
               </div>
               <nav className="flex flex-col gap-1 p-4">
                 {navItems.map((item) => (

@@ -174,7 +174,7 @@ create policy "public read event_clips" on event_clips for select using (true);
 create policy "public insert reports" on reports for insert with check (true);
 
 -- bonstagram_profiles
--- 기존 캐릭터 1명당 하나의 Bonstagram ID를 보장한다.
+-- 기존 캐릭터 1명당 하나의 Bongstagram 프로필을 보장한다.
 create table bonstagram_profiles (
   character_id uuid primary key references characters(id) on delete cascade,
   profile_name text not null,
@@ -192,4 +192,4 @@ create trigger bonstagram_profiles_updated_at before update on bonstagram_profil
   for each row execute function update_updated_at();
 
 alter table bonstagram_profiles enable row level security;
-create policy "public read Bonstagram profiles" on bonstagram_profiles for select using (true);
+create policy "public read Bongstagram profiles" on bonstagram_profiles for select using (true);
