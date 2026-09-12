@@ -213,17 +213,33 @@ function OrgCard({
 
       {/* 갱단 운영 사업체 목록 */}
       {businesses.length > 0 && (
-        <div className="border-t border-zinc-800 pt-2.5 space-y-1">
+        <div className="border-t border-zinc-800 pt-2.5 space-y-1.5">
           <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wider">운영 사업체</p>
-          {businesses.map((b) => (
-            <div key={b.id} className="flex items-center gap-1.5 text-xs text-zinc-500">
-              <span
-                className="h-1.5 w-1.5 rounded-full shrink-0"
-                style={{ backgroundColor: b.color ?? '#71717a' }}
-              />
-              {b.name_confirmed ? b.name : <span className="text-zinc-600">미정</span>}
-            </div>
-          ))}
+          {businesses.map((b) => {
+            const bizName = b.name_confirmed ? b.name : (typeLabel[b.type ?? ''] ?? null)
+            const bizType = b.name_confirmed && b.type ? typeLabel[b.type] : null
+            return (
+              <Link
+                key={b.id}
+                href={`/map?org=${org.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 hover:bg-zinc-800 transition-colors group/biz"
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-sm shrink-0 rotate-45"
+                  style={{ backgroundColor: b.color ?? '#71717a' }}
+                />
+                <span className="text-xs text-zinc-400 group-hover/biz:text-zinc-200 transition-colors truncate">
+                  {bizName ?? <span className="text-zinc-600">미정</span>}
+                </span>
+                {bizType && (
+                  <span className="ml-auto shrink-0 text-[10px] text-zinc-600 group-hover/biz:text-zinc-500">
+                    {bizType}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
         </div>
       )}
 
