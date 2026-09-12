@@ -3,13 +3,13 @@ export const revalidate = 300
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ChevronLeft, Calendar, ExternalLink, Users } from 'lucide-react'
+import { ChevronLeft, Calendar, Users, Play } from 'lucide-react'
 import type { Metadata } from 'next'
 import ReactMarkdown from 'react-markdown'
 import { typeLabel, typeColor } from '@/lib/events'
-import { StreamerBlur, StreamerReveal } from '@/components/ui/StreamerMask'
-import ClipLabel from '@/components/events/ClipLabel'
+import { StreamerBlur } from '@/components/ui/StreamerMask'
 import AppImage from '@/components/ui/AppImage'
+import ClipPlayer from '@/components/events/ClipPlayer'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -22,6 +22,7 @@ type EventDetail = {
   thumbnail_url: string | null
   occurred_at: string | null
   event_participants: Array<{
+    sort_order: number
     role: string | null
     characters: {
       id: string
@@ -55,7 +56,7 @@ async function getEvent(id: string): Promise<EventDetail | null> {
     .select(`
       id, title, summary, content, type, thumbnail_url, occurred_at,
       event_participants (
-        role,
+        sort_order, role,
         characters (
           id, name, alias, job, status,
           streamers ( id, display_name )
@@ -94,6 +95,7 @@ export default async function EventDetailPage({ params }: Props) {
   if (!event) notFound()
 
   const clips = [...(event.event_clips ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+  const participants = [...(event.event_participants ?? [])].sort((a, b) => a.sort_order - b.sort_order)
 
   // 스트리머 ID → 캐릭터명 맵 (클립 시점 표시용)
   const streamerToChar: Record<string, string> = {}
@@ -169,107 +171,72 @@ export default async function EventDetailPage({ params }: Props) {
         </div>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* 참여 캐릭터 */}
+      {/* 관련 클립 */}
+      {clips.length > 0 && (
         <section className="space-y-4">
           <h2 className="flex items-center gap-2 text-base font-bold text-white">
-            <Users size={16} className="text-zinc-500" />
-            참여 인물
-            <span className="text-sm font-normal text-zinc-500">
-              ({event.event_participants?.length ?? 0}명)
-            </span>
-          </h2>
-
-          {!event.event_participants?.length ? (
-            <p className="text-sm text-zinc-600">등록된 참여 인물이 없습니다.</p>
-          ) : (
-            <div className="space-y-2">
-              {event.event_participants.map((p, i) => {
-                const c = p.characters
-                if (!c) return null
-                return (
-                  <Link
-                    key={i}
-                    href={`/characters/${c.id}`}
-                    className="group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition-colors hover:border-zinc-700 hover:bg-zinc-800/50"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-400">
-                      {c.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white group-hover:text-amber-400 transition-colors truncate">
-                        {c.name}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {p.role && <span className="text-xs text-zinc-500">{p.role}</span>}
-                        {c.streamers && (
-                          <StreamerBlur>
-                            <span className={`text-xs text-zinc-600 ${p.role ? 'before:content-["·"] before:mr-1.5' : ''}`}>
-                              {c.streamers.display_name}
-                            </span>
-                          </StreamerBlur>
-                        )}
-                      </div>
-                    </div>
-                    <span className={`text-xs font-medium ${statusColor[c.status]}`}>
-                      {c.status === 'active' ? '●' : '○'}
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* 관련 클립 */}
-        <section className="space-y-4">
-          <h2 className="flex items-center gap-2 text-base font-bold text-white">
-            <ExternalLink size={16} className="text-zinc-500" />
+            <Play size={16} className="text-zinc-500" />
             관련 클립
             <span className="text-sm font-normal text-zinc-500">({clips.length}개)</span>
           </h2>
+          <ClipPlayer
+            clips={clips}
+            streamerToChar={streamerToChar}
+            streamerNameToChar={streamerNameToChar}
+          />
+        </section>
+      )}
 
-          {!clips.length ? (
-            <p className="text-sm text-zinc-600">등록된 클립이 없습니다.</p>
-          ) : (
-            <div className="space-y-2">
-              {clips.map((clip) => {
-                const charName = clip.streamers?.id ? streamerToChar[clip.streamers.id] : null
-                return (
-                  <a
-                    key={clip.id}
-                    href={clip.clip_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition-colors hover:border-amber-400/30 hover:bg-zinc-800/50"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800">
-                      <ExternalLink size={14} className="text-zinc-500 group-hover:text-amber-400 transition-colors" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-zinc-200 group-hover:text-amber-400 transition-colors truncate">
-                        <ClipLabel label={clip.label ?? '클립 보기'} streamerToChar={streamerNameToChar} />
-                      </p>
-                      {clip.streamers && (
-                        <p className="text-xs text-zinc-500">
-                          {charName ? (
-                            <StreamerReveal fallback={`${charName} 시점`}>
-                              {clip.streamers.display_name} 시점
-                            </StreamerReveal>
-                          ) : (
-                            <StreamerBlur>{clip.streamers.display_name} 시점</StreamerBlur>
-                          )}
-                        </p>
+      {/* 참여 캐릭터 */}
+      <section className="space-y-4">
+        <h2 className="flex items-center gap-2 text-base font-bold text-white">
+          <Users size={16} className="text-zinc-500" />
+          참여 인물
+          <span className="text-sm font-normal text-zinc-500">
+            ({participants.length}명)
+          </span>
+        </h2>
+
+        {!participants.length ? (
+          <p className="text-sm text-zinc-600">등록된 참여 인물이 없습니다.</p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {participants.map((p, i) => {
+              const c = p.characters
+              if (!c) return null
+              return (
+                <Link
+                  key={i}
+                  href={`/characters/${c.id}`}
+                  className="group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition-colors hover:border-zinc-700 hover:bg-zinc-800/50"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-400">
+                    {c.name.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white group-hover:text-amber-400 transition-colors truncate">
+                      {c.name}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {p.role && <span className="text-xs text-zinc-500">{p.role}</span>}
+                      {c.streamers && (
+                        <StreamerBlur>
+                          <span className={`text-xs text-zinc-600 ${p.role ? 'before:content-["·"] before:mr-1.5' : ''}`}>
+                            {c.streamers.display_name}
+                          </span>
+                        </StreamerBlur>
                       )}
                     </div>
-                    <ExternalLink size={12} className="shrink-0 text-zinc-600 group-hover:text-amber-400 transition-colors" />
-                  </a>
-                )
-              })}
-            </div>
-          )}
-        </section>
-      </div>
+                  </div>
+                  <span className={`text-xs font-medium ${statusColor[c.status]}`}>
+                    {c.status === 'active' ? '●' : '○'}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

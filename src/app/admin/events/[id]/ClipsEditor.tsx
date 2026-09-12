@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { addClip, updateClip, removeClip } from '../actions'
-import { Plus, Trash2, ExternalLink, Search, X, Check, Pencil } from 'lucide-react'
+import React, { useState, useRef, useEffect, useTransition } from 'react'
+import { addClip, updateClip, removeClip, reorderClips } from '../actions'
+import { Plus, Trash2, ExternalLink, Search, X, Check, Pencil, GripVertical, Save } from 'lucide-react'
 
 type Streamer = { id: string; display_name: string }
 type CharacterRef = { name: string; streamer_id: string }
@@ -120,6 +120,52 @@ export default function ClipsEditor({
   streamers: Streamer[]
   characterRefs?: CharacterRef[]
 }) {
+  const [orderedClips, setOrderedClips] = useState<Clip[]>(clips)
+  const [orderDirty, setOrderDirty] = useState(false)
+  const [orderMsg, setOrderMsg] = useState('')
+  const [isPending, startTransition] = useTransition()
+  const dragIndex = useRef<number | null>(null)
+  const dragOverIndex = useRef<number | null>(null)
+
+  useEffect(() => { setOrderedClips(clips) }, [clips])
+
+  function handleDragStart(i: number) { dragIndex.current = i }
+  function handleDragOver(e: React.DragEvent, i: number) {
+    e.preventDefault()
+    dragOverIndex.current = i
+  }
+  function handleDrop() {
+    const from = dragIndex.current
+    const to = dragOverIndex.current
+    if (from === null || to === null || from === to) return
+    const next = [...orderedClips]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    setOrderedClips(next)
+    setOrderDirty(true)
+    setOrderMsg('')
+    dragIndex.current = null
+    dragOverIndex.current = null
+  }
+  function handleDragEnd() {
+    dragIndex.current = null
+    dragOverIndex.current = null
+  }
+
+  function saveOrder() {
+    startTransition(async () => {
+      const orders = orderedClips.map((c, i) => ({ id: c.id, sortOrder: i }))
+      const result = await reorderClips(eventId, orders)
+      if (result?.error) {
+        setOrderMsg('저장 실패: ' + result.error)
+      } else {
+        setOrderDirty(false)
+        setOrderMsg('순서 저장 완료')
+        setTimeout(() => setOrderMsg(''), 2000)
+      }
+    })
+  }
+
   const [url, setUrl] = useState('')
   const [label, setLabel] = useState('')
   const [streamerId, setStreamerId] = useState('')
@@ -205,15 +251,43 @@ export default function ClipsEditor({
 
   return (
     <div className="space-y-3">
-      {clips.length > 0 ? (
+      {orderedClips.length > 0 ? (
         <div className="space-y-1.5">
-          {clips.map((c) => (
-            <ClipRow key={c.id} clip={c} eventId={eventId} />
+          {orderedClips.map((c, i) => (
+            <div
+              key={c.id}
+              draggable
+              onDragStart={() => handleDragStart(i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
+              className="flex items-center gap-1.5"
+            >
+              <GripVertical size={14} className="shrink-0 cursor-grab text-zinc-600 hover:text-zinc-400" />
+              <div className="flex-1 min-w-0">
+                <ClipRow clip={c} eventId={eventId} />
+              </div>
+            </div>
           ))}
         </div>
       ) : (
         <p className="text-xs text-zinc-600 py-2">등록된 클립이 없습니다.</p>
       )}
+
+      {orderDirty && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={saveOrder}
+            disabled={isPending}
+            className="flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-amber-300 disabled:opacity-50 cursor-pointer transition-colors"
+          >
+            <Save size={12} />
+            순서 저장
+          </button>
+          {orderMsg && <span className="text-xs text-zinc-400">{orderMsg}</span>}
+        </div>
+      )}
+      {!orderDirty && orderMsg && <p className="text-xs text-zinc-400">{orderMsg}</p>}
 
       <div className="flex items-center gap-2 flex-wrap">
         <input
@@ -226,7 +300,7 @@ export default function ClipsEditor({
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="라벨 (선택)"
-          className="w-28 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+          className="w-44 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
         />
         <div ref={containerRef} className="relative w-48">
           {streamerId ? (
