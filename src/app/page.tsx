@@ -2,7 +2,7 @@ export const revalidate = 60
 
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Users, Building2, BookOpen, FileText } from 'lucide-react'
+import { Users, Building2, Map, FileText } from 'lucide-react'
 import type { Event } from '@/types/database'
 import StreamerListWithLive from '@/components/streamers/StreamerListWithLive'
 import { getLiveStreamers } from '@/lib/data/live-streamers'
@@ -54,7 +54,7 @@ const eventTypeColor: Record<string, string> = {
 const quickLinks = [
   { href: '/characters', icon: Users, label: '캐릭터 위키', desc: '등장인물 및 관계도' },
   { href: '/organizations', icon: Building2, label: '조직 정보', desc: '세력과 단체 목록' },
-  { href: '/guide', icon: BookOpen, label: '입문 가이드', desc: '처음 보는 분을 위한 설명' },
+  { href: '/map', icon: Map, label: '거점 지도', desc: '조직 거점 및 주요 장소' },
   { href: '/report', icon: FileText, label: '제보하기', desc: '정보 제보 및 수정 요청' },
 ]
 
