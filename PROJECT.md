@@ -213,7 +213,7 @@ src/
 |---|---|
 | `streamers` | 스트리머 (chzzk_channel_id, display_name, profile_image_url, is_active) |
 | `characters` | RP 캐릭터 (name, alias[], job, status, avatar_url) |
-| `organization_members` | 캐릭터↔조직 N:M (role, is_primary, joined_at, left_at) |
+| `organization_members` | 캐릭터↔조직 N:M (role, is_primary, joined_at, left_at, sort_order) |
 | `organizations` | 조직 (category, color, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label, gang_id, is_active, is_disbanded) |
 | `map_locations` | 주요 장소 핀 (name, label, description, color, x, y) |
 | `events` | 사건 아카이브 (type, occurred_at, is_published) |
@@ -230,6 +230,7 @@ src/
 | `010_org_hq.sql` | organizations 테이블에 hq_x, hq_y, hq_label 컬럼 추가 |
 | `011_map_locations.sql` | map_locations 테이블 생성 (RLS 포함) |
 | `013_org_business_location.sql` | organizations 테이블에 biz_x, biz_y, biz_label 컬럼 추가 |
+| `014_member_sort_order.sql` | organization_members 테이블에 sort_order 컬럼 추가 |
 
 ---
 
@@ -259,7 +260,8 @@ src/
 - [x] 거점 지도 관리 — 조직 거점/사업체 모드 탭, 클릭 배치, 주요 장소 추가/수정/이동/삭제
 - [x] 제보 관리 — 상태·유형 필터(동시 적용 가능), 상태 변경, IP 차단 버튼, 좌표 제보 시 주요 장소 직접 추가
 - [x] IP 차단 관리 — 차단 목록 확인, 차단 해제
-- [x] 조직 멤버 일괄 편집 (`/admin/organizations/[id]`) — 멤버 다중 추가(검색→대기열→일괄 추가), 역할·주소속 인라인 편집, 체크박스 일괄 퇴장, 이전 멤버 복귀
+- [x] 조직 멤버 일괄 편집 (`/admin/organizations/[id]`) — 멤버 다중 추가(검색→대기열→일괄 추가), 역할·주소속 인라인 편집, 체크박스 일괄 퇴장, 이전 멤버 복귀, 드래그 앤 드롭 순서 조정
+- [x] Vercel Analytics + Speed Insights 연동 (`@vercel/analytics/next`, `@vercel/speed-insights/next`)
 
 ---
 
@@ -295,19 +297,16 @@ src/
 
 | 커밋 | 작업 내용 |
 |---|---|
+| `1ae7bd4` | OG 이미지 제거 (next/og 500 오류 미해결 — 환경 호환성 문제) |
+| `ec4eefa` | 조직 멤버 순서 직접 설정 (sort_order 컬럼, 어드민 드래그 앤 드롭 UI) |
+| `0221fd9` | Vercel Analytics + Speed Insights 연동 |
 | `b778577` | 홈 바로가기: 입문 가이드 → 거점 지도로 변경 |
 | `afdec1b` | 캐릭터 상세 페이지: 소속 조직 거점 미니맵 추가 |
 | `38b29fb` | 어드민 제보 관리: 유형별 필터 추가 (상태·유형 동시 적용, 서버사이드 필터링) |
 | `1ac8b6b` | 어드민 조직 멤버 일괄 편집 — 다중 추가·인라인 편집·일괄 퇴장·복귀 |
-| `04465d1` | 조직 상세 인라인 미니맵: SSR 오류 수정 (Client Component 래퍼 적용) |
 | `1e58b9f` | 조직 상세 페이지에 Leaflet 인라인 미니맵 추가 (거점·사업체 마커, 전체 지도 이동 버튼) |
-| `fd84960` | 조직 목록 중첩 Link 제거 (React error #441 해결) |
-| `f5734c9` | 조직 목록: 갱단 카드에 연결된 불법 사업체 표시 개선 |
 | `ab2b720` | 어드민 지도: 조직 삭제/수정 시 즉시 반영 (force-dynamic + revalidatePath) |
-| `037d391` | 어드민 지도: 거점/사업체 모드 탭을 사이드바 상단으로 이동 |
 | `3f4ec2d` | 지도: gang_id 연결된 불법 사업체 org 좌표를 갱단 biz 마커로 자동 표시 |
 | `5172f30` | 조직 불법 사업체 위치 기능 추가 (biz_x/biz_y/biz_label 컬럼, 어드민 편집) |
 | `74f970a` | 지도 마커 스타일: 조직 드롭핀 + 주요 장소 글로우·링 |
-| `330f29b` | 지도 필터 UX: 조직/주요 장소 그룹 구조화, invisible로 레이아웃 고정 |
-| `74b8d68` | '작업 위치' 명칭을 '주요 장소'로 변경 |
 | `f131609` | 제보 폼에 지도 핀 위치 첨부 기능 추가, 어드민 제보에서 좌표 → 주요 장소 직접 추가 |
