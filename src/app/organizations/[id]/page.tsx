@@ -2,13 +2,16 @@ export const revalidate = 300
 
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/server'
-import { ChevronLeft, User, Building2, Skull, Swords, MapPin, ArrowUpRight } from 'lucide-react'
+import { ChevronLeft, User, Building2, Skull, Swords, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { Organization } from '@/types/database'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import { typeLabel as eventTypeLabel, typeColor as eventTypeColor } from '@/lib/events'
 import AppImage from '@/components/ui/AppImage'
+
+const OrgMiniMap = dynamic(() => import('./OrgMiniMap'), { ssr: false })
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -256,20 +259,34 @@ export default async function OrganizationDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {org.is_active && !org.is_disbanded && org.hq_x !== null && org.hq_y !== null && (
-          <Link href={`/map?org=${encodeURIComponent(org.id)}`}
-            className="flex items-center gap-3 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-sm text-amber-400 transition-colors hover:bg-amber-400/10">
-            <MapPin size={18} className="shrink-0" />
-            <span className="flex-1"><span className="block font-semibold">지도에서 거점 보기</span>{org.hq_label && <span className="text-xs text-zinc-400">{org.hq_label}</span>}</span>
-            <ArrowUpRight size={16} />
-          </Link>
-        )}
         {org.description && (
           <p className="text-sm text-zinc-400 leading-relaxed border-t border-zinc-800 pt-4">
             {org.description}
           </p>
         )}
       </div>
+
+      {/* 거점 미니맵 */}
+      {org.hq_x !== null && org.hq_y !== null && (
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-base font-bold text-white">
+            <MapPin size={15} className="text-zinc-500" />
+            위치
+          </h2>
+          <OrgMiniMap org={{
+            id: org.id,
+            name: orgName,
+            color: org.color ?? null,
+            category: org.category ?? null,
+            hq_x: org.hq_x,
+            hq_y: org.hq_y,
+            hq_label: org.hq_label ?? null,
+            biz_x: org.biz_x ?? null,
+            biz_y: org.biz_y ?? null,
+            biz_label: org.biz_label ?? null,
+          }} />
+        </section>
+      )}
 
       {/* 갱단 → 운영 사업체 섹션 */}
       {org.category === 'gang' && (activeBiz.length > 0 || disbandedBiz.length > 0) && (
