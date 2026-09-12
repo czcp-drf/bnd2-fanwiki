@@ -3,11 +3,12 @@ export const revalidate = 300
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ChevronLeft, ExternalLink, Users, Calendar, Swords } from 'lucide-react'
+import { ChevronLeft, ExternalLink, Users, Calendar, Swords, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import { typeLabel, typeColor } from '@/lib/events'
 import AppImage from '@/components/ui/AppImage'
+import OrgMiniMapWrapper from '@/app/organizations/[id]/OrgMiniMapWrapper'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -34,9 +35,17 @@ type CharacterDetail = {
     organizations: {
       id: string
       name: string
-      type: string
+      name_confirmed: boolean
+      type: string | null
+      category: string | null
       color: string | null
       description: string | null
+      hq_x: number | null
+      hq_y: number | null
+      hq_label: string | null
+      biz_x: number | null
+      biz_y: number | null
+      biz_label: string | null
     } | null
   }>
 }
@@ -63,7 +72,7 @@ async function getCharacter(id: string): Promise<CharacterDetail | null> {
         is_primary,
         joined_at,
         left_at,
-        organizations ( id, name, type, color, description )
+        organizations ( id, name, name_confirmed, type, category, color, description, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label )
       )
     `)
     .eq('id', id)
@@ -185,6 +194,12 @@ export default async function CharacterDetailPage({ params }: Props) {
   const activeOrgs = character.organization_members.filter((m) => !m.left_at)
   const pastOrgs = character.organization_members.filter((m) => m.left_at)
 
+  // 미니맵용: 주소속 우선, 없으면 첫 번째 활성 소속 중 거점 좌표 있는 곳
+  const mapOrg = (
+    activeOrgs.find((m) => m.is_primary && m.organizations?.hq_x !== null) ??
+    activeOrgs.find((m) => m.organizations?.hq_x !== null)
+  )?.organizations ?? null
+
   const events = participations
     .filter(p => p.events?.is_published)
     .sort((a, b) => {
@@ -299,6 +314,28 @@ export default async function CharacterDetailPage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* 거점 미니맵 */}
+      {mapOrg && mapOrg.hq_x !== null && mapOrg.hq_y !== null && (
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-base font-bold text-white">
+            <MapPin size={15} className="text-zinc-500" />
+            위치
+          </h2>
+          <OrgMiniMapWrapper org={{
+            id: mapOrg.id,
+            name: mapOrg.name_confirmed ? mapOrg.name : (mapOrg.name ?? ''),
+            color: mapOrg.color,
+            category: mapOrg.category,
+            hq_x: mapOrg.hq_x,
+            hq_y: mapOrg.hq_y,
+            hq_label: mapOrg.hq_label,
+            biz_x: mapOrg.biz_x,
+            biz_y: mapOrg.biz_y,
+            biz_label: mapOrg.biz_label,
+          }} />
+        </section>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* 소속 조직 */}
