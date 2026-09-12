@@ -52,7 +52,9 @@ export default function ClipPlayer({
   }, [updateScrollState])
 
   const scroll = (dir: 'left' | 'right') => {
-    scrollRef.current?.scrollBy({ left: dir === 'left' ? -216 : 216, behavior: 'smooth' })
+    const el = scrollRef.current
+    if (!el) return
+    el.scrollBy({ left: dir === 'left' ? -el.clientWidth : el.clientWidth, behavior: 'smooth' })
   }
 
   if (!clips.length) return null
@@ -143,7 +145,7 @@ export default function ClipPlayer({
           <div
             ref={scrollRef}
             onScroll={updateScrollState}
-            className="flex gap-2 overflow-x-scroll px-10"
+            className="flex gap-2 overflow-x-scroll"
             style={{ scrollbarWidth: 'none' }}
           >
           {clips.map((clip, i) => {
