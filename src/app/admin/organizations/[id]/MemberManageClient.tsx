@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, X, UserMinus, UserPlus, ChevronDown, ChevronUp, Pencil, RotateCcw, Save, GripVertical } from 'lucide-react'
+import { Check, X, UserMinus, UserPlus, ChevronDown, ChevronUp, Pencil, RotateCcw, Save, GripVertical, ChevronsUpDown } from 'lucide-react'
 import { addOrgMembers, updateOrgMember, setMembersLeft, restoreMember, reorderMembers } from './actions'
 
 export type MemberRow = {
@@ -72,6 +72,51 @@ export default function MemberManageClient({
 
   // Past members toggle
   const [showPast, setShowPast] = useState(false)
+
+  // Column sort
+  type SortState = { key: string; dir: 'asc' | 'desc' } | null
+  const [activeSort, setActiveSort] = useState<SortState>(null)
+  const [pastSort, setPastSort] = useState<SortState>(null)
+
+  function toggleSort(sort: SortState, setSort: (s: SortState) => void, key: string) {
+    if (sort?.key === key) {
+      setSort(sort.dir === 'asc' ? { key, dir: 'desc' } : null)
+    } else {
+      setSort({ key, dir: 'asc' })
+    }
+  }
+
+  function sortMembers<T extends MemberRow>(list: T[], sort: SortState): T[] {
+    if (!sort) return list
+    return [...list].sort((a, b) => {
+      let va: string | boolean | null | undefined
+      let vb: string | boolean | null | undefined
+      if (sort.key === 'name')     { va = a.character_name; vb = b.character_name }
+      else if (sort.key === 'streamer') { va = a.streamer_name; vb = b.streamer_name }
+      else if (sort.key === 'role')    { va = a.role; vb = b.role }
+      else if (sort.key === 'primary') { va = a.is_primary; vb = b.is_primary }
+      else if (sort.key === 'left_at') { va = a.left_at; vb = b.left_at }
+      if (va == null && vb == null) return 0
+      if (va == null) return sort.dir === 'asc' ? 1 : -1
+      if (vb == null) return sort.dir === 'asc' ? -1 : 1
+      if (typeof va === 'boolean') {
+        const cmp = va === vb ? 0 : va ? -1 : 1
+        return sort.dir === 'asc' ? cmp : -cmp
+      }
+      const cmp = String(va).localeCompare(String(vb), 'ko')
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }
+
+  function SortIcon({ col, sort }: { col: string; sort: SortState }) {
+    if (!sort || sort.key !== col) return <ChevronsUpDown size={10} className="text-zinc-700 ml-1 inline-block" />
+    return sort.dir === 'asc'
+      ? <ChevronUp size={10} className="text-amber-400 ml-1 inline-block" />
+      : <ChevronDown size={10} className="text-amber-400 ml-1 inline-block" />
+  }
+
+  const displayedMembers = sortMembers(activeMembers, activeSort)
+  const displayedPastMembers = sortMembers(pastMembers, pastSort)
 
   // --- Drag & Drop reorder ---
   const [dragIndex, setDragIndex] = useState<number | null>(null)
@@ -299,10 +344,16 @@ export default function MemberManageClient({
                     className="cursor-pointer accent-amber-400"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">캐릭터</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">스트리머</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">역할</th>
-                <th className="w-16 px-4 py-3 text-left text-xs font-medium text-zinc-500">주소속</th>
+                {(['name', 'streamer', 'role', 'primary'] as const).map((col) => (
+                  <th
+                    key={col}
+                    onClick={() => toggleSort(activeSort, setActiveSort, col)}
+                    className={`px-4 py-3 text-left text-xs font-medium cursor-pointer select-none transition-colors hover:text-zinc-300 ${activeSort?.key === col ? 'text-amber-400' : 'text-zinc-500'} ${col === 'primary' ? 'w-16' : ''}`}
+                  >
+                    {{ name: '캐릭터', streamer: '스트리머', role: '역할', primary: '주소속' }[col]}
+                    <SortIcon col={col} sort={activeSort} />
+                  </th>
+                ))}
                 <th className="w-8 px-2 py-3" />
                 <th className="w-16 px-4 py-3" />
               </tr>
@@ -315,14 +366,14 @@ export default function MemberManageClient({
                   </td>
                 </tr>
               ) : (
-                activeMembers.map((m, index) => {
+                displayedMembers.map((m, index) => {
                   const isEditing = editing === m.character_id
                   const isDragging = dragIndex === index
                   const isDragOver = dragOverIndex === index && dragIndex !== index
                   return (
                     <tr
                       key={m.character_id}
-                      draggable={!isEditing}
+                      draggable={!isEditing && !activeSort}
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDrop={() => handleDrop(index)}
@@ -406,9 +457,11 @@ export default function MemberManageClient({
                             )}
                           </td>
                           <td className="px-2 py-2.5">
-                            <span className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 flex items-center">
-                              <GripVertical size={14} />
-                            </span>
+                            {!activeSort && (
+                              <span className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 flex items-center">
+                                <GripVertical size={14} />
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-2.5">
                             <button
@@ -533,14 +586,21 @@ export default function MemberManageClient({
               <table className="w-full">
                 <thead>
                   <tr className="bg-zinc-900">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">캐릭터</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">역할</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">퇴장일</th>
+                    {(['name', 'role', 'left_at'] as const).map((col) => (
+                      <th
+                        key={col}
+                        onClick={() => toggleSort(pastSort, setPastSort, col)}
+                        className={`px-4 py-3 text-left text-xs font-medium cursor-pointer select-none transition-colors hover:text-zinc-300 ${pastSort?.key === col ? 'text-amber-400' : 'text-zinc-500'}`}
+                      >
+                        {{ name: '캐릭터', role: '역할', left_at: '퇴장일' }[col]}
+                        <SortIcon col={col} sort={pastSort} />
+                      </th>
+                    ))}
                     <th className="w-16 px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
-                  {pastMembers.map((m) => (
+                  {displayedPastMembers.map((m) => (
                     <tr
                       key={m.character_id}
                       className="border-t border-zinc-800 opacity-50 transition-opacity hover:opacity-100"
