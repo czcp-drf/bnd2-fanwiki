@@ -36,25 +36,14 @@ export async function createCharacter(data: {
   if (!['active', 'dead', 'retired', 'hiatus'].includes(data.status)) {
     return { error: '올바른 상태를 선택해 주세요.' }
   }
-  const { data: char, error } = await supabase
-    .from('characters')
-    .insert({
-      name: data.name.trim() || '미정',
-      streamer_id: data.streamerId || null,
-      job: data.job?.trim() || null,
-      status: data.status,
-    })
-    .select('id')
-    .single()
-  if (error || !char) return { error: '캐릭터 생성에 실패했습니다.' }
-  if (data.orgId) {
-    await supabase.from('organization_members').insert({
-      character_id: char.id,
-      organization_id: data.orgId,
-      role: data.orgRole?.trim() || null,
-      is_primary: true,
-    })
-  }
+  const { data: characterId, error } = await supabase.rpc('create_character_with_membership', {
+    p_name: data.name.trim() || '미정', p_streamer_id: data.streamerId || null,
+    p_job: data.job?.trim() || null, p_status: data.status,
+    p_org_id: data.orgId || null, p_role: data.orgRole?.trim() || null,
+  })
+  if (error?.code === 'PGRST202') return { error: '생성 기능의 DB 업데이트(017)가 필요합니다.' }
+  if (error?.code === '23503') return { error: '선택한 스트리머 또는 조직이 없습니다. 목록을 새로고침해주세요.' }
+  if (error || !characterId) return { error: '캐릭터 생성에 실패했습니다.' }
   revalidatePath('/', 'layout')
   return { success: true }
 }

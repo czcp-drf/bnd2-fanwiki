@@ -12,18 +12,16 @@ export async function addStreamer(formData: FormData) {
 
   if (!/^[a-f0-9]{32}$/i.test(chzzk_channel_id) || !display_name) return { error: '이름과 32자리 치지직 채널 ID를 확인해주세요.' }
 
-  const { data: streamer, error } = await supabase
-    .from('streamers')
-    .insert({ chzzk_channel_id, display_name, profile_image_url, is_active: true })
-    .select('id')
-    .single()
+  const { data: streamer, error } = await supabase.rpc('create_streamer_with_character', {
+    p_channel_id: chzzk_channel_id, p_display_name: display_name,
+    p_profile_image_url: profile_image_url,
+  })
 
+  if (error?.code === 'PGRST202') return { error: '생성 기능의 DB 업데이트(017)가 필요합니다.' }
   if (error || !streamer) return { error: error?.code === '23505' ? '이미 등록된 채널 ID입니다.' : '스트리머를 추가하지 못했습니다.' }
-  const { error: characterError } = await supabase.from('characters').insert({ name: '미정', streamer_id: streamer.id, status: 'active' })
 
   revalidatePath('/admin/streamers')
   revalidatePath('/admin/characters')
-  if (characterError) return { error: '스트리머는 등록되었으나 미정 캐릭터 생성에 실패했습니다. 중복 등록하지 말고 캐릭터 관리에서 연결해주세요.' }
   return { success: true }
 }
 

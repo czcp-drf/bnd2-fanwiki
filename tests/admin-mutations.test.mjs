@@ -16,7 +16,7 @@ function load(file, responses) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText
   vm.runInNewContext(code, { exports, require: (name) => {
-    if (name === '@/lib/admin/auth') return { requireAdmin: async () => ({ from: () => chain }) }
+    if (name === '@/lib/admin/auth') return { requireAdmin: async () => ({ from: () => chain, rpc: () => chain }) }
     if (name === 'next/cache') return { revalidatePath: (path) => invalidated.push(path) }
     throw Error(name)
   } })
@@ -43,14 +43,17 @@ test('map and streamer mutations reject DB errors and missing targets; invalidat
   }
 })
 
-test('streamer creation reports duplicate and partial character creation failure', async () => {
+test('streamer creation reports duplicate and atomic RPC failure without invalidation', async () => {
   const form = new FormData()
   form.set('display_name', 'Test'); form.set('chzzk_channel_id', 'a'.repeat(32))
   let loaded = load('src/app/admin/streamers/actions.ts', [{ error: { code: '23505' } }])
   assert.match((await loaded.actions.addStreamer(form)).error, /이미 등록/)
   assert.equal(loaded.invalidated.length, 0)
-  loaded = load('src/app/admin/streamers/actions.ts', [{ data: { id: 'id' } }, { error: { code: 'error' } }])
-  assert.match((await loaded.actions.addStreamer(form)).error, /스트리머는 등록되었으나/)
+  loaded = load('src/app/admin/streamers/actions.ts', [{ error: { code: '23514' } }])
+  assert.ok((await loaded.actions.addStreamer(form)).error)
+  assert.equal(loaded.invalidated.length, 0)
+  loaded = load('src/app/admin/streamers/actions.ts', [{ error: { code: 'PGRST202' } }])
+  assert.match((await loaded.actions.addStreamer(form)).error, /017/)
 })
 
 test('client mutation guard stops success cleanup on returned and thrown errors', async () => {
@@ -60,4 +63,16 @@ test('client mutation guard stops success cleanup on returned and thrown errors'
     assert.equal(cleaned, false)
   }
   assert.equal((await unwrapMutation(Promise.resolve({ success: true }))).success, true)
+})
+
+test('character creation rejects missing RPC and invalid references, then refreshes only on success', async () => {
+  const input = { name: 'Test', status: 'active', streamerId: null, job: null, orgId: 'org', orgRole: null }
+  for (const code of ['PGRST202', '23503', '23514']) {
+    const { actions, invalidated } = load('src/app/admin/characters/actions.ts', [{ error: { code } }])
+    assert.ok((await actions.createCharacter(input)).error)
+    assert.equal(invalidated.length, 0)
+  }
+  const { actions, invalidated } = load('src/app/admin/characters/actions.ts', [{ data: 'id', error: null }])
+  assert.equal((await actions.createCharacter(input)).success, true)
+  assert.ok(invalidated.length > 0)
 })
