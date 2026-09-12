@@ -18,11 +18,20 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { id } = await params
   const supabase = await createClient()
 
-  const { data } = await supabase
+  type EventData = {
+    title: string
+    type: string | null
+    occurred_at: string | null
+    summary: string | null
+  }
+
+  const { data: raw } = await supabase
     .from('events')
     .select('title, type, occurred_at, summary')
     .eq('id', id)
     .single()
+
+  const data = raw as unknown as EventData | null
 
   const title = data?.title ?? '알 수 없음'
   const type = data?.type ?? 'other'

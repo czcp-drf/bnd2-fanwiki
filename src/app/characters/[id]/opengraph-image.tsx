@@ -16,11 +16,23 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { id } = await params
   const supabase = await createClient()
 
-  const { data } = await supabase
+  type CharData = {
+    name: string
+    alias: string[] | null
+    job: string | null
+    status: string
+    avatar_url: string | null
+    organization_members: Array<{
+      left_at: string | null
+      organizations: { name: string; color: string | null } | null
+    }>
+  }
+
+  const { data: raw } = await supabase
     .from('characters')
     .select(`
       name, alias, job, status, avatar_url,
-      organization_members!inner(
+      organization_members(
         left_at,
         organizations(name, color)
       )
@@ -28,12 +40,14 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     .eq('id', id)
     .single()
 
+  const data = raw as unknown as CharData | null
+
   const name = data?.name ?? '알 수 없음'
   const alias = data?.alias?.[0] ?? null
   const job = data?.job ?? null
   const status = data?.status ?? 'active'
   const avatarUrl = data?.avatar_url ?? null
-  const orgs = ((data?.organization_members ?? []) as any[])
+  const orgs = (data?.organization_members ?? [])
     .filter((m) => !m.left_at)
     .map((m) => m.organizations)
     .filter(Boolean)

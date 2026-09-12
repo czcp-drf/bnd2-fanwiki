@@ -18,7 +18,16 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { id } = await params
   const supabase = await createClient()
 
-  const [{ data: org }, { count: memberCount }] = await Promise.all([
+  type OrgData = {
+    name: string | null
+    name_confirmed: boolean
+    color: string | null
+    category: string | null
+    description: string | null
+    is_disbanded: boolean
+  }
+
+  const [{ data: rawOrg }, { count: memberCount }] = await Promise.all([
     supabase
       .from('organizations')
       .select('name, name_confirmed, color, category, description, is_disbanded')
@@ -30,6 +39,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
       .eq('organization_id', id)
       .is('left_at', null),
   ])
+
+  const org = rawOrg as unknown as OrgData | null
 
   const name = org?.name_confirmed ? (org?.name ?? '알 수 없음') : '미정'
   const color = org?.color ?? '#f59e0b'
