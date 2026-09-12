@@ -126,22 +126,6 @@ function StreamerCard({
           {isLive && <p className="text-xs font-semibold text-red-400 mt-0.5">LIVE</p>}
         </div>
 
-        {organizations.length > 0 && (
-          <div className="max-w-[45%] shrink-0 flex flex-wrap justify-end gap-1 self-start">
-            {organizations.map((organization) => (
-              <span
-                key={organization.id}
-                className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium truncate"
-                style={organization.color
-                  ? { borderColor: `${organization.color}60`, color: organization.color, backgroundColor: `${organization.color}12` }
-                  : undefined}
-                title={organization.name}
-              >
-                {organization.name}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="flex-1 p-4 space-y-2">
