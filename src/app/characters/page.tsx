@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 type CharacterWithRelations = Character & {
-  streamers: Pick<Streamer, 'id' | 'display_name' | 'chzzk_channel_id'> | null
+  streamers: Pick<Streamer, 'id' | 'display_name' | 'chzzk_channel_id' | 'profile_image_url'> | null
   organization_members: Array<{
     is_primary: boolean
     role: string | null
@@ -27,7 +27,7 @@ async function getAllCharacters() {
     .from('characters')
     .select(`
       *,
-      streamers ( id, display_name, chzzk_channel_id ),
+      streamers ( id, display_name, chzzk_channel_id, profile_image_url ),
       organization_members (
         is_primary,
         role,
