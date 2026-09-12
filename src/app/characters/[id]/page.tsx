@@ -369,11 +369,6 @@ export default async function CharacterDetailPage({ params }: Props) {
                           {orgTypeLabel[m.organizations.type]}
                         </span>
                       )}
-                      {m.is_primary && (
-                        <span className="rounded-full bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
-                          주 소속
-                        </span>
-                      )}
                     </div>
                     {m.role && (
                       <p className="text-xs text-zinc-500 mt-0.5">{m.role}</p>
