@@ -5,17 +5,25 @@ import { Play, Volume2, VolumeX } from 'lucide-react'
 
 let feedMuted = true
 const muteListeners = new Set<() => void>()
-function subscribeMute(listener: () => void) {
+export function subscribeBongstagramMute(listener: () => void) {
   muteListeners.add(listener)
   return () => { muteListeners.delete(listener) }
 }
-function getMuted() { return feedMuted }
-function getServerMuted() { return true }
+export function getBongstagramMuted() { return feedMuted }
+export function getServerBongstagramMuted() { return true }
+
+export function toggleBongstagramMute() {
+  feedMuted = !feedMuted
+  document.querySelectorAll<HTMLVideoElement>('video[data-bongstagram-video], video[data-bongstagram-story-video]').forEach((video) => {
+    video.muted = feedMuted
+  })
+  muteListeners.forEach((listener) => listener())
+}
 
 export default function BongstagramVideoPlayer({ src, label }: { src: string; label: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [playing, setPlaying] = useState(false)
-  const muted = useSyncExternalStore(subscribeMute, getMuted, getServerMuted)
+  const muted = useSyncExternalStore(subscribeBongstagramMute, getBongstagramMuted, getServerBongstagramMuted)
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.muted = muted
@@ -25,11 +33,11 @@ export default function BongstagramVideoPlayer({ src, label }: { src: string; la
     const video = videoRef.current
     if (!video) return
 
-    video.muted = getMuted()
+    video.muted = getBongstagramMuted()
 
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.intersectionRatio >= 0.5) {
-        document.querySelectorAll<HTMLVideoElement>('video[data-feed-video]').forEach((other) => {
+        document.querySelectorAll<HTMLVideoElement>('video[data-bongstagram-video]').forEach((other) => {
           if (other !== video) other.pause()
         })
         void video.play().catch(() => setPlaying(false))
@@ -47,7 +55,7 @@ export default function BongstagramVideoPlayer({ src, label }: { src: string; la
     if (!video) return
 
     if (video.paused) {
-      document.querySelectorAll<HTMLVideoElement>('video[data-feed-video]').forEach((other) => {
+        document.querySelectorAll<HTMLVideoElement>('video[data-bongstagram-video]').forEach((other) => {
         if (other !== video) other.pause()
       })
       void video.play().catch(() => setPlaying(false))
@@ -58,18 +66,14 @@ export default function BongstagramVideoPlayer({ src, label }: { src: string; la
 
   function toggleMute(event: React.MouseEvent<HTMLButtonElement>) {
     event.stopPropagation()
-    feedMuted = !feedMuted
-    document.querySelectorAll<HTMLVideoElement>('video[data-feed-video]').forEach((video) => {
-      video.muted = feedMuted
-    })
-    muteListeners.forEach((listener) => listener())
+    toggleBongstagramMute()
   }
 
   return (
     <div className="group relative w-full cursor-pointer overflow-hidden bg-black" style={{ height: 'min(125vw, 675px)' }} onClick={togglePlayback}>
       <video
         ref={videoRef}
-        data-feed-video
+        data-bongstagram-video
         muted={muted}
         loop
         playsInline

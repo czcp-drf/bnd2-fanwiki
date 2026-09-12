@@ -4,6 +4,7 @@ import AppImage from '@/components/ui/AppImage'
 import BongstagramVideoPlayer from './BongstagramVideoPlayer'
 import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
+import BongstagramStoryRail from './BongstagramStoryRail'
 import MediaCarousel from './MediaCarousel'
 import BongstagramPostInteractions from './BongstagramPostInteractions'
 import { createClient } from '@/lib/supabase/server'
@@ -14,7 +15,6 @@ import {
   Heart,
   Image as ImageIcon,
   MessageCircle,
-  Plus,
   Search,
   Send,
   SquarePlus,
@@ -25,13 +25,6 @@ export const metadata: Metadata = {
   title: 'Bongstagram',
   description: '봉누도2 인게임 SNS Bongstagram',
 }
-
-const storyPreviews = [
-  { label: '명충쇠', mark: '명', tone: 'from-amber-300 via-pink-500 to-fuchsia-600' },
-  { label: 'zzya', mark: 'Z', tone: 'from-orange-300 via-fuchsia-500 to-violet-600' },
-  { label: '김형순', mark: '김', tone: 'from-fuchsia-400 via-violet-500 to-sky-500' },
-  { label: '차수진', mark: '차', tone: 'from-pink-400 via-red-400 to-orange-300' },
-]
 
 type FeedMedia = {
   id: string
@@ -156,51 +149,6 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
   return { posts: visiblePosts, stories }
 }
 
-function StoryBubble({
-  label,
-  mark,
-  tone,
-  avatarUrl,
-  streamerAvatarUrl,
-  href,
-  streamerName,
-  mine = false,
-}: {
-  label: string
-  mark: string
-  tone?: string
-  avatarUrl?: string | null
-  streamerAvatarUrl?: string | null
-  href?: string
-  streamerName?: string | null
-  mine?: boolean
-}) {
-  const bubble = (
-    <div className="flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5">
-      <div className={`relative rounded-full ${mine ? '' : 'bg-gradient-to-tr p-[2px] from-zinc-800 to-zinc-700'}`}>
-        {tone && <div className={`absolute inset-0 rounded-full bg-gradient-to-tr ${tone}`} />}
-        <div className={`bongstagram-story-avatar relative flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full text-xl font-bold text-zinc-200 ${mine ? '' : 'border-2 border-zinc-950'}`}>
-          <BongstagramProfileAvatar
-            profileAvatarUrl={avatarUrl}
-            streamerAvatarUrl={streamerAvatarUrl}
-            profileName={label}
-            streamerName={streamerName}
-            fallbackText={mark}
-            className="h-full w-full rounded-full object-cover"
-          />
-        </div>
-        {mine && (
-          <span className="bongstagram-story-add absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full">
-            <Plus size={12} strokeWidth={3} />
-          </span>
-        )}
-      </div>
-      <span className="max-w-[4.5rem] truncate text-[11px] text-zinc-400"><BongstagramDisplayName profileName={label} streamerName={streamerName} /></span>
-    </div>
-  )
-  return href ? <Link href={href}>{bubble}</Link> : bubble
-}
-
 function FilledHomeIcon({ size = 23 }: { size?: number }) {
   return (
     <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -254,7 +202,7 @@ function FeedPostCard({ post }: { post: FeedPost }) {
     <article className="border-b border-zinc-800">
       <header className="flex items-center justify-between px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-bold text-zinc-200">
+          <Link href={`/bongstagram/${post.character_id}`} aria-label={`${post.profile_name} 프로필 보기`} className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-bold text-zinc-200">
             <BongstagramProfileAvatar
               profileAvatarUrl={post.profile_avatar_url}
               streamerAvatarUrl={post.streamer_avatar_url}
@@ -263,7 +211,7 @@ function FeedPostCard({ post }: { post: FeedPost }) {
               streamerName={post.streamer_name}
               className="h-full w-full object-cover"
             />
-          </div>
+          </Link>
           <div className="min-w-0">
             <Link href={`/bongstagram/${post.character_id}`} className="truncate text-sm font-semibold text-zinc-200 transition-colors hover:text-fuchsia-300"><BongstagramDisplayName profileName={post.profile_name} streamerName={post.streamer_name} /></Link>
           </div>
@@ -342,14 +290,7 @@ export default async function BongstagramPage() {
           </div>
           </header>
 
-        <section className="flex gap-3 overflow-x-auto border-b border-zinc-800 px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="스토리">
-          <StoryBubble label="내 스토리" mark="D" mine />
-          {stories.length > 0
-            ? stories.map((story) => (
-              <StoryBubble key={story.id} label={story.profile_name} mark={story.profile_name.slice(0, 1)} streamerName={story.streamer_name} streamerAvatarUrl={story.streamer_avatar_url} avatarUrl={story.profile_avatar_url ?? story.character_avatar_url} href={`/bongstagram/${story.character_id}`} tone="from-amber-300 via-pink-500 to-fuchsia-600" />
-            ))
-            : storyPreviews.map((story) => <StoryBubble key={story.label} {...story} />)}
-        </section>
+        <BongstagramStoryRail stories={stories} />
 
         <main>
           {posts.length > 0 ? posts.map((post) => <FeedPostCard key={post.id} post={post} />) : (

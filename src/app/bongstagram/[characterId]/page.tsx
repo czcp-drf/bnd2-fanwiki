@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import AppImage from '@/components/ui/AppImage'
+import BongstagramDisplayName from '../BongstagramDisplayName'
+import BongstagramProfileAvatar from '../BongstagramProfileAvatar'
 import { ArrowLeft, Image as ImageIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { formatKstDate, getKstDateKey } from '@/lib/bongstagram/story-schedule'
@@ -32,7 +34,7 @@ async function getProfileData(characterId: string) {
       .maybeSingle(),
     supabase
       .from('characters')
-      .select('id, name, avatar_url')
+      .select('id, streamer_id, name, avatar_url')
       .eq('id', characterId)
       .maybeSingle(),
     supabase
@@ -45,10 +47,13 @@ async function getProfileData(characterId: string) {
   if (!profile || !character) notFound()
 
   type ProfileRow = { character_id: string; profile_name: string; avatar_url: string | null; bio: string | null }
-  type CharacterRow = { id: string; name: string; avatar_url: string | null }
+  type CharacterRow = { id: string; streamer_id: string | null; name: string; avatar_url: string | null }
   type PostRow = Omit<ProfilePost, 'media'> & { bongstagram_post_media: Media[] }
   const profileRow = profile as ProfileRow
   const characterRow = character as CharacterRow
+  const { data: streamer } = characterRow.streamer_id
+    ? await supabase.from('streamers').select('display_name, profile_image_url').eq('id', characterRow.streamer_id).maybeSingle()
+    : { data: null }
   const profilePosts = ((posts ?? []) as PostRow[]).map((post) => ({
     id: post.id,
     post_type: post.post_type,
@@ -58,7 +63,12 @@ async function getProfileData(characterId: string) {
     media: post.bongstagram_post_media.sort((a, b) => a.sort_order - b.sort_order),
   }))
 
-  return { profile: profileRow, character: characterRow, posts: profilePosts }
+  return {
+    profile: profileRow,
+    character: characterRow,
+    streamer: streamer as { display_name: string; profile_image_url: string | null } | null,
+    posts: profilePosts,
+  }
 }
 
 function MediaThumb({ media, label }: { media: Media; label: string }) {
@@ -75,7 +85,7 @@ export async function generateMetadata({ params }: { params: Promise<{ character
 
 export default async function BongstagramProfilePage({ params }: { params: Promise<{ characterId: string }> }) {
   const { characterId } = await params
-  const { profile, character, posts } = await getProfileData(characterId)
+  const { profile, character, streamer, posts } = await getProfileData(characterId)
   const regularPosts = posts.filter((post) => post.post_type === 'post')
   const storyGroups = new Map<string, ProfilePost[]>()
   for (const story of posts.filter((post) => post.post_type === 'story')) {
@@ -85,22 +95,28 @@ export default async function BongstagramProfilePage({ params }: { params: Promi
     storyGroups.set(key, group)
   }
 
-  const avatarUrl = profile.avatar_url ?? character.avatar_url
   return (
     <div className="bongstagram-theme">
       <div className="bongstagram-font min-h-[calc(100vh-3.5rem)] bg-zinc-950">
         <div className="mx-auto min-h-[calc(100vh-3.5rem)] w-full max-w-[540px] border-x border-zinc-900 bg-zinc-950">
           <header className="flex h-16 items-center gap-4 border-b border-zinc-800 px-5">
             <Link href="/bongstagram" aria-label="Bongstagram 홈" className="text-zinc-300 transition-colors hover:text-white"><ArrowLeft size={21} /></Link>
-            <h1 className="truncate text-lg font-medium text-white">{profile.profile_name}</h1>
+            <h1 className="truncate text-lg font-medium text-white"><BongstagramDisplayName profileName={profile.profile_name} streamerName={streamer?.display_name} /></h1>
           </header>
 
           <section className="flex items-center gap-5 border-b border-zinc-800 px-5 py-6">
             <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-2xl font-bold text-zinc-200">
-              {avatarUrl ? <AppImage src={avatarUrl} alt={profile.profile_name} className="h-full w-full object-cover" /> : profile.profile_name.slice(0, 1)}
+              <BongstagramProfileAvatar
+                profileAvatarUrl={profile.avatar_url}
+                streamerAvatarUrl={streamer?.profile_image_url}
+                fallbackAvatarUrl={character.avatar_url}
+                profileName={profile.profile_name}
+                streamerName={streamer?.display_name}
+                className="h-full w-full object-cover"
+              />
             </div>
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-semibold text-white">{profile.profile_name}</h2>
+              <h2 className="truncate text-lg font-semibold text-white"><BongstagramDisplayName profileName={profile.profile_name} streamerName={streamer?.display_name} /></h2>
               <p className="mt-1 text-sm text-zinc-500">{character.name}</p>
               {profile.bio && <p className="mt-2 whitespace-pre-wrap break-words text-sm text-zinc-300">{profile.bio}</p>}
             </div>

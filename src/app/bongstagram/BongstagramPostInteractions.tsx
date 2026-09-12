@@ -104,7 +104,7 @@ export default function BongstagramPostInteractions({
         >
           <section className="flex max-h-[min(75vh,42rem)] w-full max-w-[540px] flex-col rounded-t-2xl border border-zinc-800 bg-zinc-950 sm:rounded-2xl" role="dialog" aria-modal="true" aria-labelledby={`comments-title-${postId}`}>
             <header className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
-              <h2 id={`comments-title-${postId}`} className="text-sm font-semibold text-zinc-100">댓글</h2>
+              <h2 id={`comments-title-${postId}`} className="text-sm font-semibold text-white">댓글</h2>
               <button type="button" aria-label="댓글창 닫기" onClick={() => setCommentsOpen(false)} className="text-zinc-400 transition-colors hover:text-white">
                 <X size={20} />
               </button>
@@ -128,7 +128,6 @@ export default function BongstagramPostInteractions({
                 <p className="py-8 text-center text-sm text-zinc-500">아직 댓글이 없습니다.</p>
               )}
             </div>
-            <p className="border-t border-zinc-800 px-5 py-3 text-center text-xs text-zinc-600">댓글 작성은 운영진만 가능합니다.</p>
           </section>
         </div>
       )}
