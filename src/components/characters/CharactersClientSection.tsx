@@ -199,28 +199,65 @@ export default function CharactersClientSection({
                 {/* 카드 전체 링크 (캐릭터 상세) */}
                 <Link href={`/characters/${c.id}`} className="absolute inset-0 rounded-xl" aria-label={c.name} />
 
-                {/* 이름 */}
-                <div className="min-w-0 space-y-0.5">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {c.avatar_url ? (
-                      <AppImage
-                        src={c.avatar_url}
-                        alt={c.name}
-                        className="h-8 w-8 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-400">
-                        {c.name.charAt(0)}
-                      </div>
+                {/* 상단: 캐릭터 정보(좌) + 스트리머(우) */}
+                <div className="flex items-start gap-3">
+                  {/* 좌: 아바타 + 이름 + 별명 */}
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      {c.avatar_url ? (
+                        <AppImage
+                          src={c.avatar_url}
+                          alt={c.name}
+                          className="h-8 w-8 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-400">
+                          {c.name.charAt(0)}
+                        </div>
+                      )}
+                      <p className="font-bold text-white group-hover:text-amber-400 transition-colors truncate">
+                        {c.name}
+                      </p>
+                    </div>
+                    {c.alias && c.alias.length > 0 && (
+                      <p className="text-xs text-zinc-500 truncate pl-9">
+                        {c.alias.join(' · ')}
+                      </p>
                     )}
-                    <p className="font-bold text-white group-hover:text-amber-400 transition-colors truncate">
-                      {c.name}
-                    </p>
                   </div>
-                  {c.alias && c.alias.length > 0 && (
-                    <p className="text-xs text-zinc-500 truncate pl-9">
-                      {c.alias.join(' · ')}
-                    </p>
+
+                  {/* 우: 스트리머 링크 + 치지직 (빨간약) */}
+                  {c.streamers && (
+                    <StreamerReveal>
+                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                        <Link
+                          href={`/streamers/${c.streamers.id}`}
+                          className="relative z-10 flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-600 hover:text-white transition-colors"
+                        >
+                          {c.streamers.profile_image_url ? (
+                            <AppImage
+                              src={c.streamers.profile_image_url}
+                              alt={c.streamers.display_name}
+                              className="h-4 w-4 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-zinc-600 text-[9px] font-bold">
+                              {c.streamers.display_name.charAt(0)}
+                            </div>
+                          )}
+                          {c.streamers.display_name}
+                        </Link>
+                        <a
+                          href={`https://chzzk.naver.com/${c.streamers.chzzk_channel_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative z-10 flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-400 hover:border-amber-400/40 hover:text-amber-400 transition-colors"
+                        >
+                          <ExternalLink size={10} />
+                          치지직
+                        </a>
+                      </div>
+                    </StreamerReveal>
                   )}
                 </div>
 
@@ -251,40 +288,6 @@ export default function CharactersClientSection({
                       ) : null
                     )}
                   </div>
-                )}
-
-                {/* 스트리머 */}
-                {c.streamers && (
-                  <StreamerReveal>
-                    <div className="mt-auto border-t border-zinc-800 pt-3 flex items-center gap-2">
-                      <Link
-                        href={`/streamers/${c.streamers.id}`}
-                        className="relative z-10 inline-flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-zinc-600 hover:text-white transition-colors"
-                      >
-                        {c.streamers.profile_image_url ? (
-                          <AppImage
-                            src={c.streamers.profile_image_url}
-                            alt={c.streamers.display_name}
-                            className="h-4 w-4 rounded-full object-cover shrink-0"
-                          />
-                        ) : (
-                          <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-zinc-600 text-[9px] font-bold">
-                            {c.streamers.display_name.charAt(0)}
-                          </div>
-                        )}
-                        <span className="truncate">{c.streamers.display_name}</span>
-                      </Link>
-                      <a
-                        href={`https://chzzk.naver.com/${c.streamers.chzzk_channel_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="relative z-10 flex shrink-0 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-400 hover:border-amber-400/40 hover:text-amber-400 transition-colors"
-                      >
-                        <ExternalLink size={10} />
-                        치지직
-                      </a>
-                    </div>
-                  </StreamerReveal>
                 )}
               </div>
             )
