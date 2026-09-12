@@ -21,6 +21,16 @@ type Profile = {
   avatar_url: string | null
 }
 
+type Organization = {
+  id: string
+  name: string
+}
+
+type Membership = {
+  character_id: string
+  organization_id: string
+}
+
 type PostMedia = {
   id: string
   media_type: 'image' | 'video'
@@ -53,6 +63,23 @@ const postTypeOptions: SelectOption[] = [
 const mediaTypeOptions: SelectOption[] = [
   { value: 'image', label: '이미지' },
   { value: 'video', label: '동영상' },
+]
+
+const postFilterOptions: SelectOption[] = [
+  { value: 'all', label: '전체 게시물' },
+  { value: 'post', label: '게시글' },
+  { value: 'story', label: '스토리' },
+]
+
+const mediaFilterOptions: SelectOption[] = [
+  { value: 'all', label: '전체 미디어' },
+  { value: 'image', label: '이미지 포함' },
+  { value: 'video', label: '동영상 포함' },
+]
+
+const sortOptions: SelectOption[] = [
+  { value: 'latest', label: '최신 게시일 순' },
+  { value: 'oldest', label: '오래된 게시일 순' },
 ]
 
 function toLocalDateTime(value: string) {
@@ -282,13 +309,63 @@ function PostEditRow({ post, character, profile }: { post: Post; character: Char
   )
 }
 
-export default function BongstagramPostManager({ characters, profiles, posts }: { characters: Character[]; profiles: Profile[]; posts: Post[] }) {
+export default function BongstagramPostManager({ characters, profiles, organizations, memberships, posts }: { characters: Character[]; profiles: Profile[]; organizations: Organization[]; memberships: Membership[]; posts: Post[] }) {
   const characterById = new Map(characters.map((character) => [character.id, character]))
   const profileByCharacterId = new Map(profiles.map((profile) => [profile.character_id, profile]))
+  const [search, setSearch] = useState('')
+  const [characterFilter, setCharacterFilter] = useState('all')
+  const [organizationFilter, setOrganizationFilter] = useState('all')
+  const [postFilter, setPostFilter] = useState('all')
+  const [mediaFilter, setMediaFilter] = useState('all')
+  const [sort, setSort] = useState('latest')
+  const organizationsByCharacterId = new Map<string, string[]>()
+  memberships.forEach((membership) => {
+    const current = organizationsByCharacterId.get(membership.character_id) ?? []
+    current.push(membership.organization_id)
+    organizationsByCharacterId.set(membership.character_id, current)
+  })
+  const characterFilterOptions: SelectOption[] = [
+    { value: 'all', label: '전체 캐릭터' },
+    ...characters
+      .filter((character) => profileByCharacterId.has(character.id))
+      .map((character) => ({ value: character.id, label: `${character.name} · ${profileByCharacterId.get(character.id)?.profile_name ?? ''}` })),
+  ]
+  const organizationFilterOptions: SelectOption[] = [
+    { value: 'all', label: '전체 조직' },
+    { value: '__none__', label: '무소속' },
+    ...organizations.map((organization) => ({ value: organization.id, label: organization.name })),
+  ]
+  const normalizedSearch = search.trim().toLocaleLowerCase()
+  const filteredPosts = posts
+    .filter((post) => {
+      const character = characterById.get(post.character_id)
+      const profile = profileByCharacterId.get(post.character_id)
+      const organizationIds = organizationsByCharacterId.get(post.character_id) ?? []
+      const searchTarget = `${character?.name ?? ''} ${profile?.profile_name ?? ''} ${post.content}`.toLocaleLowerCase()
+      return (!normalizedSearch || searchTarget.includes(normalizedSearch))
+        && (characterFilter === 'all' || post.character_id === characterFilter)
+        && (organizationFilter === 'all' || (organizationFilter === '__none__' ? organizationIds.length === 0 : organizationIds.includes(organizationFilter)))
+        && (postFilter === 'all' || post.post_type === postFilter)
+        && (mediaFilter === 'all' || post.media.some((media) => media.media_type === mediaFilter))
+    })
+    .sort((a, b) => {
+      const result = new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime()
+      return sort === 'latest' ? result : -result
+    })
   return (
     <div className="space-y-6">
       <NewPostForm characters={characters} profiles={profiles} />
-      <section className="space-y-3"><div><h2 className="text-sm font-bold text-white">등록된 게시물</h2><p className="mt-1 text-xs text-zinc-500">총 {posts.length}개 · 최신 게시일 순</p></div>{posts.length === 0 ? <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center text-sm text-zinc-600">등록된 Bongstagram 게시물이 없습니다.</div> : posts.map((post) => { const character = characterById.get(post.character_id); const profile = profileByCharacterId.get(post.character_id); if (!character || !profile) return null; return <PostEditRow key={post.id} post={post} character={character} profile={profile} /> })}</section>
+      <section className="space-y-3"><div><h2 className="text-sm font-bold text-white">등록된 게시물</h2><p className="mt-1 text-xs text-zinc-500">총 {filteredPosts.length}개 / 전체 {posts.length}개</p></div>
+        <div className="grid gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-3 sm:grid-cols-2 lg:grid-cols-3">
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="프로필·캐릭터·본문 검색" className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-fuchsia-400/60 focus:outline-none" />
+          <Select value={characterFilter} onChange={setCharacterFilter} options={characterFilterOptions} searchable searchPlaceholder="캐릭터 검색" fullWidth />
+          <Select value={organizationFilter} onChange={setOrganizationFilter} options={organizationFilterOptions} searchable searchPlaceholder="조직 검색" fullWidth />
+          <Select value={postFilter} onChange={setPostFilter} options={postFilterOptions} fullWidth />
+          <Select value={mediaFilter} onChange={setMediaFilter} options={mediaFilterOptions} fullWidth />
+          <Select value={sort} onChange={setSort} options={sortOptions} fullWidth />
+        </div>
+        {filteredPosts.length === 0 ? <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center text-sm text-zinc-600">조건에 맞는 Bongstagram 게시물이 없습니다.</div> : filteredPosts.map((post) => { const character = characterById.get(post.character_id); const profile = profileByCharacterId.get(post.character_id); if (!character || !profile) return null; return <PostEditRow key={post.id} post={post} character={character} profile={profile} /> })}
+      </section>
     </div>
   )
 }

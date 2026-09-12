@@ -17,6 +17,17 @@ type ProfileRow = {
   avatar_url: string | null
 }
 
+type OrganizationRow = {
+  id: string
+  name: string
+}
+
+type MembershipRow = {
+  character_id: string
+  organization_id: string
+  left_at: string | null
+}
+
 type MediaRow = {
   id: string
   media_type: 'image' | 'video'
@@ -37,7 +48,7 @@ type PostRow = {
 
 async function getPostData() {
   const supabase = createAdminClient()
-  const [{ data: characters }, { data: profiles }, { data: posts }] = await Promise.all([
+  const [{ data: characters }, { data: profiles }, { data: posts }, { data: organizations }, { data: memberships }] = await Promise.all([
     supabase
       .from('characters')
       .select('id, name, avatar_url, streamers ( display_name )')
@@ -49,11 +60,21 @@ async function getPostData() {
       .from('bongstagram_posts')
       .select('id, character_id, post_type, content, posted_at, story_expires_at, bongstagram_post_media ( id, media_type, media_url, storage_path, sort_order )')
       .order('posted_at', { ascending: false }),
+    supabase
+      .from('organizations')
+      .select('id, name')
+      .order('name'),
+    supabase
+      .from('organization_members')
+      .select('character_id, organization_id, left_at')
+      .is('left_at', null),
   ])
 
   return {
     characters: (characters ?? []) as unknown as CharacterRow[],
     profiles: (profiles ?? []) as unknown as ProfileRow[],
+    organizations: (organizations ?? []) as unknown as OrganizationRow[],
+    memberships: (memberships ?? []) as unknown as MembershipRow[],
     posts: ((posts ?? []) as unknown as PostRow[]).map((post) => ({
       id: post.id,
       character_id: post.character_id,
@@ -67,7 +88,7 @@ async function getPostData() {
 }
 
 export default async function AdminBongstagramPostsPage() {
-  const { characters, profiles, posts } = await getPostData()
+  const { characters, profiles, organizations, memberships, posts } = await getPostData()
 
   return (
     <div className="space-y-6 p-8">
@@ -75,7 +96,7 @@ export default async function AdminBongstagramPostsPage() {
         <h1 className="text-xl font-black text-white">Bongstagram 게시물 관리</h1>
         <p className="mt-1 text-sm text-zinc-500">프로필별 게시글과 스토리를 등록하고 관리합니다.</p>
       </div>
-      <BongstagramPostManager characters={characters} profiles={profiles} posts={posts} />
+      <BongstagramPostManager characters={characters} profiles={profiles} organizations={organizations} memberships={memberships} posts={posts} />
     </div>
   )
 }
