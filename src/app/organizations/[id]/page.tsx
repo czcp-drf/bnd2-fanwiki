@@ -9,6 +9,7 @@ import type { Organization } from '@/types/database'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import { typeLabel as eventTypeLabel, typeColor as eventTypeColor } from '@/lib/events'
 import AppImage from '@/components/ui/AppImage'
+import { groupOrganizationMembers } from '@/lib/data/organization-members'
 import BackButton from '@/components/ui/BackButton'
 import OrgMiniMapWrapper from './OrgMiniMapWrapper'
 
@@ -21,6 +22,7 @@ type OrgDetail = Organization & {
     role: string | null
     is_primary: boolean
     joined_at: string | null
+    left_at: string | null
     sort_order: number
     characters: {
       id: string
@@ -97,7 +99,7 @@ async function getOrganization(id: string) {
     .select(`
       *, gang_id, is_disbanded,
       organization_members (
-        role, is_primary, joined_at, sort_order,
+        role, is_primary, joined_at, left_at, sort_order,
         characters (
           id, name, alias, job, status,
           streamers ( id, display_name ),
@@ -196,12 +198,8 @@ export default async function OrganizationDetailPage({ params }: Props) {
 
   const { org, businesses } = result
   const orgName = org.name_confirmed ? org.name : (typeLabel[org.type ?? ''] ?? '미정')
-  const activeMembers = org.organization_members
-    .filter((m) => m.characters?.status === 'active')
-    .sort((a, b) => a.sort_order - b.sort_order)
-  const inactiveMembers = org.organization_members
-    .filter((m) => m.characters && m.characters.status !== 'active')
-    .sort((a, b) => a.sort_order - b.sort_order)
+  const { active: activeMembers, inactive: inactiveMembers, former: formerMembers } =
+    groupOrganizationMembers(org.organization_members)
 
   const activeBiz = businesses.filter((b) => !b.is_disbanded)
   const disbandedBiz = businesses.filter((b) => b.is_disbanded)
@@ -259,7 +257,7 @@ export default async function OrganizationDetailPage({ params }: Props) {
           </div>
 
           <div className="text-right text-sm text-zinc-500 shrink-0">
-            멤버 <span className="text-white font-bold">{activeMembers.length}</span>명
+            멤버 <span className="text-white font-bold">{activeMembers.length + inactiveMembers.length}</span>명
           </div>
         </div>
 
@@ -346,7 +344,7 @@ export default async function OrganizationDetailPage({ params }: Props) {
 
         {activeMembers.length === 0 && inactiveMembers.length === 0 ? (
           <div className="rounded-xl border border-zinc-800 bg-zinc-900 py-12 text-center text-sm text-zinc-600">
-            등록된 멤버가 없습니다.
+              현재 소속된 멤버가 없습니다.
           </div>
         ) : (
           <div className="space-y-2">
@@ -365,7 +363,16 @@ export default async function OrganizationDetailPage({ params }: Props) {
         )}
       </section>
 
-      {/* 관련 사건 */}
+        {formerMembers.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-base font-bold text-zinc-400">이전 멤버 <span className="text-sm font-normal text-zinc-500">{formerMembers.length}명</span></h2>
+            <div className="space-y-2">
+              {formerMembers.map((member) => <MemberRow key={member.characters!.id} member={member} dim />)}
+            </div>
+          </section>
+        )}
+
+        {/* 관련 사건 */}
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-base font-bold text-white">
           <Swords size={15} className="text-zinc-500" />
@@ -461,6 +468,7 @@ function MemberRow({
       </div>
 
       <div className="flex flex-col items-end gap-1.5">
+        {member.left_at !== null && <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400">퇴장</span>}
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[c.status]}`}>
           {statusLabel[c.status]}
         </span>

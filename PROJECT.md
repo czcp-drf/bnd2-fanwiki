@@ -318,6 +318,10 @@ src/
 
 ## 최근 작업 기록
 
+- 전체 점검 후 1차 수정: 조직 상세는 `left_at` 기준으로 현재/이전 멤버를 구분합니다. 현재 소속 중 활동·비활동 멤버를 합산하고, 이전 멤버는 별도 섹션과 퇴장 배지를 표시합니다. 분류 함수: `src/lib/data/organization-members.ts`. 회귀 테스트: `node --experimental-strip-types --test tests/organization-members.test.mjs` (2개 통과), 변경 파일 린트·빌드 통과. `fix/project-audit` 브랜치의 1차 수정입니다.
+
+- 2026-09-12 전체 점검: [PROJECT_AUDIT.md](./PROJECT_AUDIT.md). 빌드 성공, 린트 오류 6개·경고 8개, 기존 테스트 8/10 성공. 발견한 기능 문제·검증 한계·수정 우선순위는 점검 문서 참조. 이번 점검에서는 애플리케이션 코드나 DB를 수정하지 않았습니다.
+
 모든 커밋은 `deploy/main`에 푸시 완료. 배포 완료 여부는 Vercel에서 별도 확인.
 
 | 커밋 | 작업 내용 |
