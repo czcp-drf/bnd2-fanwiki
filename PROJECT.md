@@ -99,7 +99,8 @@ src/
 │   │   ├── TimelineView.tsx    # 연대표 (가로/세로 모드)
 │   │   ├── TimelineFilters.tsx
 │   │   ├── EventTypeFilter.tsx
-│   │   └── ClipLabel.tsx       # 클립 라벨 스트리머명↔캐릭터명 치환
+│   │   ├── ClipLabel.tsx       # 클립 라벨 스트리머명↔캐릭터명 치환
+│   │   └── ClipPlayer.tsx      # 클립 인라인 플레이어 (Chzzk/YouTube iframe, 플레이리스트, 툴팁)
 │   ├── live/
 │   │   └── LiveDataError.tsx   # 라이브 데이터 로드 실패 UI
 │   └── report/
@@ -185,6 +186,14 @@ src/
 - 조직 상세 `/organizations/[id]`에 인라인 미니맵 표시 (거점+사업체 마커, Atlas 고정)
 - `/map?org=<ID>`로 이동하면 해당 핀 자동 선택·확대
 
+### 클립 플레이어 (`ClipPlayer.tsx`)
+- Chzzk URL `https://chzzk.naver.com/clips/{id}` → embed `https://chzzk.naver.com/embed/clip/{id}`
+- YouTube `watch?v=`, `youtu.be/`, `shorts/` → `https://www.youtube.com/embed/{id}`
+- 모든 클립 iframe을 최초 렌더 시 미리 로드, `visibility: hidden/visible`로 전환 — 클립 전환 시 딜레이 없음
+- YouTube 백그라운드 iframe은 `autoplay` 없이 프리로드 (동시 재생 방지)
+- 플레이리스트: 좌우 버튼 내비게이션 (끝 도달 시 버튼 `opacity-0`), `scrollBy(clientWidth)` 단위 이동
+- 툴팁: `overflow-x: scroll` 클리핑 우회를 위해 `getBoundingClientRect` + `fixed` 포지션으로 렌더링
+
 ### 타일 Storage
 - Supabase Storage 공개 버킷: `map-tiles`
 - 경로: `mapStyles/styleAtlas/{z}/{x}/{y}.jpg` / `mapStyles/styleSatelite/{z}/{x}/{y}.jpg`
@@ -217,7 +226,7 @@ src/
 | `organizations` | 조직 (category, color, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label, gang_id, is_active, is_disbanded) |
 | `map_locations` | 주요 장소 핀 (name, label, description, color, x, y) |
 | `events` | 사건 아카이브 (type, occurred_at, is_published) |
-| `event_participants` | 사건↔캐릭터 N:M (role) |
+| `event_participants` | 사건↔캐릭터 N:M (role, sort_order) |
 | `event_clips` | 사건 클립 (clip_url, label, streamer_id, sort_order) |
 | `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/neutral) |
 | `reports` | 제보 (type, status: pending/reviewing/applied/rejected, ip) |
@@ -231,6 +240,7 @@ src/
 | `011_map_locations.sql` | map_locations 테이블 생성 (RLS 포함) |
 | `013_org_business_location.sql` | organizations 테이블에 biz_x, biz_y, biz_label 컬럼 추가 |
 | `014_member_sort_order.sql` | organization_members 테이블에 sort_order 컬럼 추가 |
+| `015_event_sort_orders.sql` | event_participants 테이블에 sort_order 컬럼 추가 |
 
 ---
 
@@ -247,7 +257,7 @@ src/
 - [x] `/organizations/[id]` — 상세 (멤버, 운영 사업체, 관련 사건, 인라인 미니맵)
 - [x] `/map` — GTA V 거점 지도 (조직 드롭핀·사업체 다이아몬드·주요 장소 원형 마커, Atlas/위성 전환, 그룹 필터 UI)
 - [x] `/events` — 목록 + 타입 필터
-- [x] `/events/[id]` — 상세 (참여자, 클립)
+- [x] `/events/[id]` — 상세 (참여자 sort_order 정렬, 클립 인라인 임베드 플레이어)
 - [x] `/events/timeline` — 연대표 (가로/세로, 캐릭터/조직/전체 필터)
 - [x] `/search` — 통합 검색 (캐릭터/스트리머/사건/조직, 조직·사건 확장 카드)
 - [x] `/schedule`, `/guide`, `/report` — 일정, 가이드, 제보 폼 (지도 핀 위치 첨부 기능 포함)
@@ -262,6 +272,7 @@ src/
 - [x] IP 차단 관리 — 차단 목록 확인, 차단 해제
 - [x] 조직 멤버 일괄 편집 (`/admin/organizations/[id]`) — 멤버 다중 추가(검색→대기열→일괄 추가), 역할·주소속 인라인 편집, 체크박스 일괄 퇴장, 이전 멤버 복귀, 드래그 앤 드롭 순서 조정
 - [x] Vercel Analytics + Speed Insights 연동 (`@vercel/analytics/next`, `@vercel/speed-insights/next`)
+- [x] 사건 편집 — 참여 캐릭터·클립 드래그 앤 드롭 순서 조정 + 순서 저장
 
 ---
 
@@ -297,6 +308,7 @@ src/
 
 | 커밋 | 작업 내용 |
 |---|---|
+| `aa35cf6` | feat/clip-embed 머지: 클립 임베드 플레이어 + 사건 편집 순서 조정 |
 | `1ae7bd4` | OG 이미지 제거 (next/og 500 오류 미해결 — 환경 호환성 문제) |
 | `ec4eefa` | 조직 멤버 순서 직접 설정 (sort_order 컬럼, 어드민 드래그 앤 드롭 UI) |
 | `0221fd9` | Vercel Analytics + Speed Insights 연동 |
