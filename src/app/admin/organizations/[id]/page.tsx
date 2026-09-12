@@ -21,13 +21,12 @@ async function getData(id: string) {
     supabase
       .from('organization_members')
       .select(`
-        character_id, role, is_primary, joined_at, left_at,
+        character_id, role, is_primary, joined_at, left_at, sort_order,
         characters ( id, name, status, streamers ( display_name ) )
       `)
       .eq('organization_id', id)
-      // 현재 멤버 먼저, 그 안에서 주소속 먼저
       .order('left_at', { ascending: true, nullsFirst: true })
-      .order('is_primary', { ascending: false }),
+      .order('sort_order', { ascending: true }),
 
     supabase
       .from('characters')
@@ -43,6 +42,7 @@ async function getData(id: string) {
     is_primary: boolean
     joined_at: string | null
     left_at: string | null
+    sort_order: number
     characters: {
       id: string
       name: string
@@ -67,6 +67,7 @@ async function getData(id: string) {
     is_primary: m.is_primary,
     joined_at: m.joined_at,
     left_at: m.left_at,
+    sort_order: m.sort_order,
   }))
 
   const memberCharIds = new Set(memberRows.map((m) => m.character_id))

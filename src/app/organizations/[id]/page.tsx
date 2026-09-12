@@ -20,6 +20,7 @@ type OrgDetail = Organization & {
     role: string | null
     is_primary: boolean
     joined_at: string | null
+    sort_order: number
     characters: {
       id: string
       name: string
@@ -90,7 +91,7 @@ async function getOrganization(id: string) {
     .select(`
       *, gang_id, is_disbanded,
       organization_members (
-        role, is_primary, joined_at,
+        role, is_primary, joined_at, sort_order,
         characters (
           id, name, alias, job, status,
           streamers ( id, display_name )
@@ -188,8 +189,12 @@ export default async function OrganizationDetailPage({ params }: Props) {
 
   const { org, businesses } = result
   const orgName = org.name_confirmed ? org.name : (typeLabel[org.type ?? ''] ?? '미정')
-  const activeMembers = org.organization_members.filter((m) => m.characters?.status === 'active')
-  const inactiveMembers = org.organization_members.filter((m) => m.characters && m.characters.status !== 'active')
+  const activeMembers = org.organization_members
+    .filter((m) => m.characters?.status === 'active')
+    .sort((a, b) => a.sort_order - b.sort_order)
+  const inactiveMembers = org.organization_members
+    .filter((m) => m.characters && m.characters.status !== 'active')
+    .sort((a, b) => a.sort_order - b.sort_order)
 
   const activeBiz = businesses.filter((b) => !b.is_disbanded)
   const disbandedBiz = businesses.filter((b) => b.is_disbanded)

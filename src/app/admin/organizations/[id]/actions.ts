@@ -73,3 +73,24 @@ export async function restoreMember(orgId: string, characterId: string) {
   paths(orgId)
   return { success: true }
 }
+
+export async function reorderMembers(
+  orgId: string,
+  orders: { characterId: string; sortOrder: number }[]
+) {
+  const supabase = await requireAdmin()
+  const results = await Promise.all(
+    orders.map(({ characterId, sortOrder }) =>
+      supabase
+        .from('organization_members')
+        .update({ sort_order: sortOrder })
+        .eq('organization_id', orgId)
+        .eq('character_id', characterId)
+        .is('left_at', null)
+    )
+  )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) return { error: failed.error.message }
+  paths(orgId)
+  return { success: true }
+}

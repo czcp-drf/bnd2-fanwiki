@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, X, UserMinus, UserPlus, ChevronDown, ChevronUp, Pencil, RotateCcw } from 'lucide-react'
-import { addOrgMembers, updateOrgMember, setMembersLeft, restoreMember } from './actions'
+import { Check, X, UserMinus, UserPlus, ChevronDown, ChevronUp, Pencil, RotateCcw, ArrowUp, ArrowDown, Save } from 'lucide-react'
+import { addOrgMembers, updateOrgMember, setMembersLeft, restoreMember, reorderMembers } from './actions'
 
 export type MemberRow = {
   character_id: string
@@ -14,6 +14,7 @@ export type MemberRow = {
   is_primary: boolean
   joined_at: string | null
   left_at: string | null
+  sort_order: number
 }
 
 export type CharOption = {
@@ -42,8 +43,15 @@ export default function MemberManageClient({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const activeMembers = members.filter((m) => !m.left_at)
+  const initialActive = members.filter((m) => !m.left_at)
   const pastMembers = members.filter((m) => m.left_at)
+
+  // Reorder state
+  const [orderedMembers, setOrderedMembers] = useState<MemberRow[]>(initialActive)
+  const [orderDirty, setOrderDirty] = useState(false)
+  const [orderMsg, setOrderMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+
+  const activeMembers = orderedMembers
 
   // Bulk selection for departure
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -64,6 +72,40 @@ export default function MemberManageClient({
 
   // Past members toggle
   const [showPast, setShowPast] = useState(false)
+
+  // --- Reorder ---
+  function moveUp(index: number) {
+    if (index === 0) return
+    const next = [...orderedMembers]
+    ;[next[index - 1], next[index]] = [next[index], next[index - 1]]
+    setOrderedMembers(next)
+    setOrderDirty(true)
+    setOrderMsg(null)
+  }
+
+  function moveDown(index: number) {
+    if (index === orderedMembers.length - 1) return
+    const next = [...orderedMembers]
+    ;[next[index], next[index + 1]] = [next[index + 1], next[index]]
+    setOrderedMembers(next)
+    setOrderDirty(true)
+    setOrderMsg(null)
+  }
+
+  function saveOrder() {
+    setOrderMsg(null)
+    startTransition(async () => {
+      const orders = orderedMembers.map((m, i) => ({
+        characterId: m.character_id,
+        sortOrder: i,
+      }))
+      const res = await reorderMembers(orgId, orders)
+      if (res.error) { setOrderMsg({ type: 'err', text: res.error }); return }
+      setOrderDirty(false)
+      setOrderMsg({ type: 'ok', text: '순서 저장 완료' })
+      router.refresh()
+    })
+  }
 
   // --- Inline edit ---
   function startEdit(m: MemberRow) {
@@ -193,18 +235,35 @@ export default function MemberManageClient({
             현재 멤버{' '}
             <span className="font-normal text-zinc-500">({activeMembers.length}명)</span>
           </h2>
-          {selected.size > 0 && (
-            <button
-              onClick={handleBulkLeave}
-              disabled={isPending}
-              className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
-            >
-              <UserMinus size={12} />
-              선택 {selected.size}명 퇴장 처리
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {orderDirty && (
+              <button
+                onClick={saveOrder}
+                disabled={isPending}
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-400/20 disabled:opacity-50"
+              >
+                <Save size={12} />
+                순서 저장
+              </button>
+            )}
+            {selected.size > 0 && (
+              <button
+                onClick={handleBulkLeave}
+                disabled={isPending}
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+              >
+                <UserMinus size={12} />
+                선택 {selected.size}명 퇴장 처리
+              </button>
+            )}
+          </div>
         </div>
 
+        {orderMsg && (
+          <p className={`text-xs ${orderMsg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
+            {orderMsg.text}
+          </p>
+        )}
         {leaveMsg && (
           <p className={`text-xs ${leaveMsg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
             {leaveMsg.text}
@@ -227,18 +286,19 @@ export default function MemberManageClient({
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">스트리머</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">역할</th>
                 <th className="w-16 px-4 py-3 text-left text-xs font-medium text-zinc-500">주소속</th>
-                <th className="w-20 px-4 py-3" />
+                <th className="w-20 px-4 py-3 text-left text-xs font-medium text-zinc-500">순서</th>
+                <th className="w-16 px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {activeMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-xs text-zinc-600">
+                  <td colSpan={7} className="px-4 py-10 text-center text-xs text-zinc-600">
                     등록된 멤버가 없습니다.
                   </td>
                 </tr>
               ) : (
-                activeMembers.map((m) => {
+                activeMembers.map((m, index) => {
                   const isEditing = editing === m.character_id
                   return (
                     <tr
@@ -288,7 +348,7 @@ export default function MemberManageClient({
                               <p className="mt-1 text-xs text-red-400">{editError}</p>
                             )}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2" colSpan={2}>
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => saveEdit(m.character_id)}
@@ -318,6 +378,24 @@ export default function MemberManageClient({
                             ) : (
                               <span className="text-zinc-700">—</span>
                             )}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                onClick={() => moveUp(index)}
+                                disabled={index === 0 || isPending}
+                                className="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-20 disabled:cursor-default"
+                              >
+                                <ArrowUp size={12} />
+                              </button>
+                              <button
+                                onClick={() => moveDown(index)}
+                                disabled={index === activeMembers.length - 1 || isPending}
+                                className="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-20 disabled:cursor-default"
+                              >
+                                <ArrowDown size={12} />
+                              </button>
+                            </div>
                           </td>
                           <td className="px-4 py-2.5">
                             <button
