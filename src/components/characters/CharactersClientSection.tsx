@@ -193,7 +193,7 @@ export default function CharactersClientSection({
             return (
               <div
                 key={c.id}
-                className="group relative flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition-colors hover:border-amber-400/40 hover:bg-zinc-800/50"
+                className={`group relative flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition-colors hover:border-amber-400/40 hover:bg-zinc-800/50${c.streamers ? ' min-h-[7rem]' : ''}`}
               >
                 {/* 카드 전체 링크 (캐릭터 상세) */}
                 <Link href={`/characters/${c.id}`} className="absolute inset-0 rounded-xl" aria-label={c.name} />
