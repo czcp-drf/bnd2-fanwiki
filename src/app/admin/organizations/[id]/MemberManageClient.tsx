@@ -219,7 +219,7 @@ export default function MemberManageClient({
       const res = await setMembersLeft(orgId, ids)
       if (res.error) { setLeaveMsg({ type: 'err', text: res.error }); return }
       setSelected(new Set())
-      setLeaveMsg({ type: 'ok', text: `${ids.length}명 퇴장 처리 완료` })
+      setLeaveMsg({ type: 'ok', text: `${ids.length}명 탈퇴 처리 완료` })
       router.refresh()
     })
   }
@@ -318,7 +318,7 @@ export default function MemberManageClient({
                 className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
               >
                 <UserMinus size={12} />
-                선택 {selected.size}명 퇴장 처리
+                선택 {selected.size}명 탈퇴 처리
               </button>
             )}
           </div>
@@ -593,7 +593,7 @@ export default function MemberManageClient({
                         onClick={() => toggleSort(pastSort, setPastSort, col)}
                         className={`px-4 py-3 text-left text-xs font-medium cursor-pointer select-none transition-colors hover:text-zinc-300 ${pastSort?.key === col ? 'text-amber-400' : 'text-zinc-500'}`}
                       >
-                        {{ name: '캐릭터', role: '역할', left_at: '퇴장일' }[col]}
+                        {{ name: '캐릭터', role: '역할', left_at: '탈퇴일' }[col]}
                         <SortIcon col={col} sort={pastSort} />
                       </th>
                     ))}

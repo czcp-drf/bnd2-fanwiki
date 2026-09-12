@@ -65,7 +65,7 @@ src/
 │       │   ├── actions.ts      # createOrganization, updateOrganization, deleteOrganization
 │       │   └── [id]/           # 조직별 멤버 관리 페이지
 │       │       ├── page.tsx        # 서버 컴포넌트 (org + members + 가용 캐릭터 fetch)
-│       │       ├── MemberManageClient.tsx  # 멤버 추가·편집·퇴장·복귀 클라이언트 UI
+│       │       ├── MemberManageClient.tsx  # 멤버 추가·편집·탈퇴·복귀 클라이언트 UI
 │       │       └── actions.ts      # addOrgMembers, updateOrgMember, setMembersLeft, restoreMember
 │       ├── events/             # 사건 CRUD + 참여자/클립 편집
 │       ├── relationships/      # 캐릭터 관계 CRUD
@@ -273,7 +273,7 @@ src/
 - [x] 거점 지도 관리 — 조직 거점/사업체 모드 탭, 클릭 배치, 주요 장소 추가/수정/이동/삭제
 - [x] 제보 관리 — 상태·유형 필터(동시 적용 가능), 상태 변경, IP 차단 버튼, 좌표 제보 시 주요 장소 직접 추가
 - [x] IP 차단 관리 — 차단 목록 확인, 차단 해제
-- [x] 조직 멤버 일괄 편집 (`/admin/organizations/[id]`) — 멤버 다중 추가(검색→대기열→일괄 추가), 역할·주소속 인라인 편집, 체크박스 일괄 퇴장, 이전 멤버 복귀, 드래그 앤 드롭 순서 조정, 칼럼 헤더 정렬(정렬 상태에서 드래그 가능)
+- [x] 조직 멤버 일괄 편집 (`/admin/organizations/[id]`) — 멤버 다중 추가(검색→대기열→일괄 추가), 역할·주소속 인라인 편집, 체크박스 일괄 탈퇴, 이전 멤버 복귀, 드래그 앤 드롭 순서 조정, 칼럼 헤더 정렬(정렬 상태에서 드래그 가능)
 - [x] Vercel Analytics + Speed Insights 연동 (`@vercel/analytics/next`, `@vercel/speed-insights/next`)
 - [x] 사건 편집 — 참여 캐릭터·클립 드래그 앤 드롭 순서 조정 + 순서 저장
 - [x] 캐릭터 추가 — 어드민 캐릭터 관리 페이지에서 스트리머 연결 없이 직접 추가 가능
@@ -318,6 +318,17 @@ src/
 
 ## 최근 작업 기록
 
+### 커밋·브랜치 규칙
+
+- 커밋 제목은 `type: 변경 내용` 형식을 사용합니다. 타입은 `feat`, `fix`, `style`, `refactor`, `docs`, `test`, `chore` 중 작업 성격에 맞게 선택합니다.
+- 점검 수정은 `fix/project-audit`에서 단계별로 커밋하고, 관련 검사 결과와 작업 내용을 문서에 기록합니다.
+- 커밋·푸시와 `main` 병합은 사용자 요청에 따라 진행합니다. 병합 전 원격 변경을 확인하고 강제 푸시는 사용하지 않습니다.
+- 1차 멤버 분리 기능은 사용자 동작 확인을 완료했으며, 공개·관리자 화면의 용어를 ‘탈퇴’로 통일했습니다.
+
+- 전체 점검 후 1차 수정: 조직 상세는 `left_at` 기준으로 현재/이전 멤버를 구분합니다. 현재 소속 중 활동·비활동 멤버를 합산하고, 이전 멤버는 별도 섹션과 탈퇴 배지를 표시합니다. 분류 함수: `src/lib/data/organization-members.ts`. 회귀 테스트: `node --experimental-strip-types --test tests/organization-members.test.mjs` (2개 통과), 변경 파일 린트·빌드 통과. `fix/project-audit` 브랜치의 1차 수정입니다.
+
+- 2026-09-12 전체 점검: [PROJECT_AUDIT.md](./PROJECT_AUDIT.md). 빌드 성공, 린트 오류 6개·경고 8개, 기존 테스트 8/10 성공. 발견한 기능 문제·검증 한계·수정 우선순위는 점검 문서 참조. 이번 점검에서는 애플리케이션 코드나 DB를 수정하지 않았습니다.
+
 모든 커밋은 `deploy/main`에 푸시 완료. 배포 완료 여부는 Vercel에서 별도 확인.
 
 | 커밋 | 작업 내용 |
@@ -339,6 +350,6 @@ src/
 | `ec4eefa` | 조직 멤버 순서 직접 설정 (sort_order 컬럼, 어드민 드래그 앤 드롭 UI) |
 | `0221fd9` | Vercel Analytics + Speed Insights 연동 |
 | `afdec1b` | 캐릭터 상세 페이지: 소속 조직 거점 미니맵 추가 |
-| `1ac8b6b` | 어드민 조직 멤버 일괄 편집 — 다중 추가·인라인 편집·일괄 퇴장·복귀 |
+| `1ac8b6b` | 어드민 조직 멤버 일괄 편집 — 다중 추가·인라인 편집·일괄 탈퇴·복귀 |
 | `3f4ec2d` | 지도: gang_id 연결된 불법 사업체 org 좌표를 갱단 biz 마커로 자동 표시 |
 | `5172f30` | 조직 불법 사업체 위치 기능 추가 (biz_x/biz_y/biz_label 컬럼, 어드민 편집) |
