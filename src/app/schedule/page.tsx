@@ -22,7 +22,7 @@ const preEvents = [
     date: '2026-09-12',
     label: '9월 12일',
     title: '공무직 우선 접속',
-    desc: '공무직 스트리머 사전 입장 — 교통 정리',
+    desc: '공무직 스트리머 사전 입장 — 교통 정리 / 사전 오픈 20:00',
     phase: 'pre',
   },
   {
@@ -73,7 +73,7 @@ function getServerStatus(now: Date): {
       label: '공무직 우선 접속',
       color: 'text-amber-400',
       dot: 'bg-amber-400',
-      detail: '오늘은 공무직 스트리머 우선 접속일입니다.',
+      detail: '오늘은 공무직 스트리머 우선 접속일입니다. 사전 오픈 20:00',
     }
   }
   if (todayStr === '2026-09-13') {
