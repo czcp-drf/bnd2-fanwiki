@@ -103,7 +103,7 @@ export default async function OrgMembersPage({ params }: Props) {
         <div>
           <h1 className="text-xl font-black text-white">{orgName} — 멤버 관리</h1>
           <p className="mt-0.5 text-xs text-zinc-500">
-            현재 멤버 {activeCount}명 · 멤버 추가·역할 편집·퇴장 처리
+            현재 멤버 {activeCount}명 · 멤버 추가·역할 편집·탈퇴 처리
           </p>
         </div>
       </div>
