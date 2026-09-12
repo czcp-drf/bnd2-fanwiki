@@ -44,9 +44,9 @@ export default function ClipPlayer({
   const activeCharName = active.streamers?.id ? streamerToChar[active.streamers.id] : null
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+    <div className="flex flex-col gap-4">
       {/* 플레이어 */}
-      <div className="flex-1 min-w-0 space-y-0 rounded-xl border border-zinc-800 overflow-hidden">
+      <div className="w-full space-y-0 rounded-xl border border-zinc-800 overflow-hidden">
         {/* 영상 영역 */}
         {embedUrl ? (
           <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
@@ -102,7 +102,7 @@ export default function ClipPlayer({
 
       {/* 플레이리스트 (2개 이상일 때만) */}
       {clips.length > 1 && (
-        <div className="flex flex-row gap-2 overflow-x-auto pb-1 lg:flex-col lg:w-64 lg:overflow-x-visible lg:pb-0 shrink-0">
+        <div className="flex flex-row gap-2 overflow-x-auto pb-1">
           {clips.map((clip, i) => {
             const isActive = clip.id === activeId
             const charName = clip.streamers?.id ? streamerToChar[clip.streamers.id] : null
@@ -110,7 +110,7 @@ export default function ClipPlayer({
               <button
                 key={clip.id}
                 onClick={() => setActiveId(clip.id)}
-                className={`flex shrink-0 items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer lg:w-full ${
+                className={`flex shrink-0 items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer w-52 ${
                   isActive
                     ? 'border-amber-400/40 bg-amber-400/5'
                     : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800/50'
