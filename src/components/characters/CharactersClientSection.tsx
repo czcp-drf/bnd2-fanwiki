@@ -3,17 +3,16 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Search, X } from 'lucide-react'
+import { Search, X, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Select, { type SelectOption } from '@/components/ui/Select'
-import { StreamerReveal } from '@/components/ui/StreamerMask'
 import AppImage from '@/components/ui/AppImage'
 import { useRedPill } from '@/lib/context/RedPillContext'
 import type { Character, Streamer, Organization } from '@/types/database'
 import type { OrganizationFilterOption } from '@/lib/data/organizations'
 
 type CharacterWithRelations = Character & {
-  streamers: Pick<Streamer, 'id' | 'display_name' | 'chzzk_channel_id'> | null
+  streamers: Pick<Streamer, 'id' | 'display_name' | 'chzzk_channel_id' | 'profile_image_url'> | null
   organization_members: Array<{
     is_primary: boolean
     role: string | null
@@ -192,14 +191,48 @@ export default function CharactersClientSection({
             const allOrgs = c.organization_members.map((m) => m.organizations).filter(Boolean)
 
             return (
-              <Link
+              <div
                 key={c.id}
-                href={`/characters/${c.id}`}
-                className="group flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition-colors hover:border-amber-400/40 hover:bg-zinc-800/50"
+                className={`group relative flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition-colors hover:border-amber-400/40 hover:bg-zinc-800/50${c.streamers ? ' min-h-[7rem]' : ''}`}
               >
-                {/* 이름 */}
-                <div className="min-w-0 space-y-0.5">
-                  <div className="flex flex-wrap items-center gap-1.5">
+                {/* 카드 전체 링크 (캐릭터 상세) */}
+                <Link href={`/characters/${c.id}`} className="absolute inset-0 rounded-xl" aria-label={c.name} />
+
+                {/* 스트리머 — 우측 상단 절대 위치 (레이아웃 흐름 비영향) */}
+                {c.streamers && (
+                  <div className={`absolute top-5 right-5 flex flex-col items-end gap-1.5 ${isRedPill ? '' : 'invisible'}`}>
+                    <Link
+                      href={`/streamers/${c.streamers.id}`}
+                      className="relative z-10 flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-300 hover:border-zinc-600 hover:text-white transition-colors"
+                    >
+                      {c.streamers.profile_image_url ? (
+                        <AppImage
+                          src={c.streamers.profile_image_url}
+                          alt={c.streamers.display_name}
+                          className="h-5 w-5 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-600 text-[10px] font-bold">
+                          {c.streamers.display_name.charAt(0)}
+                        </div>
+                      )}
+                      {c.streamers.display_name}
+                    </Link>
+                    <a
+                      href={`https://chzzk.naver.com/${c.streamers.chzzk_channel_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative z-10 flex items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400 hover:border-amber-400/40 hover:text-amber-400 transition-colors"
+                    >
+                      <ExternalLink size={11} />
+                      치지직
+                    </a>
+                  </div>
+                )}
+
+                {/* 이름 — 스트리머 있으면 우측 여백 확보 */}
+                <div className={`min-w-0 space-y-0.5 ${c.streamers ? 'pr-28' : ''}`}>
+                  <div className="flex items-center gap-1.5">
                     {c.avatar_url ? (
                       <AppImage
                         src={c.avatar_url}
@@ -250,17 +283,7 @@ export default function CharactersClientSection({
                     )}
                   </div>
                 )}
-
-                {/* 스트리머 */}
-                {c.streamers && (
-                  <StreamerReveal>
-                    <div className="mt-auto flex items-center gap-1.5 border-t border-zinc-800 pt-3">
-                      <Users size={11} className="text-zinc-600" />
-                      <span className="text-xs text-zinc-500">{c.streamers.display_name}</span>
-                    </div>
-                  </StreamerReveal>
-                )}
-              </Link>
+              </div>
             )
           })}
         </div>
