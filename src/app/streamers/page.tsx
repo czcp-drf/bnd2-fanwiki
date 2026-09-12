@@ -7,12 +7,15 @@ import type { Streamer } from '@/types/database'
 import StreamerFilters from '@/components/streamers/StreamerFilters'
 import StreamerListWithLive, { type StreamerItem } from '@/components/streamers/StreamerListWithLive'
 
+type OrgInfo = { id: string; name: string; color: string | null }
+
 type StreamerWithCharacters = Streamer & {
   characters: Array<{
     id: string
     name: string
     job: string | null
     status: string
+    organizations: OrgInfo[]
   }>
 }
 
@@ -25,21 +28,41 @@ async function getStreamers(sort: string): Promise<StreamerWithCharacters[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('streamers')
-    .select(`
-      *,
-      characters (
-        id,
-        name,
-        job,
-        status
-      )
-    `)
+    .select('*, characters ( id, name, job, status )')
     .order(
       sort === 'latest' || sort === 'oldest' ? 'created_at' : 'display_name',
       { ascending: sort === 'name' || sort === 'oldest' }
     )
 
-  return (data ?? []) as unknown as StreamerWithCharacters[]
+  const streamers = (data ?? []) as unknown as (Streamer & { characters: Array<{ id: string; name: string; job: string | null; status: string }> })[]
+
+  const charIds = streamers.flatMap((s) => s.characters.map((c) => c.id))
+
+  const { data: memberships } = charIds.length
+    ? await supabase
+        .from('organization_members')
+        .select('character_id, is_primary, organizations ( id, name, color )')
+        .in('character_id', charIds)
+        .is('left_at', null)
+    : { data: [] }
+
+  type MemberRow = { character_id: string; is_primary: boolean; organizations: OrgInfo | null }
+  const orgsByCharId = new Map<string, OrgInfo[]>()
+  for (const m of (memberships ?? []) as unknown as MemberRow[]) {
+    if (!m.organizations) continue
+    const list = orgsByCharId.get(m.character_id) ?? []
+    if (m.is_primary) list.unshift(m.organizations)
+    else list.push(m.organizations)
+    orgsByCharId.set(m.character_id, list)
+  }
+
+  return streamers.map((s) => ({
+    ...s,
+    characters: s.characters.map((c) => ({
+      ...c,
+      organizations: orgsByCharId.get(c.id) ?? [],
+    })),
+  }))
 }
 
 type Props = { searchParams: Promise<{ sort?: string }> }
