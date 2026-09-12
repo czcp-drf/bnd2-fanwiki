@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { ExternalLink, Play } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { ExternalLink, Play, ChevronLeft, ChevronRight } from 'lucide-react'
 import ClipLabel from './ClipLabel'
 
 type Clip = {
@@ -36,6 +36,24 @@ export default function ClipPlayer({
   streamerNameToChar: Record<string, string>
 }) {
   const [activeId, setActiveId] = useState<string>(clips[0]?.id ?? '')
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [canLeft, setCanLeft] = useState(false)
+  const [canRight, setCanRight] = useState(false)
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    setCanLeft(el.scrollLeft > 0)
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+  }, [])
+
+  useEffect(() => {
+    updateScrollState()
+  }, [updateScrollState])
+
+  const scroll = (dir: 'left' | 'right') => {
+    scrollRef.current?.scrollBy({ left: dir === 'left' ? -216 : 216, behavior: 'smooth' })
+  }
 
   if (!clips.length) return null
 
@@ -102,7 +120,25 @@ export default function ClipPlayer({
 
       {/* 플레이리스트 (2개 이상일 때만) */}
       {clips.length > 1 && (
-        <div className="flex flex-row gap-2 overflow-x-auto pb-1">
+        <div className="relative">
+          <button
+            onClick={() => scroll('left')}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all shadow-lg ${canLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            onClick={() => scroll('right')}
+            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all shadow-lg ${canRight ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          >
+            <ChevronRight size={16} />
+          </button>
+          <div
+            ref={scrollRef}
+            onScroll={updateScrollState}
+            className="flex gap-2 overflow-x-scroll px-10"
+            style={{ scrollbarWidth: 'none' }}
+          >
           {clips.map((clip, i) => {
             const isActive = clip.id === activeId
             const charName = clip.streamers?.id ? streamerToChar[clip.streamers.id] : null
@@ -147,6 +183,7 @@ export default function ClipPlayer({
               </button>
             )
           })}
+          </div>
         </div>
       )}
     </div>
