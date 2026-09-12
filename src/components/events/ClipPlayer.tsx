@@ -39,6 +39,8 @@ export default function ClipPlayer({
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canLeft, setCanLeft] = useState(false)
   const [canRight, setCanRight] = useState(false)
+  const [tooltip, setTooltip] = useState<{ label: string; streamerLine: string | null } | null>(null)
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
 
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current
@@ -146,64 +148,65 @@ export default function ClipPlayer({
             className="flex gap-2 overflow-x-scroll"
             style={{ scrollbarWidth: 'none' }}
           >
-          {clips.map((clip, i) => {
-            const isActive = clip.id === activeId
-            const charName = clip.streamers?.id ? streamerToChar[clip.streamers.id] : null
-            return (
-              <button
-                key={clip.id}
-                onClick={() => setActiveId(clip.id)}
-                className={`group/item relative flex shrink-0 items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer w-52 ${
-                  isActive
-                    ? 'border-amber-400/40 bg-amber-400/5'
-                    : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800/50'
-                }`}
-              >
-                {/* 커스텀 툴팁 */}
-                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 hidden group-hover/item:block">
-                  <div className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 shadow-xl w-max max-w-60">
-                    <p className="text-xs font-medium text-zinc-200">
+            {clips.map((clip, i) => {
+              const isActive = clip.id === activeId
+              const charName = clip.streamers?.id ? streamerToChar[clip.streamers.id] : null
+              const streamerLine = clip.streamers
+                ? (charName ? `${charName} 시점` : `${clip.streamers.display_name} 시점`)
+                : null
+              return (
+                <button
+                  key={clip.id}
+                  onClick={() => setActiveId(clip.id)}
+                  onMouseEnter={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top })
+                    setTooltip({ label: clip.label ?? `클립 ${i + 1}`, streamerLine })
+                  }}
+                  onMouseLeave={() => setTooltip(null)}
+                  className={`flex shrink-0 items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer w-52 ${
+                    isActive
+                      ? 'border-amber-400/40 bg-amber-400/5'
+                      : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <div
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                      isActive
+                        ? 'bg-amber-400 text-zinc-900'
+                        : 'bg-zinc-800 text-zinc-500'
+                    }`}
+                  >
+                    {isActive ? <Play size={11} fill="currentColor" /> : i + 1}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-xs font-medium truncate ${isActive ? 'text-amber-400' : 'text-zinc-300'}`}>
                       <ClipLabel label={clip.label ?? `클립 ${i + 1}`} streamerToChar={streamerNameToChar} />
                     </p>
                     {clip.streamers && (
-                      <p className="text-[11px] text-zinc-500 mt-0.5">
-                        {charName ? `${charName} 시점` : `${clip.streamers.display_name} 시점`}
-                      </p>
+                      <p className="text-[11px] text-zinc-500 truncate">{streamerLine}</p>
                     )}
                   </div>
-                </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
-                <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                    isActive
-                      ? 'bg-amber-400 text-zinc-900'
-                      : 'bg-zinc-800 text-zinc-500'
-                  }`}
-                >
-                  {isActive ? <Play size={11} fill="currentColor" /> : i + 1}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`text-xs font-medium truncate ${
-                      isActive ? 'text-amber-400' : 'text-zinc-300'
-                    }`}
-                  >
-                    <ClipLabel
-                      label={clip.label ?? `클립 ${i + 1}`}
-                      streamerToChar={streamerNameToChar}
-                    />
-                  </p>
-                  {clip.streamers && (
-                    <p className="text-[11px] text-zinc-500 truncate">
-                      {charName
-                        ? `${charName} 시점`
-                        : `${clip.streamers.display_name} 시점`}
-                    </p>
-                  )}
-                </div>
-              </button>
-            )
-          })}
+      {/* fixed 툴팁 — overflow 클리핑 우회 */}
+      {tooltip && (
+        <div
+          className="pointer-events-none fixed z-50"
+          style={{ left: tooltipPos.x, top: tooltipPos.y, transform: 'translate(-50%, calc(-100% - 10px))' }}
+        >
+          <div className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 shadow-xl w-max max-w-64 text-left">
+            <p className="text-xs font-medium text-zinc-200">
+              <ClipLabel label={tooltip.label} streamerToChar={streamerNameToChar} />
+            </p>
+            {tooltip.streamerLine && (
+              <p className="text-[11px] text-zinc-500 mt-0.5">{tooltip.streamerLine}</p>
+            )}
           </div>
         </div>
       )}
