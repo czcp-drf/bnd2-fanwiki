@@ -12,7 +12,7 @@ type Clip = {
   streamers: { id: string; display_name: string } | null
 }
 
-function parseClipUrl(url: string): string | null {
+function parseClipUrl(url: string, autoplay = false): string | null {
   // Chzzk: https://chzzk.naver.com/clips/5UJ2F0U94w
   const chzzkMatch = url.match(/chzzk\.naver\.com\/clips\/([a-zA-Z0-9_-]+)/)
   if (chzzkMatch) return `https://chzzk.naver.com/embed/clip/${chzzkMatch[1]}`
@@ -21,7 +21,7 @@ function parseClipUrl(url: string): string | null {
   const ytMatch = url.match(
     /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
   )
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}${autoplay ? '?autoplay=1' : ''}`
 
   return null
 }
@@ -58,36 +58,43 @@ export default function ClipPlayer({
   if (!clips.length) return null
 
   const active = clips.find((c) => c.id === activeId) ?? clips[0]
-  const embedUrl = parseClipUrl(active.clip_url)
   const activeCharName = active.streamers?.id ? streamerToChar[active.streamers.id] : null
 
   return (
     <div className="flex flex-col gap-4">
       {/* 플레이어 */}
       <div className="w-full space-y-0 rounded-xl border border-zinc-800 overflow-hidden">
-        {/* 영상 영역 */}
-        {embedUrl ? (
-          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-            <iframe
-              key={activeId}
-              src={embedUrl}
-              className="absolute inset-0 w-full h-full"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-              style={{ border: 'none' }}
-            />
-          </div>
-        ) : (
-          <a
-            href={active.clip_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center gap-3 bg-zinc-900 py-20 text-zinc-500 hover:text-amber-400 transition-colors"
-          >
-            <ExternalLink size={28} />
-            <span className="text-sm">외부 링크로 보기</span>
-          </a>
-        )}
+        {/* 영상 영역 — 모든 iframe 미리 렌더링, 활성 클립만 표시 */}
+        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+          {clips.map((clip) => {
+            const url = parseClipUrl(clip.clip_url)
+            const isActive = clip.id === activeId
+            if (!url) {
+              return isActive ? (
+                <a
+                  key={clip.id}
+                  href={clip.clip_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900 text-zinc-500 hover:text-amber-400 transition-colors"
+                >
+                  <ExternalLink size={28} />
+                  <span className="text-sm">외부 링크로 보기</span>
+                </a>
+              ) : null
+            }
+            return (
+              <iframe
+                key={clip.id}
+                src={url}
+                className="absolute inset-0 w-full h-full"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                style={{ border: 'none', visibility: isActive ? 'visible' : 'hidden' }}
+              />
+            )
+          })}
+        </div>
 
         {/* 클립 정보 바 */}
         <div className="flex items-center gap-3 bg-zinc-900 border-t border-zinc-800 px-4 py-3">
