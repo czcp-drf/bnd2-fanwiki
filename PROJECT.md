@@ -87,6 +87,7 @@ src/
 │   ├── ui/
 │   │   ├── StreamerMask.tsx    # StreamerReveal / StreamerBlur 컴포넌트
 │   │   ├── AppImage.tsx        # 이미지 컴포넌트 (unoptimized, 외부 URL 허용)
+│   │   ├── BackButton.tsx      # 이전 페이지로 돌아가기 (router.back(), iconOnly prop 지원)
 │   │   ├── Select.tsx          # 커스텀 셀렉트
 │   │   ├── button.tsx          # shadcn 버튼
 │   │   ├── sheet.tsx           # shadcn Sheet (모바일 메뉴)
@@ -94,7 +95,8 @@ src/
 │   ├── streamers/
 │   │   └── StreamerListWithLive.tsx  # 온라인/오프라인/비활동 분류 카드 리스트
 │   ├── characters/
-│   │   └── CharacterFilters.tsx
+│   │   ├── CharacterFilters.tsx
+│   │   └── CharactersClientSection.tsx  # 캐릭터 카드 그리드 (필터·정렬·빨간약 스트리머 섹션)
 │   ├── events/
 │   │   ├── TimelineView.tsx    # 연대표 (가로/세로 모드)
 │   │   ├── TimelineFilters.tsx
@@ -228,7 +230,7 @@ src/
 | `events` | 사건 아카이브 (type, occurred_at, is_published) |
 | `event_participants` | 사건↔캐릭터 N:M (role, sort_order) |
 | `event_clips` | 사건 클립 (clip_url, label, streamer_id, sort_order) |
-| `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/neutral) |
+| `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/colleague/neutral) |
 | `reports` | 제보 (type, status: pending/reviewing/applied/rejected, ip) |
 | `blocked_ips` | 차단 IP 목록 (ip, reason) |
 
@@ -241,6 +243,7 @@ src/
 | `013_org_business_location.sql` | organizations 테이블에 biz_x, biz_y, biz_label 컬럼 추가 |
 | `014_member_sort_order.sql` | organization_members 테이블에 sort_order 컬럼 추가 |
 | `015_event_sort_orders.sql` | event_participants 테이블에 sort_order 컬럼 추가 |
+| `016_relationship_add_colleague.sql` | character_relationships CHECK 제약에 'colleague' 추가 |
 
 ---
 
@@ -251,7 +254,7 @@ src/
 - [x] `/live` — 온라인/오프라인 실시간 분류, 조직 필터 (현재 임시 중단 안내)
 - [x] `/streamers` — 목록 (라이브 확인 없이 디렉토리 형태)
 - [x] `/streamers/[id]` — 스트리머 상세
-- [x] `/characters` — 목록 + 필터
+- [x] `/characters` — 목록 + 필터 (빨간약 ON 시 카드 우상단에 스트리머 프로필·치지직 바로가기 표시)
 - [x] `/characters/[id]` — 상세 (소속 조직, 인물 관계, 참여 사건, 소속 조직 거점 인라인 미니맵)
 - [x] `/organizations` — 목록 (갱단/공무직/사업체 등, 갱단 카드에 연결된 불법 사업체 표시)
 - [x] `/organizations/[id]` — 상세 (멤버, 운영 사업체, 관련 사건, 인라인 미니맵)
@@ -264,7 +267,7 @@ src/
 
 ### 어드민 (`/admin/*`)
 - [x] 대시보드 — 통계, 미정 캐릭터·미처리 제보 바로가기
-- [x] 캐릭터/조직/사건/관계 CRUD
+- [x] 캐릭터/조직/사건/관계 CRUD (캐릭터 RP명 인라인 수정, 조직 불법 사업체 gang_id 연결)
 - [x] 사건 인라인 삭제 (2단계 확인)
 - [x] 스트리머 관리 — 추가/수정/삭제, 치지직 채널 ID·프로필 이미지 관리
 - [x] 거점 지도 관리 — 조직 거점/사업체 모드 탭, 클릭 배치, 주요 장소 추가/수정/이동/삭제
@@ -308,18 +311,18 @@ src/
 
 | 커밋 | 작업 내용 |
 |---|---|
+| `0f89db4` | 전체 상세 페이지 뒤로가기 버튼 → router.back() 통일 (BackButton 컴포넌트) |
+| `69fb30c` | 캐릭터 카드: 빨간약 ON 시 스트리머 프로필·치지직 바로가기 (우상단 absolute 배치) |
+| `a52cc3c` | 캐릭터·스트리머 상세 뒤로가기 → router.back() |
+| `dfee92a` | 인물 관계 타입 '동료(colleague)' 추가 + 마이그레이션 016 |
+| `8bcd5bb` | 어드민 스트리머 액션 버튼 잘림 수정 (colgroup inline style, w-12→11rem) |
 | `0a3e5dd` | 404 페이지: 경로별 컨텍스트 버튼 (characters/organizations/events 등) |
 | `aa35cf6` | feat/clip-embed 머지: 클립 임베드 플레이어 + 사건 편집 순서 조정 |
-| `1ae7bd4` | OG 이미지 제거 (next/og 500 오류 미해결 — 환경 호환성 문제) |
 | `ec4eefa` | 조직 멤버 순서 직접 설정 (sort_order 컬럼, 어드민 드래그 앤 드롭 UI) |
 | `0221fd9` | Vercel Analytics + Speed Insights 연동 |
-| `b778577` | 홈 바로가기: 입문 가이드 → 거점 지도로 변경 |
 | `afdec1b` | 캐릭터 상세 페이지: 소속 조직 거점 미니맵 추가 |
 | `38b29fb` | 어드민 제보 관리: 유형별 필터 추가 (상태·유형 동시 적용, 서버사이드 필터링) |
 | `1ac8b6b` | 어드민 조직 멤버 일괄 편집 — 다중 추가·인라인 편집·일괄 퇴장·복귀 |
 | `1e58b9f` | 조직 상세 페이지에 Leaflet 인라인 미니맵 추가 (거점·사업체 마커, 전체 지도 이동 버튼) |
-| `ab2b720` | 어드민 지도: 조직 삭제/수정 시 즉시 반영 (force-dynamic + revalidatePath) |
 | `3f4ec2d` | 지도: gang_id 연결된 불법 사업체 org 좌표를 갱단 biz 마커로 자동 표시 |
 | `5172f30` | 조직 불법 사업체 위치 기능 추가 (biz_x/biz_y/biz_label 컬럼, 어드민 편집) |
-| `74f970a` | 지도 마커 스타일: 조직 드롭핀 + 주요 장소 글로우·링 |
-| `f131609` | 제보 폼에 지도 핀 위치 첨부 기능 추가, 어드민 제보에서 좌표 → 주요 장소 직접 추가 |
