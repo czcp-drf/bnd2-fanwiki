@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useRedPill } from '@/lib/context/RedPillContext'
 import { LIVE_ENABLED } from '@/lib/live/config'
-import { BonstagramThemeToggle } from '@/components/bonstagram/BonstagramTheme'
+import { BongstagramThemeToggle } from '@/components/bongstagram/BongstagramTheme'
 
 const navItems = [
   { href: '/', label: '홈' },
@@ -80,7 +80,7 @@ function RedPillToggle({ compact = false }: { compact?: boolean }) {
 
 export default function Header() {
   const pathname = usePathname()
-  const isBonstagramRoute = pathname === '/bonstagram' || pathname.startsWith('/bonstagram/')
+  const isBongstagramRoute = pathname === '/bongstagram' || pathname.startsWith('/bongstagram/')
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -157,7 +157,7 @@ export default function Header() {
           )}
 
           <RedPillToggle />
-          <BonstagramThemeToggle disabled={!isBonstagramRoute} />
+          <BongstagramThemeToggle disabled={!isBongstagramRoute} />
 
           {/* 모바일 메뉴 */}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -178,7 +178,7 @@ export default function Header() {
                 </span>
                 <div className="flex items-center gap-3">
                   <RedPillToggle compact />
-                  <BonstagramThemeToggle disabled={!isBonstagramRoute} />
+                  <BongstagramThemeToggle disabled={!isBongstagramRoute} />
                 </div>
               </div>
               <nav className="flex flex-col gap-1 p-4">

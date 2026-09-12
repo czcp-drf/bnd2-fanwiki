@@ -165,7 +165,7 @@ export type Database = {
         Insert: Omit<Database['public']['Tables']['map_locations']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['map_locations']['Insert']>
       }
-      bonstagram_profiles: {
+      bongstagram_profiles: {
         Row: {
           character_id: string
           profile_name: string
@@ -174,8 +174,8 @@ export type Database = {
           created_at: string
           updated_at: string
         }
-        Insert: Omit<Database['public']['Tables']['bonstagram_profiles']['Row'], 'created_at' | 'updated_at'>
-        Update: Partial<Database['public']['Tables']['bonstagram_profiles']['Insert']>
+        Insert: Omit<Database['public']['Tables']['bongstagram_profiles']['Row'], 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['bongstagram_profiles']['Insert']>
       }
     }
   }
@@ -193,4 +193,4 @@ export type Event = Database['public']['Tables']['events']['Row']
 export type EventParticipant = Database['public']['Tables']['event_participants']['Row']
 export type EventClip = Database['public']['Tables']['event_clips']['Row']
 export type Report = Database['public']['Tables']['reports']['Row']
-export type BonstagramProfile = Database['public']['Tables']['bonstagram_profiles']['Row']
+export type BongstagramProfile = Database['public']['Tables']['bongstagram_profiles']['Row']

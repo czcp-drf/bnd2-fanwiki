@@ -52,7 +52,7 @@ src/
 │   │       ├── OrgMiniMap.tsx      # Leaflet 인라인 미니맵 (거점·사업체 마커, SSR 제외)
 │   │       └── OrgMiniMapWrapper.tsx  # Client Component 래퍼 (ssr:false dynamic import)
 │   ├── events/                 # 사건 목록 / 상세 / 연대표 [ISR 300s]
-│   ├── bonstagram/page.tsx     # Bongstagram 기본 피드 화면 (1단계)
+│   ├── bongstagram/page.tsx    # Bongstagram 기본 피드 화면 (1단계)
 │   ├── map/                    # 공개 거점 지도 [ISR 300s]
 │   │   ├── page.tsx            # 서버 컴포넌트 (orgs + locations 패치)
 │   │   ├── MapView.tsx         # 클라이언트 래퍼 (카테고리 필터, 위치 토글)
@@ -243,7 +243,7 @@ src/
 | `event_clips` | 사건 클립 (clip_url, label, streamer_id, sort_order) |
 | `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/colleague/neutral) |
 | `reports` | 제보 (type, status: pending/reviewing/applied/rejected, ip) |
-| `bonstagram_profiles` | 기존 `characters`와 1:1로 연결되는 Bongstagram 표시 닉네임 |
+| `bongstagram_profiles` | 기존 `characters`와 1:1로 연결되는 Bongstagram 표시 닉네임 |
 | `blocked_ips` | 차단 IP 목록 (ip, reason) |
 
 ### 마이그레이션 파일 (supabase/migrations/)
@@ -258,6 +258,7 @@ src/
 | `016_relationship_add_colleague.sql` | character_relationships CHECK 제약에 'colleague' 추가 |
 | `017_atomic_creation.sql` | 캐릭터·스트리머와 연결 데이터 원자적 생성 RPC 추가 |
 | `018_bonstagram_profiles.sql` | 기존 캐릭터와 1:1 연결되는 Bongstagram 프로필 테이블 생성 |
+| `019_rename_bongstagram.sql` | 적용된 018의 테이블·제약조건·트리거·RLS 정책명을 Bongstagram으로 변경 |
 
 ---
 
@@ -294,9 +295,9 @@ src/
 - [x] 스트리머 추가 시 '미정' 캐릭터 자동 생성·연결
 
 ### Bongstagram (임시 브랜치 작업 중)
-- [x] `/bonstagram` Instagram 스타일 모바일 피드 레이아웃과 Bongstagram 프로필 안내 UI
+- [x] `/bongstagram` Instagram 스타일 모바일 피드 레이아웃과 Bongstagram 프로필 안내 UI
 - [x] 글로벌 네비게이션의 Bongstagram 다크/라이트 테마 토글 (Bongstagram 외 페이지에서는 비활성화)과 브라우저 저장
-- [x] `bonstagram_profiles` 1:1 계정 테이블·프로필 이름 제약 마이그레이션 작성 (`018_bonstagram_profiles.sql`)
+- [x] `bongstagram_profiles` 1:1 계정 테이블·프로필 이름 제약 마이그레이션 작성 (`018_bonstagram_profiles.sql`, `019_rename_bongstagram.sql`)
 - [ ] 기존 캐릭터 선택 기반의 Bongstagram 프로필 등록/수정 화면
 - [ ] 게시물 피드·상세·댓글·좋아요 기능
 - [ ] 릴스 기능 — 범위에서 제외
@@ -345,6 +346,8 @@ src/
 - Bongstagram UI 보정 (`feat/bonstagram`): 참고 이미지에 맞춰 모바일 SNS 레이아웃의 로고 크기·가로 비율·고딕 폰트, 작성자 팔로우 버튼, 하단 홈·검색·만들기·프로필 네비게이션을 조정했습니다. 릴스·저장·더보기 버튼은 제외했으며, 홈은 출입구가 있는 채움형 아이콘, 만들기는 둥근 사각형 안의 `+` 아이콘으로 구성했습니다. 변경 파일 린트와 `git diff --check`를 통과했습니다. 이번 수정도 `deploy/feat/bonstagram`에 푸시합니다.
 
 - Bongstagram 테마·브랜드 보정 (`feat/bonstagram`): 테마 토글을 글로벌 네비게이션의 빨간약 토글 우측으로 이동하고 Bongstagram에서만 활성화했습니다. `Bongstagram` 표기와 로고 비율을 통일했으며, 라이트·다크 호버 색상, 스토리 `+` 배지, 스토리 내부 회색 그라데이션 원을 조정했습니다. 관련 파일 린트와 프로덕션 빌드를 통과했으며 `git diff --check`를 확인했습니다. 이번 수정도 `deploy/feat/bonstagram`에 푸시합니다.
+
+- Bongstagram 명칭 통일 (`feat/bonstagram`): 공개 라우트를 `/bongstagram`으로 변경하고 기존 `/bonstagram`은 호환 리다이렉트로 유지했습니다. 코드·타입·스키마 스냅샷·테마 식별자를 `bongstagram` 기준으로 정리했으며, 이미 적용된 018을 변경하지 않고 `019_rename_bongstagram.sql`에서 테이블·제약조건·트리거·RLS 정책을 rename하도록 작성했습니다. 019는 사용자가 운영 DB에 적용 완료했고, `bongstagram_profiles` 조회 성공 및 기존 테이블명 미노출을 확인했습니다.
 
 - 사용자 전달 사항 반영: 마이그레이션 017 적용 완료 및 운영진과 논의한 ‘봉누도 따라가기’ 개발 의향을 기록했습니다. 공식 위키 준비 소식은 사용자 전달 기준이며, 새 콘텐츠 기능은 아직 기획·구현 미확정입니다.
 

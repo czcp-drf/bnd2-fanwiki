@@ -153,81 +153,81 @@
   background: #fbbf24;
 }
 
-.bonstagram-font {
+.bongstagram-font {
   font-family: Arial, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
-.bonstagram-story-add {
+.bongstagram-story-add {
   border: 2px solid #09090b;
   background-color: #0ea5e9;
   color: #09090b;
 }
 
-.bonstagram-story-avatar {
+.bongstagram-story-avatar {
   background: linear-gradient(to bottom, #52525b, #27272a);
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .bg-zinc-950 {
+html[data-bongstagram-theme="light"] .bongstagram-theme .bg-zinc-950 {
   background-color: #ffffff;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .bg-zinc-900 {
+html[data-bongstagram-theme="light"] .bongstagram-theme .bg-zinc-900 {
   background-color: #fafafa;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .bg-zinc-800 {
+html[data-bongstagram-theme="light"] .bongstagram-theme .bg-zinc-800 {
   background-color: #e4e4e7;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme [class~="bg-zinc-950/95"] {
+html[data-bongstagram-theme="light"] .bongstagram-theme [class~="bg-zinc-950/95"] {
   background-color: rgb(255 255 255 / 0.95);
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme [class~="bg-zinc-950/60"] {
+html[data-bongstagram-theme="light"] .bongstagram-theme [class~="bg-zinc-950/60"] {
   background-color: rgb(244 244 245 / 0.8);
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .border-zinc-900,
-html[data-bonstagram-theme="light"] .bonstagram-theme .border-zinc-800 {
+html[data-bongstagram-theme="light"] .bongstagram-theme .border-zinc-900,
+html[data-bongstagram-theme="light"] .bongstagram-theme .border-zinc-800 {
   border-color: #e4e4e7;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .text-white {
+html[data-bongstagram-theme="light"] .bongstagram-theme .text-white {
   color: #18181b;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .text-zinc-200 {
+html[data-bongstagram-theme="light"] .bongstagram-theme .text-zinc-200 {
   color: #27272a;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .text-zinc-300 {
+html[data-bongstagram-theme="light"] .bongstagram-theme .text-zinc-300 {
   color: #3f3f46;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .text-zinc-400,
-html[data-bonstagram-theme="light"] .bonstagram-theme .text-zinc-500 {
+html[data-bongstagram-theme="light"] .bongstagram-theme .text-zinc-400,
+html[data-bongstagram-theme="light"] .bongstagram-theme .text-zinc-500 {
   color: #71717a;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .text-zinc-600 {
+html[data-bongstagram-theme="light"] .bongstagram-theme .text-zinc-600 {
   color: #a1a1aa;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .bonstagram-story-add {
+html[data-bongstagram-theme="light"] .bongstagram-theme .bongstagram-story-add {
   border-color: #ffffff;
   background-color: #0ea5e9;
   color: #ffffff;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .bonstagram-story-avatar {
+html[data-bongstagram-theme="light"] .bongstagram-theme .bongstagram-story-avatar {
   background: linear-gradient(to bottom, #f4f4f5, #d4d4d8);
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .border-zinc-950 {
+html[data-bongstagram-theme="light"] .bongstagram-theme .border-zinc-950 {
   border-color: #ffffff;
 }
 
-html[data-bonstagram-theme="light"] .bonstagram-theme .hover\:text-white:hover {
+html[data-bongstagram-theme="light"] .bongstagram-theme .hover\:text-white:hover {
   color: #18181b;
 }
 

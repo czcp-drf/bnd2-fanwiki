@@ -3,13 +3,13 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { Moon, Sun } from 'lucide-react'
 
-type BonstagramTheme = 'dark' | 'light'
+type BongstagramTheme = 'dark' | 'light'
 
 const THEME_STORAGE_KEY = 'bongstagram-theme'
 const LEGACY_THEME_STORAGE_KEY = 'bonstagram-theme'
 const THEME_CHANGE_EVENT = 'bongstagram-theme-change'
 
-function getStoredTheme(): BonstagramTheme {
+function getStoredTheme(): BongstagramTheme {
   if (typeof window === 'undefined') return 'dark'
   const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY)
   return savedTheme === 'light' ? 'light' : 'dark'
@@ -20,16 +20,16 @@ function subscribeToTheme(onChange: () => void) {
   return () => window.removeEventListener(THEME_CHANGE_EVENT, onChange)
 }
 
-function getServerTheme(): BonstagramTheme {
+function getServerTheme(): BongstagramTheme {
   return 'dark'
 }
 
-export function BonstagramThemeToggle({ disabled = false }: { disabled?: boolean }) {
+export function BongstagramThemeToggle({ disabled = false }: { disabled?: boolean }) {
   const theme = useSyncExternalStore(subscribeToTheme, getStoredTheme, getServerTheme)
   const isLight = theme === 'light'
 
   useEffect(() => {
-    document.documentElement.dataset.bonstagramTheme = theme
+    document.documentElement.dataset.bongstagramTheme = theme
   }, [theme])
 
   function toggleTheme() {
