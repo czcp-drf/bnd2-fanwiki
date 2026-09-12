@@ -139,10 +139,13 @@ export default function MemberManageClient({
       setDragOverIndex(null)
       return
     }
-    const next = [...orderedMembers]
+    // 정렬 상태라면 정렬된 순서 기준으로 재배치 후 정렬 해제
+    const base = sortMembers(orderedMembers, activeSort)
+    const next = [...base]
     const [moved] = next.splice(dragIndex, 1)
     next.splice(index, 0, moved)
     setOrderedMembers(next)
+    if (activeSort) setActiveSort(null)
     setOrderDirty(true)
     setOrderMsg(null)
     setDragIndex(null)
@@ -373,7 +376,7 @@ export default function MemberManageClient({
                   return (
                     <tr
                       key={m.character_id}
-                      draggable={!isEditing && !activeSort}
+                      draggable={!isEditing}
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDrop={() => handleDrop(index)}
@@ -457,11 +460,9 @@ export default function MemberManageClient({
                             )}
                           </td>
                           <td className="px-2 py-2.5">
-                            {!activeSort && (
-                              <span className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 flex items-center">
-                                <GripVertical size={14} />
-                              </span>
-                            )}
+                            <span className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 flex items-center">
+                              <GripVertical size={14} />
+                            </span>
                           </td>
                           <td className="px-4 py-2.5">
                             <button
