@@ -100,20 +100,18 @@ export default function ClipPlayer({
 
         {/* 클립 정보 바 */}
         <div className="flex items-center gap-3 bg-zinc-900 border-t border-zinc-800 px-4 py-3">
-          <div className="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
-            <p className="text-sm font-medium text-zinc-200 truncate shrink-0 max-w-[60%]">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-zinc-200 truncate">
               <ClipLabel
                 label={active.label ?? '클립'}
                 streamerToChar={streamerNameToChar}
               />
             </p>
-            {active.streamers && (
-              <p className="text-xs text-zinc-500 truncate shrink min-w-0">
-                {activeCharName
-                  ? `${activeCharName} 시점`
-                  : `${active.streamers.display_name} 시점`}
-              </p>
-            )}
+            <p className="text-xs text-zinc-500 mt-0.5 truncate">
+              {active.streamers
+                ? (activeCharName ? `${activeCharName} 시점` : `${active.streamers.display_name} 시점`)
+                : '\u00A0'}
+            </p>
           </div>
           <a
             href={active.clip_url}
@@ -155,12 +153,26 @@ export default function ClipPlayer({
               <button
                 key={clip.id}
                 onClick={() => setActiveId(clip.id)}
-                className={`flex shrink-0 items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer w-52 ${
+                className={`group/item relative flex shrink-0 items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer w-52 ${
                   isActive
                     ? 'border-amber-400/40 bg-amber-400/5'
                     : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700 hover:bg-zinc-800/50'
                 }`}
               >
+                {/* 커스텀 툴팁 */}
+                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20 hidden group-hover/item:block">
+                  <div className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 shadow-xl w-max max-w-60">
+                    <p className="text-xs font-medium text-zinc-200">
+                      <ClipLabel label={clip.label ?? `클립 ${i + 1}`} streamerToChar={streamerNameToChar} />
+                    </p>
+                    {clip.streamers && (
+                      <p className="text-[11px] text-zinc-500 mt-0.5">
+                        {charName ? `${charName} 시점` : `${clip.streamers.display_name} 시점`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 <div
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                     isActive

@@ -300,7 +300,7 @@ export default function ClipsEditor({
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="라벨 (선택)"
-          className="w-28 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+          className="w-44 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
         />
         <div ref={containerRef} className="relative w-48">
           {streamerId ? (
