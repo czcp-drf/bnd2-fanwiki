@@ -15,10 +15,11 @@ function normalizeIp(value: string): string | null {
     if (isIP(possibleIp) > 0) candidate = possibleIp
   }
 
-  if (isIP(candidate) === 4) return candidate
+  if (isIP(candidate) === 4) return candidate === '127.0.0.1' ? 'localhost' : candidate
   if (isIP(candidate) === 6) {
     const mappedIpv4 = candidate.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i)?.[1]
-    return mappedIpv4 && isIP(mappedIpv4) === 4 ? mappedIpv4 : candidate.toLowerCase()
+    if (mappedIpv4 && isIP(mappedIpv4) === 4) return mappedIpv4 === '127.0.0.1' ? 'localhost' : mappedIpv4
+    return candidate === '::1' ? 'localhost' : candidate.toLowerCase()
   }
   return null
 }
