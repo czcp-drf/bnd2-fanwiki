@@ -22,14 +22,14 @@ const preEvents = [
     date: '2026-09-12',
     label: '9월 12일',
     title: '공무직 우선 접속',
-    desc: '공무직 스트리머 먼저 입장 — 교통 정리·체계 세팅 목적',
+    desc: '공무직 스트리머 사전 입장 — 교통 정리',
     phase: 'pre',
   },
   {
     date: '2026-09-13',
     label: '9월 13일',
     title: '전체 유저 베타 접속',
-    desc: '전체 스트리머 입장 — 캐릭터 커스터마이징 목적',
+    desc: '전체 스트리머 사전 입장 — 캐릭터 커스터마이징 및 접속 문제 해결',
     phase: 'beta',
   },
   {
@@ -73,7 +73,7 @@ function getServerStatus(now: Date): {
       label: '공무직 우선 접속',
       color: 'text-amber-400',
       dot: 'bg-amber-400',
-      detail: '오늘 공무직 스트리머 우선 접속일입니다.',
+      detail: '오늘은 공무직 스트리머 우선 접속일입니다.',
     }
   }
   if (todayStr === '2026-09-13') {
@@ -81,7 +81,7 @@ function getServerStatus(now: Date): {
       label: '베타 접속',
       color: 'text-blue-400',
       dot: 'bg-blue-400',
-      detail: '오늘 전체 유저 베타 접속일입니다.',
+      detail: '오늘은 전체 유저 베타 접속일입니다.',
     }
   }
   if (todayStr > '2026-10-04') {
