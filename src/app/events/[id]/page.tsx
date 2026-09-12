@@ -3,12 +3,13 @@ export const revalidate = 300
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ChevronLeft, Calendar, Users, Play } from 'lucide-react'
+import { Calendar, Users, Play } from 'lucide-react'
 import type { Metadata } from 'next'
 import ReactMarkdown from 'react-markdown'
 import { typeLabel, typeColor } from '@/lib/events'
 import { StreamerBlur } from '@/components/ui/StreamerMask'
 import AppImage from '@/components/ui/AppImage'
+import BackButton from '@/components/ui/BackButton'
 import ClipPlayer from '@/components/events/ClipPlayer'
 
 type Props = { params: Promise<{ id: string }> }
@@ -110,13 +111,7 @@ export default async function EventDetailPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
       {/* 뒤로가기 */}
-      <Link
-        href="/events"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-      >
-        <ChevronLeft size={16} />
-        사건 아카이브
-      </Link>
+      <BackButton />
 
       {/* 헤더 */}
       <div className="space-y-4">

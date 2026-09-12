@@ -4,7 +4,8 @@ import EventForm from '../../EventForm'
 import ParticipantsEditor from '../ParticipantsEditor'
 import ClipsEditor from '../ClipsEditor'
 import Link from 'next/link'
-import { ChevronLeft, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
+import BackButton from '@/components/ui/BackButton'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -46,9 +47,7 @@ export default async function EditEventPage({ params }: Props) {
     <div className="p-8 space-y-6">
       {/* 헤더 */}
       <div className="flex items-center gap-3">
-        <Link href="/admin/events" className="text-zinc-500 hover:text-zinc-300 transition-colors">
-          <ChevronLeft size={18} />
-        </Link>
+        <BackButton iconOnly />
         <div className="flex-1">
           <h1 className="text-xl font-black text-white">{event.title}</h1>
           <p className="text-sm text-zinc-500 mt-0.5">사건 편집</p>

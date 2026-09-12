@@ -1,8 +1,7 @@
-import Link from 'next/link'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
-import { ChevronLeft } from 'lucide-react'
+import BackButton from '@/components/ui/BackButton'
 import TimelineFilters from '@/components/events/TimelineFilters'
 import TimelineView from '@/components/events/TimelineView'
 
@@ -104,13 +103,7 @@ export default async function TimelinePage({ searchParams }: Props) {
     <div className="mx-auto max-w-3xl px-4 py-10 space-y-8">
       {/* 헤더 */}
       <div className="space-y-1">
-        <Link
-          href="/events"
-          className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          <ChevronLeft size={14} />
-          사건 아카이브
-        </Link>
+        <BackButton />
         <h1 className="text-2xl font-black text-white">사건 연대표</h1>
         <p className="text-sm text-zinc-500">
           {filterLabel} · <span className="text-white font-bold">{events.length}</span>건

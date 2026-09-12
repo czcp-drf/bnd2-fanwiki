@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic'
 
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
+import BackButton from '@/components/ui/BackButton'
 import { createAdminClient } from '@/lib/supabase/admin'
 import MemberManageClient, { type MemberRow, type CharOption } from './MemberManageClient'
 
@@ -96,12 +95,7 @@ export default async function OrgMembersPage({ params }: Props) {
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center gap-3">
-        <Link
-          href="/admin/organizations"
-          className="text-zinc-500 transition-colors hover:text-zinc-300"
-        >
-          <ChevronLeft size={20} />
-        </Link>
+        <BackButton iconOnly />
         <div
           className="h-4 w-4 rounded-sm shrink-0"
           style={{ backgroundColor: org.color ?? '#52525b' }}

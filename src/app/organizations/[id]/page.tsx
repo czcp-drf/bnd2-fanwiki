@@ -3,12 +3,13 @@ export const revalidate = 300
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ChevronLeft, User, Building2, Skull, Swords, MapPin } from 'lucide-react'
+import { User, Building2, Skull, Swords, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { Organization } from '@/types/database'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import { typeLabel as eventTypeLabel, typeColor as eventTypeColor } from '@/lib/events'
 import AppImage from '@/components/ui/AppImage'
+import BackButton from '@/components/ui/BackButton'
 import OrgMiniMapWrapper from './OrgMiniMapWrapper'
 
 type Props = { params: Promise<{ id: string }> }
@@ -201,13 +202,7 @@ export default async function OrganizationDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
-      <Link
-        href="/organizations"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-      >
-        <ChevronLeft size={16} />
-        조직 목록
-      </Link>
+      <BackButton />
 
       {/* 헤더 */}
       <div
