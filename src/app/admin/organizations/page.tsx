@@ -58,14 +58,14 @@ export default async function AdminOrganizationsPage() {
         return (
           <section key={cat} className="space-y-3">
             <h2 className="text-sm font-bold text-zinc-400">{categoryLabel[cat]}</h2>
-            <div className="rounded-xl border border-zinc-800 overflow-hidden">
-              <table className="w-full table-fixed">
+            <div className="rounded-xl border border-zinc-800 overflow-x-auto">
+              <table className="w-full min-w-[760px] table-fixed">
                 <colgroup>
                   <col className="w-12" />
                   <col className="w-64" />
                   <col />
                   <col className="w-16" />
-                  <col className="w-16" />
+                  <col className="w-48" />
                 </colgroup>
                 <thead>
                   <tr className="bg-zinc-900">
@@ -73,7 +73,7 @@ export default async function AdminOrganizationsPage() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">명칭</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">설명</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">상태</th>
-                    <th className="px-4 py-3" />
+                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">관리</th>
                   </tr>
                 </thead>
                 <tbody>
