@@ -12,6 +12,13 @@ import BackButton from '@/components/ui/BackButton'
 
 type Props = { params: Promise<{ id: string }> }
 
+type OrgMember = {
+  character_id: string
+  role: string | null
+  is_primary: boolean
+  organizations: { id: string; name: string; type: string; color: string | null } | null
+}
+
 type StreamerDetail = Streamer & {
   characters: Array<{
     id: string
@@ -21,11 +28,7 @@ type StreamerDetail = Streamer & {
     description: string | null
     status: string
     first_appeared: string | null
-    organization_members: Array<{
-      role: string | null
-      is_primary: boolean
-      organizations: { id: string; name: string; type: string; color: string | null } | null
-    }>
+    organization_members: Array<Omit<OrgMember, 'character_id'>>
   }>
 }
 
@@ -35,25 +38,41 @@ async function getStreamer(id: string): Promise<StreamerDetail | null> {
     .from('streamers')
     .select(`
       *,
-      characters (
-        id,
-        name,
-        alias,
-        job,
-        description,
-        status,
-        first_appeared,
-        organization_members (
-          role,
-          is_primary,
-          organizations ( id, name, type, color )
-        )
-      )
+      characters ( id, name, alias, job, description, status, first_appeared )
     `)
     .eq('id', id)
     .single()
 
-  return data as unknown as StreamerDetail | null
+  if (!data) return null
+
+  type RawStreamer = Omit<StreamerDetail, 'characters'> & {
+    characters: Array<Omit<StreamerDetail['characters'][0], 'organization_members'>>
+  }
+  const streamer = data as unknown as RawStreamer
+  const charIds = streamer.characters.map((c) => c.id)
+
+  const { data: memberships } = charIds.length
+    ? await supabase
+        .from('organization_members')
+        .select('character_id, role, is_primary, organizations ( id, name, type, color )')
+        .in('character_id', charIds)
+        .is('left_at', null)
+    : { data: [] }
+
+  const byCharId = new Map<string, Array<Omit<OrgMember, 'character_id'>>>()
+  for (const m of (memberships ?? []) as unknown as OrgMember[]) {
+    const list = byCharId.get(m.character_id) ?? []
+    list.push({ role: m.role, is_primary: m.is_primary, organizations: m.organizations })
+    byCharId.set(m.character_id, list)
+  }
+
+  return {
+    ...streamer,
+    characters: streamer.characters.map((c) => ({
+      ...c,
+      organization_members: byCharId.get(c.id) ?? [],
+    })),
+  } as StreamerDetail
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
