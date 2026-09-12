@@ -153,6 +153,10 @@
   background: #fbbf24;
 }
 
+.bonstagram-font {
+  font-family: Arial, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
