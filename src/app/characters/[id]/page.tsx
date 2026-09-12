@@ -130,7 +130,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: character.name,
       description: `${character.name} — ${character.job ?? '봉누도2 RP 캐릭터'}`,
-      ...(character.avatar_url ? { images: [character.avatar_url] } : {}),
     },
   }
 }
