@@ -29,6 +29,11 @@ type OrgDetail = Organization & {
       job: string | null
       status: string
       streamers: { id: string; display_name: string } | null
+      organization_members: Array<{
+        is_primary: boolean
+        left_at: string | null
+        organizations: { id: string; name: string; color: string | null } | null
+      }>
     } | null
   }>
 }
@@ -95,7 +100,8 @@ async function getOrganization(id: string) {
         role, is_primary, joined_at, sort_order,
         characters (
           id, name, alias, job, status,
-          streamers ( id, display_name )
+          streamers ( id, display_name ),
+          organization_members ( is_primary, left_at, organizations ( id, name, color ) )
         )
       )
     `)
@@ -416,6 +422,10 @@ function MemberRow({
   const c = member.characters
   if (!c) return null
 
+  const primaryOrg = c.organization_members?.find(m => m.is_primary && !m.left_at)?.organizations
+    ?? c.organization_members?.find(m => !m.left_at)?.organizations
+    ?? null
+
   return (
     <Link
       href={`/characters/${c.id}`}
@@ -435,10 +445,10 @@ function MemberRow({
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          {c.job && <span className="text-xs text-zinc-500">{c.job}</span>}
+          {primaryOrg && <span className="text-xs text-zinc-500">{primaryOrg.name}</span>}
           {member.role && (
             <>
-              {c.job && <span className="text-zinc-700">·</span>}
+              {primaryOrg && <span className="text-zinc-700">·</span>}
               <span className="text-xs text-zinc-400">{member.role}</span>
             </>
           )}
