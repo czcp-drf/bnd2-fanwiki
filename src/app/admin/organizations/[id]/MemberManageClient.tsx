@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, X, UserMinus, UserPlus, ChevronDown, ChevronUp, Pencil, RotateCcw, ArrowUp, ArrowDown, Save } from 'lucide-react'
+import { Check, X, UserMinus, UserPlus, ChevronDown, ChevronUp, Pencil, RotateCcw, Save, GripVertical } from 'lucide-react'
 import { addOrgMembers, updateOrgMember, setMembersLeft, restoreMember, reorderMembers } from './actions'
 
 export type MemberRow = {
@@ -73,23 +73,40 @@ export default function MemberManageClient({
   // Past members toggle
   const [showPast, setShowPast] = useState(false)
 
-  // --- Reorder ---
-  function moveUp(index: number) {
-    if (index === 0) return
-    const next = [...orderedMembers]
-    ;[next[index - 1], next[index]] = [next[index], next[index - 1]]
-    setOrderedMembers(next)
-    setOrderDirty(true)
-    setOrderMsg(null)
+  // --- Drag & Drop reorder ---
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+  function handleDragStart(index: number) {
+    setDragIndex(index)
   }
 
-  function moveDown(index: number) {
-    if (index === orderedMembers.length - 1) return
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault()
+    if (dragIndex !== null && dragOverIndex !== index) {
+      setDragOverIndex(index)
+    }
+  }
+
+  function handleDrop(index: number) {
+    if (dragIndex === null || dragIndex === index) {
+      setDragIndex(null)
+      setDragOverIndex(null)
+      return
+    }
     const next = [...orderedMembers]
-    ;[next[index], next[index + 1]] = [next[index + 1], next[index]]
+    const [moved] = next.splice(dragIndex, 1)
+    next.splice(index, 0, moved)
     setOrderedMembers(next)
     setOrderDirty(true)
     setOrderMsg(null)
+    setDragIndex(null)
+    setDragOverIndex(null)
+  }
+
+  function handleDragEnd() {
+    setDragIndex(null)
+    setDragOverIndex(null)
   }
 
   function saveOrder() {
@@ -286,7 +303,7 @@ export default function MemberManageClient({
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">스트리머</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">역할</th>
                 <th className="w-16 px-4 py-3 text-left text-xs font-medium text-zinc-500">주소속</th>
-                <th className="w-20 px-4 py-3 text-left text-xs font-medium text-zinc-500">순서</th>
+                <th className="w-8 px-2 py-3" />
                 <th className="w-16 px-4 py-3" />
               </tr>
             </thead>
@@ -300,10 +317,19 @@ export default function MemberManageClient({
               ) : (
                 activeMembers.map((m, index) => {
                   const isEditing = editing === m.character_id
+                  const isDragging = dragIndex === index
+                  const isDragOver = dragOverIndex === index && dragIndex !== index
                   return (
                     <tr
                       key={m.character_id}
-                      className="border-t border-zinc-800 transition-colors hover:bg-zinc-800/20"
+                      draggable={!isEditing}
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDrop={() => handleDrop(index)}
+                      onDragEnd={handleDragEnd}
+                      className={`border-t border-zinc-800 transition-colors ${
+                        isDragging ? 'opacity-40' : 'hover:bg-zinc-800/20'
+                      } ${isDragOver ? 'bg-amber-400/5 border-t-amber-400/40' : ''}`}
                     >
                       <td className="px-4 py-2.5">
                         <input
@@ -379,23 +405,10 @@ export default function MemberManageClient({
                               <span className="text-zinc-700">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-2.5">
-                            <div className="flex items-center gap-0.5">
-                              <button
-                                onClick={() => moveUp(index)}
-                                disabled={index === 0 || isPending}
-                                className="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-20 disabled:cursor-default"
-                              >
-                                <ArrowUp size={12} />
-                              </button>
-                              <button
-                                onClick={() => moveDown(index)}
-                                disabled={index === activeMembers.length - 1 || isPending}
-                                className="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-20 disabled:cursor-default"
-                              >
-                                <ArrowDown size={12} />
-                              </button>
-                            </div>
+                          <td className="px-2 py-2.5">
+                            <span className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 flex items-center">
+                              <GripVertical size={14} />
+                            </span>
                           </td>
                           <td className="px-4 py-2.5">
                             <button
