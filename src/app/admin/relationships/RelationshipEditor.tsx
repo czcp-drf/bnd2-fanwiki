@@ -22,8 +22,9 @@ const REL_TYPES = [
   { value: 'family',   label: '가족',   color: 'text-purple-400 bg-purple-400/10' },
   { value: 'romantic', label: '연인',   color: 'text-pink-400 bg-pink-400/10' },
   { value: 'ally',     label: '동맹',   color: 'text-green-400 bg-green-400/10' },
-  { value: 'mentor',   label: '사제',   color: 'text-yellow-400 bg-yellow-400/10' },
-  { value: 'neutral',  label: '중립',   color: 'text-zinc-400 bg-zinc-400/10' },
+  { value: 'mentor',    label: '사제',   color: 'text-yellow-400 bg-yellow-400/10' },
+  { value: 'colleague', label: '동료',   color: 'text-cyan-400 bg-cyan-400/10' },
+  { value: 'neutral',   label: '중립',   color: 'text-zinc-400 bg-zinc-400/10' },
 ]
 
 function relColor(type: string) {

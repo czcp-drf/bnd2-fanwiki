@@ -157,6 +157,7 @@ const relationTypeLabel: Record<string, string> = {
   romantic: '연인',
   ally: '동맹',
   mentor: '사제',
+  colleague: '동료',
   neutral: '중립',
 }
 
@@ -168,6 +169,7 @@ const relationTypeColor: Record<string, string> = {
   romantic: 'text-pink-400 bg-pink-400/10',
   ally: 'text-green-400 bg-green-400/10',
   mentor: 'text-yellow-400 bg-yellow-400/10',
+  colleague: 'text-cyan-400 bg-cyan-400/10',
   neutral: 'text-zinc-400 bg-zinc-400/10',
 }
 

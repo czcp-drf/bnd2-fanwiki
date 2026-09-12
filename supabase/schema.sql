@@ -63,7 +63,7 @@ create table character_relationships (
   character_b_id uuid references characters(id) on delete cascade,
   type           text check (type in (
                    'friend', 'enemy', 'rival', 'family',
-                   'romantic', 'ally', 'mentor', 'neutral'
+                   'romantic', 'ally', 'mentor', 'colleague', 'neutral'
                  )),
   description    text,
   created_at     timestamptz default now(),

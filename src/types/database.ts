@@ -88,7 +88,7 @@ export type Database = {
           id: string
           character_a_id: string
           character_b_id: string
-          type: 'friend' | 'enemy' | 'rival' | 'family' | 'romantic' | 'ally' | 'mentor' | 'neutral'
+          type: 'friend' | 'enemy' | 'rival' | 'family' | 'romantic' | 'ally' | 'mentor' | 'colleague' | 'neutral'
           description: string | null
           created_at: string
         }
