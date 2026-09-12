@@ -59,6 +59,14 @@ src/
 │       ├── login/              # 로그인 페이지 + actions
 │       ├── characters/         # 캐릭터 CRUD
 │       ├── organizations/      # 조직 CRUD
+│       │   ├── page.tsx        # 조직 목록 (카테고리별 그룹, 각 행에 멤버 관리 링크)
+│       │   ├── OrgEditRow.tsx  # 조직 인라인 편집/삭제 행
+│       │   ├── OrgAddForm.tsx  # 조직 추가 폼
+│       │   ├── actions.ts      # createOrganization, updateOrganization, deleteOrganization
+│       │   └── [id]/           # 조직별 멤버 관리 페이지
+│       │       ├── page.tsx        # 서버 컴포넌트 (org + members + 가용 캐릭터 fetch)
+│       │       ├── MemberManageClient.tsx  # 멤버 추가·편집·퇴장·복귀 클라이언트 UI
+│       │       └── actions.ts      # addOrgMembers, updateOrgMember, setMembersLeft, restoreMember
 │       ├── events/             # 사건 CRUD + 참여자/클립 편집
 │       ├── relationships/      # 캐릭터 관계 CRUD
 │       ├── streamers/          # 스트리머 CRUD (display_name, chzzk_channel_id, profile_image_url, is_active)
@@ -251,6 +259,7 @@ src/
 - [x] 거점 지도 관리 — 조직 거점/사업체 모드 탭, 클릭 배치, 주요 장소 추가/수정/이동/삭제
 - [x] 제보 관리 — 상태 필터, 상태 변경, IP 차단 버튼, 좌표 제보 시 주요 장소 직접 추가
 - [x] IP 차단 관리 — 차단 목록 확인, 차단 해제
+- [x] 조직 멤버 일괄 편집 (`/admin/organizations/[id]`) — 멤버 다중 추가(검색→대기열→일괄 추가), 역할·주소속 인라인 편집, 체크박스 일괄 퇴장, 이전 멤버 복귀
 
 ---
 
@@ -286,6 +295,7 @@ src/
 
 | 커밋 | 작업 내용 |
 |---|---|
+| `1ac8b6b` | 어드민 조직 멤버 일괄 편집 — 다중 추가·인라인 편집·일괄 퇴장·복귀 |
 | `04465d1` | 조직 상세 인라인 미니맵: SSR 오류 수정 (Client Component 래퍼 적용) |
 | `1e58b9f` | 조직 상세 페이지에 Leaflet 인라인 미니맵 추가 (거점·사업체 마커, 전체 지도 이동 버튼) |
 | `fd84960` | 조직 목록 중첩 Link 제거 (React error #441 해결) |
