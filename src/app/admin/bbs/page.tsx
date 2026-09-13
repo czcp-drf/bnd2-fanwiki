@@ -17,6 +17,7 @@ type ArticleRow = {
   reporter_character_id: string
 }
 type MediaRow = { id: string; article_id: string; image_url: string; sort_order: number }
+type ReactionRow = { article_id: string; reaction: 'like' | 'dislike' }
 type ReporterOrganizationRow = { id: string }
 type ReporterMembershipRow = { character_id: string; organization_id: string }
 type ReporterRow = { id: string; name: string; avatar_url: string | null; streamers: { display_name: string; profile_image_url: string | null } | null }
@@ -25,12 +26,13 @@ type CommentRow = { id: string; article_id: string; author_character_id: string 
 
 async function getBbsAdminData() {
   const supabase = createAdminClient()
-  const [{ data: articles, error: articleError }, { data: media, error: mediaError }, { data: characters, error: characterError }, { data: journalistOrganizations, error: organizationError }, { data: comments, error: commentError }] = await Promise.all([
+  const [{ data: articles, error: articleError }, { data: media, error: mediaError }, { data: characters, error: characterError }, { data: journalistOrganizations, error: organizationError }, { data: comments, error: commentError }, { data: reactions, error: reactionError }] = await Promise.all([
     supabase.from('bbs_articles').select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id').order('approved_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }),
     supabase.from('bbs_article_media').select('id, article_id, image_url, sort_order').order('sort_order'),
     supabase.from('characters').select('id, name, avatar_url, streamers ( display_name, profile_image_url )').order('name'),
     supabase.from('organizations').select('id').eq('type', 'journalist').eq('is_active', true),
     supabase.from('bbs_article_comments').select('id, article_id, author_character_id, author_name, content, created_at').order('created_at', { ascending: true }),
+    supabase.from('bbs_article_reactions').select('article_id, reaction'),
   ])
   const journalistOrganizationIds = ((journalistOrganizations ?? []) as ReporterOrganizationRow[]).map((organization) => organization.id)
   const { data: journalistMembers, error: membershipError } = journalistOrganizationIds.length
@@ -45,8 +47,8 @@ async function getBbsAdminData() {
   }))
   const reporters = allCharacters.filter((character) => reporterIds.has(character.id))
 
-  if (articleError || mediaError || characterError || organizationError || membershipError || commentError) {
-    console.error('BBS admin data load failed:', articleError?.message, mediaError?.message, characterError?.message, organizationError?.message, membershipError?.message, commentError?.message)
+  if (articleError || mediaError || characterError || organizationError || membershipError || commentError || reactionError) {
+    console.error('BBS admin data load failed:', articleError?.message, mediaError?.message, characterError?.message, organizationError?.message, membershipError?.message, commentError?.message, reactionError?.message)
   }
 
   const mediaByArticleId = new Map<string, MediaRow[]>()
@@ -56,8 +58,20 @@ async function getBbsAdminData() {
     mediaByArticleId.set(item.article_id, current)
   }
 
+  const reactionCountsByArticleId = new Map<string, { like: number; dislike: number }>()
+  for (const reaction of (reactions ?? []) as ReactionRow[]) {
+    const counts = reactionCountsByArticleId.get(reaction.article_id) ?? { like: 0, dislike: 0 }
+    counts[reaction.reaction] += 1
+    reactionCountsByArticleId.set(reaction.article_id, counts)
+  }
+
   return {
-    articles: ((articles ?? []) as ArticleRow[]).map((article) => ({ ...article, media: mediaByArticleId.get(article.id) ?? [] })),
+    articles: ((articles ?? []) as ArticleRow[]).map((article) => ({
+      ...article,
+      media: mediaByArticleId.get(article.id) ?? [],
+      like_count: reactionCountsByArticleId.get(article.id)?.like ?? 0,
+      dislike_count: reactionCountsByArticleId.get(article.id)?.dislike ?? 0,
+    })),
     reporters: reporters ?? [],
     characters: allCharacters,
     comments: ((comments ?? []) as CommentRow[]),

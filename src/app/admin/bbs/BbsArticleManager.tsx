@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, MessageCircle, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
+import { Check, ChevronDown, MessageCircle, Pencil, Plus, ThumbsDown, ThumbsUp, Trash2, Upload, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -24,6 +24,8 @@ type Article = {
   approved_at: string | null
   is_published: boolean
   reporter_character_id: string
+  like_count: number
+  dislike_count: number
   media: Media[]
 }
 type MediaDraft = { imageUrl: string; storagePath?: string | null }
@@ -46,6 +48,17 @@ const sortOptions: SelectOption[] = [
   { value: 'latest', label: '승인일시 최신순' },
   { value: 'oldest', label: '승인일시 오래된순' },
   { value: 'title', label: '제목순' },
+  { value: 'likes-desc', label: '좋아요 많은순' },
+  { value: 'likes-asc', label: '좋아요 적은순' },
+  { value: 'dislikes-desc', label: '싫어요 많은순' },
+  { value: 'dislikes-asc', label: '싫어요 적은순' },
+]
+
+const reactionFilterOptions: SelectOption[] = [
+  { value: 'all', label: '전체 반응' },
+  { value: 'liked', label: '좋아요 있음' },
+  { value: 'disliked', label: '싫어요 있음' },
+  { value: 'none', label: '반응 없음' },
 ]
 
 type MarkdownTool = { label: string; title: string; action: 'plain' | 'h1' | 'h2' | 'h3' | 'bold' | 'italic' | 'strike' | 'bullet' | 'ordered' }
@@ -241,6 +254,7 @@ export default function BbsArticleManager({ articles, reporters, characters, com
   const [category, setCategory] = useState('all')
   const [status, setStatus] = useState('all')
   const [reporterId, setReporterId] = useState('all')
+  const [reactionFilter, setReactionFilter] = useState('all')
   const [sort, setSort] = useState('latest')
   const [commentsOpenId, setCommentsOpenId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -258,8 +272,13 @@ export default function BbsArticleManager({ articles, reporters, characters, com
       && (category === 'all' || article.category === category)
       && (status === 'all' || (status === 'published' ? article.is_published : !article.is_published))
       && (reporterId === 'all' || article.reporter_character_id === reporterId)
+      && (reactionFilter === 'all' || (reactionFilter === 'liked' ? article.like_count > 0 : reactionFilter === 'disliked' ? article.dislike_count > 0 : article.like_count === 0 && article.dislike_count === 0))
   }).sort((a, b) => {
     if (sort === 'title') return a.title.localeCompare(b.title, 'ko')
+    if (sort === 'likes-desc') return b.like_count - a.like_count
+    if (sort === 'likes-asc') return a.like_count - b.like_count
+    if (sort === 'dislikes-desc') return b.dislike_count - a.dislike_count
+    if (sort === 'dislikes-asc') return a.dislike_count - b.dislike_count
     const aTime = a.approved_at ? new Date(a.approved_at).getTime() : 0
     const bTime = b.approved_at ? new Date(b.approved_at).getTime() : 0
     return sort === 'oldest' ? aTime - bTime : bTime - aTime
@@ -302,9 +321,9 @@ export default function BbsArticleManager({ articles, reporters, characters, com
       {(showCreate || editing) && <ArticleForm key={editing?.id ?? 'new'} article={editing ?? undefined} reporters={reporters} onDone={closeForm} />}
       <section className="space-y-3">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><h2 className="text-sm font-bold text-white">등록된 기사</h2><p className="mt-1 text-xs text-zinc-500">총 {filteredArticles.length}개 / 전체 {articles.length}개</p></div><button type="button" onClick={() => { setEditing(null); setShowCreate(true) }} className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-zinc-950 transition-colors hover:bg-amber-300"><Plus size={13} />새 기사 등록</button></div>
-        <div className="grid gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_170px_170px_190px_180px]"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="제목·본문·담당기자 검색" className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/60 focus:outline-none" /><Select value={category} onChange={setCategory} options={[{ value: 'all', label: '전체 말머리' }, ...categoryOptions]} fullWidth /><Select value={status} onChange={setStatus} options={statusOptions} fullWidth /><Select value={reporterId} onChange={setReporterId} options={[{ value: 'all', label: '전체 담당기자' }, ...reporters.map((reporter) => ({ value: reporter.id, label: reporter.name }))]} searchable searchPlaceholder="기자 검색" fullWidth /><Select value={sort} onChange={setSort} options={sortOptions} fullWidth /></div>
+        <div className="grid gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_160px_160px_190px_160px_180px]"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="제목·본문·담당기자 검색" className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/60 focus:outline-none" /><Select value={category} onChange={setCategory} options={[{ value: 'all', label: '전체 말머리' }, ...categoryOptions]} fullWidth /><Select value={status} onChange={setStatus} options={statusOptions} fullWidth /><Select value={reporterId} onChange={setReporterId} options={[{ value: 'all', label: '전체 담당기자' }, ...reporters.map((reporter) => ({ value: reporter.id, label: reporter.name }))]} searchable searchPlaceholder="기자 검색" fullWidth /><Select value={reactionFilter} onChange={setReactionFilter} options={reactionFilterOptions} fullWidth /><Select value={sort} onChange={setSort} options={sortOptions} fullWidth /></div>
         {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
-        {filteredArticles.length === 0 ? <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center text-sm text-zinc-600">조건에 맞는 기사가 없습니다.</div> : <div className="space-y-2">{filteredArticles.map((article) => { const reporter = reporterById.get(article.reporter_character_id); const articleComments = commentsByArticleId.get(article.id) ?? []; const commentsOpen = commentsOpenId === article.id; return <div key={article.id} className="space-y-2"><article className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:flex-row sm:items-center"><div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-zinc-950">{article.thumbnail_url ? <AppImage src={article.thumbnail_url} alt="" fill sizes="112px" className="object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-zinc-700">이미지 없음</div>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-[11px]"><span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-amber-300">{categoryOptions.find((option) => !option.separator && option.value === article.category)?.label}</span><span className={article.is_published ? 'text-emerald-400' : 'text-zinc-500'}>{article.is_published ? '공개' : '비공개'}</span></div><h3 className="mt-1 line-clamp-2 text-sm font-bold text-zinc-100">{article.title}</h3><p className="mt-1 text-xs text-zinc-500">담당기자 {reporter?.name ?? '알 수 없음'} · {formatDate(article.approved_at)} · 첨부 {article.media.length}장</p></div><div className="flex shrink-0 items-center gap-1"><button type="button" onClick={() => setCommentsOpenId(commentsOpen ? null : article.id)} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"><MessageCircle size={12} />댓글 {articleComments.length}개<ChevronDown size={12} className={`transition-transform ${commentsOpen ? 'rotate-180' : ''}`} /></button><button type="button" onClick={() => requestEdit(article)} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"><Pencil size={12} />수정</button><button type="button" onClick={() => remove(article)} disabled={isPending} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 size={12} />삭제</button></div></article>{commentsOpen && <BbsArticleCommentPanel articleId={article.id} comments={articleComments} characters={characters} />}</div> })}</div>}
+        {filteredArticles.length === 0 ? <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center text-sm text-zinc-600">조건에 맞는 기사가 없습니다.</div> : <div className="space-y-2">{filteredArticles.map((article) => { const reporter = reporterById.get(article.reporter_character_id); const articleComments = commentsByArticleId.get(article.id) ?? []; const commentsOpen = commentsOpenId === article.id; return <div key={article.id} className="space-y-2"><article className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:flex-row sm:items-center"><div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-zinc-950">{article.thumbnail_url ? <AppImage src={article.thumbnail_url} alt="" fill sizes="112px" className="object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-zinc-700">이미지 없음</div>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-[11px]"><span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-amber-300">{categoryOptions.find((option) => !option.separator && option.value === article.category)?.label}</span><span className={article.is_published ? 'text-emerald-400' : 'text-zinc-500'}>{article.is_published ? '공개' : '비공개'}</span></div><h3 className="mt-1 line-clamp-2 text-sm font-bold text-zinc-100">{article.title}</h3><p className="mt-1 text-xs text-zinc-500">담당기자 {reporter?.name ?? '알 수 없음'} · {formatDate(article.approved_at)} · 첨부 {article.media.length}장</p><div className="mt-2 flex items-center gap-3 text-[11px]"><span className="inline-flex items-center gap-1 text-rose-400"><ThumbsUp size={12} fill="currentColor" />{article.like_count}</span><span className="inline-flex items-center gap-1 text-sky-400"><ThumbsDown size={12} fill="currentColor" />{article.dislike_count}</span></div></div><div className="flex shrink-0 items-center gap-1"><button type="button" onClick={() => setCommentsOpenId(commentsOpen ? null : article.id)} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"><MessageCircle size={12} />댓글 {articleComments.length}개<ChevronDown size={12} className={`transition-transform ${commentsOpen ? 'rotate-180' : ''}`} /></button><button type="button" onClick={() => requestEdit(article)} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"><Pencil size={12} />수정</button><button type="button" onClick={() => remove(article)} disabled={isPending} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 size={12} />삭제</button></div></article>{commentsOpen && <BbsArticleCommentPanel articleId={article.id} comments={articleComments} characters={characters} />}</div> })}</div>}
       </section>
       {pendingEdit && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="presentation"><div role="dialog" aria-modal="true" aria-labelledby="bbs-edit-warning-title" className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"><h2 id="bbs-edit-warning-title" className="text-base font-bold text-white">작성 중인 기사를 바꿀까요?</h2><p className="mt-2 text-sm leading-6 text-zinc-400">현재 등록 중인 기사 내용은 사라집니다. ‘{pendingEdit.title}’ 기사 수정으로 이동할까요?</p><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setPendingEdit(null)} className="cursor-pointer rounded-lg bg-zinc-800 px-3.5 py-2 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white">취소</button><button type="button" onClick={confirmEdit} className="cursor-pointer rounded-lg bg-amber-400 px-3.5 py-2 text-xs font-bold text-zinc-950 transition-colors hover:bg-amber-300">확인</button></div></div></div>}
     </div>
