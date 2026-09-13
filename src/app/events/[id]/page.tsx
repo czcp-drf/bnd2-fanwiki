@@ -3,7 +3,7 @@ export const revalidate = 300
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Calendar, Users, Play } from 'lucide-react'
+import { Calendar, MapPin, Users, Play } from 'lucide-react'
 import type { Metadata } from 'next'
 import ReactMarkdown from 'react-markdown'
 import { typeLabel, typeColor } from '@/lib/events'
@@ -11,6 +11,7 @@ import { StreamerBlur } from '@/components/ui/StreamerMask'
 import AppImage from '@/components/ui/AppImage'
 import BackButton from '@/components/ui/BackButton'
 import ClipPlayer from '@/components/events/ClipPlayer'
+import EventLocationMap from './EventLocationMap'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -22,6 +23,8 @@ type EventDetail = {
   type: string | null
   thumbnail_url: string | null
   occurred_at: string | null
+  location_x: number | null
+  location_y: number | null
   event_participants: Array<{
     sort_order: number
     role: string | null
@@ -55,7 +58,7 @@ async function getEvent(id: string): Promise<EventDetail | null> {
   const { data } = await supabase
     .from('events')
     .select(`
-      id, title, summary, content, type, thumbnail_url, occurred_at,
+      id, title, summary, content, type, thumbnail_url, occurred_at, location_x, location_y,
       event_participants (
         sort_order, role,
         characters (
@@ -146,6 +149,20 @@ export default async function EventDetailPage({ params }: Props) {
         <div className="overflow-hidden rounded-xl border border-zinc-800">
           <AppImage src={event.thumbnail_url} alt={event.title} className="w-full object-cover max-h-80" />
         </div>
+      )}
+
+      {/* 발생 위치 */}
+      {event.location_x !== null && event.location_y !== null && (
+        <section className="space-y-4">
+          <h2 className="flex items-center gap-2 text-base font-bold text-white">
+            <MapPin size={16} className="text-amber-400" />
+            발생 위치
+          </h2>
+          <EventLocationMap x={event.location_x} y={event.location_y} />
+          <p className="text-xs text-zinc-500">
+            X: {event.location_x.toFixed(1)}, Y: {event.location_y.toFixed(1)}
+          </p>
+        </section>
       )}
 
       {/* 본문 */}

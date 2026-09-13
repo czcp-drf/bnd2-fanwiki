@@ -32,24 +32,30 @@ function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }
 
 type Props = {
   coords: { lat: number; lng: number } | null
-  onPick: (lat: number, lng: number) => void
+  onPick?: (lat: number, lng: number) => void
+  readOnly?: boolean
 }
 
-export default function MapPinPicker({ coords, onPick }: Props) {
+export default function MapPinPicker({ coords, onPick, readOnly = false }: Props) {
   return (
     <MapContainer
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       crs={GTA_CRS as any}
-      center={[0, 0]}
+      center={coords ? [coords.lat, coords.lng] : [0, 0]}
       zoom={MAP_DEFAULT_ZOOM}
       minZoom={MAP_MIN_ZOOM}
       maxZoom={MAP_MAX_ZOOM}
       maxBounds={MAP_MAX_BOUNDS}
       maxBoundsViscosity={1}
-      style={{ height: '100%', width: '100%', background: '#0FA8D2', cursor: 'crosshair' }}
+      scrollWheelZoom={!readOnly}
+      dragging={!readOnly}
+      doubleClickZoom={!readOnly}
+      touchZoom={!readOnly}
+      zoomControl={!readOnly}
+      style={{ height: '100%', width: '100%', background: '#0FA8D2', cursor: readOnly ? 'default' : 'crosshair' }}
     >
       <TileLayer url={MAP_TILE_URLS.atlas} noWrap />
-      <ClickHandler onPick={onPick} />
+      {!readOnly && onPick && <ClickHandler onPick={onPick} />}
       {coords && (
         <CircleMarker
           center={[coords.lat, coords.lng]}
