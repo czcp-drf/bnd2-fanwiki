@@ -5,6 +5,7 @@ import BongstagramCommentManager from '../BongstagramCommentManager'
 import BongstagramAdminTabs from '../BongstagramAdminTabs'
 
 export const metadata: Metadata = { title: 'Bongstagram 게시물 관리' }
+export const dynamic = 'force-dynamic'
 
 type CharacterRow = {
   id: string

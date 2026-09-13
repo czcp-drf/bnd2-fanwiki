@@ -434,6 +434,8 @@ src/
 
 - Bongstagram 좋아요 비상 전환 준비 (`feat/bonstagram`, 커밋 대기): `BONGSTAGRAM_LIKES_MODE` 환경변수로 서버 저장과 브라우저 localStorage 전용 모드를 전환할 수 있도록 게시물·스토리 좋아요 UI와 Server Action을 연결했습니다. local 모드에서는 좋아요 등록·취소 Server Action을 서버에서 거부하고, 사용자별 DB 좋아요 조회와 60초 집계 갱신도 건너뜁니다. server 모드는 기존 IP 해시 제한 동작을 유지합니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며, 아직 커밋·푸시하지 않았습니다.
 
+- Bongstagram 어드민 좋아요 집계 보정 (`feat/bonstagram`): 어드민 게시물 관리 페이지에 `dynamic = 'force-dynamic'`을 지정해 빌드 시 정적 HTML에 고정되던 좋아요 수를 요청 시점의 Supabase 데이터로 표시하도록 수정했습니다. 사용자가 server 모드에서 DB 좋아요 생성을 확인했고 local 모드에서는 DB 쓰기가 발생하지 않음을 확인했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드를 통과했으며 `git diff --check`도 통과했습니다. 대상 브랜치는 `feat/bonstagram`, 원격은 `deploy/feat/bonstagram`입니다.
+
 - Bongstagram 조회 페이지네이션·스토리 레일 개선 (`feat/bonstagram`): 메인 피드는 최초 12개, 검색·해시태그 게시물 그리드는 최초 24개를 cursor 기반으로 조회하고 하단 접근 시 다음 페이지를 무한 스크롤로 추가합니다. `posted_at`과 `id`를 함께 cursor로 사용해 정렬 경계의 중복·누락을 줄였으며, 기존 전체 게시물 일괄 그리드 컴포넌트를 제거했습니다. 홈 스토리 레일에는 모바일 스와이프와 PC 드래그를 유지하고 좌우 이동 버튼은 제거했으며 텍스트 선택도 방지했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치 `feat/bonstagram`에 커밋하고 원격 `deploy/feat/bonstagram`으로 푸시합니다.
 
 - Bongstagram 게시물 상세·프로필 UI 개선 (`feat/bonstagram`): `/bongstagram/post/[postId]` 게시물 상세 페이지를 추가해 피드와 동일한 작성자·팔로우·미디어 캐러셀·좋아요·댓글·본문·업로드 시간 UI를 제공합니다. 검색·프로필 게시물 그리드에서 상세 페이지로 연결하고, 상세·다른 유저 프로필의 뒤로가기는 직전 페이지로 이동하도록 했습니다. 프로필 헤더 제목을 중앙 정렬하고 우측 Bongstagram 문구를 제거했으며, 다른 유저 프로필의 팔로우 버튼을 설명 아래 전체 너비로 확장했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
