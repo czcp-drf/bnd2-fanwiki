@@ -119,7 +119,7 @@ export default async function HomePage() {
                 오늘의 봉누도 소식
               </h1>
               <p className="max-w-lg text-sm leading-6 text-[var(--site-muted)]">
-                사건 기록부터 BBS 기사와 Bongstagram까지,
+                사건 기록부터 BBS 기사와 봉스타그램까지,
                 <br />
                 봉누도2의 흐름을 한 곳에서 확인하세요.
               </p>
@@ -190,7 +190,9 @@ export default async function HomePage() {
                     {event.thumbnail_url ? (
                       <AppImage src={event.thumbnail_url} alt="" width={80} height={64} className="h-16 w-20 shrink-0 rounded-lg object-cover" />
                     ) : (
-                      <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 text-xs font-semibold text-amber-500">기록</div>
+                      <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 px-1 text-center text-xs font-semibold text-amber-500">
+                        {eventTypeLabel[event.type ?? 'other'] ?? '기타'}
+                      </div>
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">

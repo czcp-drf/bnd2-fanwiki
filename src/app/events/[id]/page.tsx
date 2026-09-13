@@ -9,7 +9,7 @@ import { Calendar, MapPin, Users, Play } from 'lucide-react'
 import type { Metadata } from 'next'
 import ReactMarkdown from 'react-markdown'
 import { typeLabel, typeColor } from '@/lib/events'
-import { StreamerBlur } from '@/components/ui/StreamerMask'
+import { StreamerReveal } from '@/components/ui/StreamerMask'
 import AppImage from '@/components/ui/AppImage'
 import BackButton from '@/components/ui/BackButton'
 import ClipPlayer from '@/components/events/ClipPlayer'
@@ -34,9 +34,10 @@ type EventDetail = {
       id: string
       name: string
       alias: string[] | null
+      avatar_url: string | null
       job: string | null
       status: string
-      streamers: { id: string; display_name: string } | null
+      streamers: { id: string; display_name: string; profile_image_url: string | null } | null
     } | null
   }>
   event_clips: Array<{
@@ -64,8 +65,8 @@ async function getEvent(id: string): Promise<EventDetail | null> {
       event_participants (
         sort_order, role,
         characters (
-          id, name, alias, job, status,
-          streamers ( id, display_name )
+          id, name, alias, avatar_url, job, status,
+          streamers ( id, display_name, profile_image_url )
         )
       ),
       event_clips (
@@ -224,28 +225,34 @@ export default async function EventDetailPage({ params }: Props) {
             {participants.map((p, i) => {
               const c = p.characters
               if (!c) return null
+              const characterAvatar = c.avatar_url ? (
+                <AppImage src={c.avatar_url} alt={c.name} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-400">
+                  {c.name.charAt(0)}
+                </div>
+              )
               return (
                 <Link
                   key={i}
                   href={`/characters/${c.id}`}
                   className="group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition-colors hover:border-zinc-700 hover:bg-zinc-800/50"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-400">
-                    {c.name.charAt(0)}
-                  </div>
+                  {c.streamers ? (
+                    <StreamerReveal fallback={characterAvatar}>
+                      {c.streamers.profile_image_url ? (
+                        <AppImage src={c.streamers.profile_image_url} alt={c.streamers.display_name} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                      ) : characterAvatar}
+                    </StreamerReveal>
+                  ) : characterAvatar}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white group-hover:text-amber-400 transition-colors truncate">
-                      {c.name}
+                      <StreamerReveal fallback={c.name}>
+                        {c.streamers?.display_name ?? c.name}
+                      </StreamerReveal>
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       {p.role && <span className="text-xs text-zinc-500">{p.role}</span>}
-                      {c.streamers && (
-                        <StreamerBlur>
-                          <span className={`text-xs text-zinc-600 ${p.role ? 'before:content-["·"] before:mr-1.5' : ''}`}>
-                            {c.streamers.display_name}
-                          </span>
-                        </StreamerBlur>
-                      )}
                     </div>
                   </div>
                   <span className={`text-xs font-medium ${statusColor[c.status]}`}>

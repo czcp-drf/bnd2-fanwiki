@@ -87,7 +87,7 @@ export default async function EventsPage({ searchParams }: Props) {
           {featured && !type && (
             <Link
               href={`/events/${featured.id}`}
-              className="group relative flex flex-col justify-end overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 min-h-[260px] transition-colors hover:border-amber-400/30"
+              className={`group relative flex min-h-[260px] flex-col justify-end overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition-colors hover:border-amber-400/30 ${featured.thumbnail_url ? 'events-featured-card' : ''}`}
             >
               {featured.thumbnail_url && (
                 <>
@@ -100,10 +100,14 @@ export default async function EventsPage({ searchParams }: Props) {
                 </>
               )}
               {!featured.thumbnail_url && (
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent" />
+                <div className="events-thumbnail-fallback absolute inset-0 flex items-center justify-center bg-gradient-to-br from-amber-500/10 to-transparent">
+                  <span className="text-4xl font-black text-amber-400 opacity-50 drop-shadow-sm">
+                    {typeLabel[featured.type ?? 'other'] ?? '기타'}
+                  </span>
+                </div>
               )}
 
-              <div className="relative p-6 space-y-3">
+              <div className="relative z-10 space-y-3 p-6">
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-xs font-bold text-zinc-900">
                     최신
@@ -163,12 +167,10 @@ function EventCard({ event: e }: { event: Event }) {
           )}
         </div>
       ) : (
-        <div className="flex items-center gap-2 px-4 pt-4">
-          {e.type && (
-            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${typeColor[e.type]}`}>
-              {typeLabel[e.type]}
-            </span>
-          )}
+        <div className="events-thumbnail-fallback flex h-40 items-center justify-center bg-amber-400/5">
+          <span className={`rounded-full border px-3 py-1 text-sm font-semibold ${typeColor[e.type ?? 'other'] ?? typeColor.other}`}>
+            {typeLabel[e.type ?? 'other'] ?? '기타'}
+          </span>
         </div>
       )}
 

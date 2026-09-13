@@ -289,6 +289,13 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .hover\:text-zinc-200:hover,
 .wiki-theme .hover\:text-zinc-300:hover { color: var(--wiki-text-secondary); }
 
+.wiki-theme .events-featured-card .text-white { color: #ffffff; }
+.wiki-theme .events-featured-card .text-zinc-400 { color: rgb(244 244 245 / 0.85); }
+.wiki-theme .events-featured-card .text-zinc-500 { color: rgb(228 228 231 / 0.75); }
+.wiki-theme .events-featured-card .hover\:text-amber-400:hover { color: #fbbf24; }
+.wiki-theme .events-thumbnail-fallback { background-color: #27272a; }
+html[data-bongstagram-theme="light"] .wiki-theme .events-thumbnail-fallback { background-color: #e4e4e7; }
+
 html[data-bongstagram-theme="light"] .wiki-theme .prose-invert {
   --tw-prose-body: var(--wiki-muted);
   --tw-prose-headings: var(--wiki-text);
