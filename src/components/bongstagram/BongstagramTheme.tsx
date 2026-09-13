@@ -6,12 +6,11 @@ import { Moon, Sun } from 'lucide-react'
 type BongstagramTheme = 'dark' | 'light'
 
 const THEME_STORAGE_KEY = 'bongstagram-theme'
-const LEGACY_THEME_STORAGE_KEY = 'bonstagram-theme'
 const THEME_CHANGE_EVENT = 'bongstagram-theme-change'
 
 function getStoredTheme(): BongstagramTheme {
   if (typeof window === 'undefined') return 'dark'
-  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY)
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
   return savedTheme === 'light' ? 'light' : 'dark'
 }
 
