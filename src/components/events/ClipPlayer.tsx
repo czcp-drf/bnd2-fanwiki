@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ExternalLink, Play, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useRedPill } from '@/lib/context/RedPillContext'
 import ClipLabel from './ClipLabel'
 
 type Clip = {
@@ -41,6 +42,7 @@ export default function ClipPlayer({
   const [canRight, setCanRight] = useState(false)
   const [tooltip, setTooltip] = useState<{ label: string; streamerLine: string | null } | null>(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
+  const { isRedPill } = useRedPill()
 
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current
@@ -63,21 +65,22 @@ export default function ClipPlayer({
 
   const active = clips.find((c) => c.id === activeId) ?? clips[0]
   const activeCharName = active.streamers?.id ? streamerToChar[active.streamers.id] : null
+  const activePerspective = active.streamers
+    ? (isRedPill ? active.streamers.display_name : activeCharName ?? active.streamers.display_name)
+    : null
 
   return (
     <div className="flex flex-col gap-4">
       {/* 플레이어 */}
       <div className="w-full space-y-0 rounded-xl border border-zinc-800 overflow-hidden">
-        {/* 영상 영역 — 모든 iframe 미리 렌더링, 활성 클립만 표시 */}
+        {/* 영상 영역 — 활성 클립만 렌더링해 다른 클립으로 바꾸면 이전 재생을 중지 */}
         <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-          {clips.map((clip) => {
-            const url = parseClipUrl(clip.clip_url)
-            const isActive = clip.id === activeId
+          {(() => {
+            const url = parseClipUrl(active.clip_url)
             if (!url) {
-              return isActive ? (
+              return (
                 <a
-                  key={clip.id}
-                  href={clip.clip_url}
+                  href={active.clip_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900 text-zinc-500 hover:text-amber-400 transition-colors"
@@ -85,19 +88,19 @@ export default function ClipPlayer({
                   <ExternalLink size={28} />
                   <span className="text-sm">외부 링크로 보기</span>
                 </a>
-              ) : null
+              )
             }
             return (
               <iframe
-                key={clip.id}
+                key={active.id}
                 src={url}
                 className="absolute inset-0 w-full h-full"
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
-                style={{ border: 'none', visibility: isActive ? 'visible' : 'hidden' }}
+                style={{ border: 'none' }}
               />
             )
-          })}
+          })()}
         </div>
 
         {/* 클립 정보 바 */}
@@ -110,9 +113,7 @@ export default function ClipPlayer({
               />
             </p>
             <p className="text-xs text-zinc-500 mt-0.5 truncate">
-              {active.streamers
-                ? (activeCharName ? `${activeCharName} 시점` : `${active.streamers.display_name} 시점`)
-                : '\u00A0'}
+              {activePerspective ? `${activePerspective} 시점` : '\u00A0'}
             </p>
           </div>
           <a
@@ -152,7 +153,7 @@ export default function ClipPlayer({
               const isActive = clip.id === activeId
               const charName = clip.streamers?.id ? streamerToChar[clip.streamers.id] : null
               const streamerLine = clip.streamers
-                ? (charName ? `${charName} 시점` : `${clip.streamers.display_name} 시점`)
+                ? `${isRedPill ? clip.streamers.display_name : charName ?? clip.streamers.display_name} 시점`
                 : null
               return (
                 <button
