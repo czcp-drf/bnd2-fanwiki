@@ -42,7 +42,7 @@ export default function BongstagramMyProfile({ profiles, characters, streamers }
 
   return (
     <main>
-      <header className="flex h-16 items-center justify-between border-b border-zinc-800 px-5"><h1 className="text-lg font-semibold text-white">내 프로필</h1><span className="text-xs text-zinc-600">Bongstagram</span></header>
+      <header className="relative flex h-16 items-center border-b border-zinc-800 px-5"><h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold text-white">내 프로필</h1></header>
       <section className="px-5 pb-5 pt-6">
         <div className="flex items-center gap-5">
           <div className="rounded-full bg-gradient-to-tr from-amber-300 via-fuchsia-500 to-sky-400 p-[3px]"><div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-zinc-950 text-zinc-400"><UserRound size={34} strokeWidth={1.5} /></div></div>

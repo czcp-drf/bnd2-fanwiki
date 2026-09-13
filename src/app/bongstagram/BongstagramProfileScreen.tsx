@@ -1,9 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Archive, Grid3X3, Image as ImageIcon } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import BongstagramDisplayName from './BongstagramDisplayName'
+import BongstagramBackButton from './BongstagramBackButton'
 import BongstagramFollowButton from './BongstagramFollowButton'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 
@@ -38,9 +40,9 @@ export default function BongstagramProfileScreen({ profile, character, streamer,
 
   return (
     <>
-      <header className="flex h-16 items-center border-b border-zinc-800 px-5">
-        <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-white"><BongstagramDisplayName profileName={profile.profile_name} streamerName={streamer?.display_name} /></h1>
-        <span className="text-xs text-zinc-600">Bongstagram</span>
+      <header className="relative flex h-16 items-center border-b border-zinc-800 px-5">
+        <BongstagramBackButton label="이전 페이지로 돌아가기" />
+        <h1 className="absolute left-1/2 max-w-[60%] -translate-x-1/2 truncate text-lg font-semibold text-white"><BongstagramDisplayName profileName={profile.profile_name} streamerName={streamer?.display_name} /></h1>
       </header>
 
       <main>
@@ -59,7 +61,7 @@ export default function BongstagramProfileScreen({ profile, character, streamer,
           </div>
 
           <div className="mt-4"><h2 className="text-base font-bold text-white"><BongstagramDisplayName profileName={profile.profile_name} streamerName={streamer?.display_name} /></h2><p className="mt-1 text-sm text-zinc-400">{character.name}</p>{profile.bio && <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-5 text-zinc-300">{profile.bio}</p>}</div>
-          <div className="mt-4"><BongstagramFollowButton characterId={character.id} /></div>
+          <div className="mt-4 flex"><BongstagramFollowButton characterId={character.id} className="w-full py-2.5 text-base" /></div>
         </section>
 
         {latestStory && <section className="border-y border-zinc-800 px-5 py-4"><div className="flex w-20 flex-col items-center gap-1.5"><div className="rounded-full bg-gradient-to-tr from-amber-300 via-fuchsia-500 to-sky-400 p-[2px]"><div className="h-14 w-14 overflow-hidden rounded-full bg-zinc-900 p-[2px]"><div className="h-full w-full overflow-hidden rounded-full bg-zinc-800">{latestStory.media[0] ? <MediaThumb media={latestStory.media[0]} label="스토리 하이라이트" /> : <div className="flex h-full items-center justify-center text-zinc-600"><ImageIcon size={18} /></div>}</div></div></div><span className="w-full truncate text-center text-[11px] text-zinc-400">{formatArchiveDate(latestStory.posted_at)}</span></div></section>}
@@ -69,7 +71,7 @@ export default function BongstagramProfileScreen({ profile, character, streamer,
           <button type="button" onClick={() => setTab('archive')} aria-label="스토리 보관함 보기" aria-pressed={tab === 'archive'} className={`flex flex-1 cursor-pointer justify-center border-b-2 py-3 transition-colors ${tab === 'archive' ? 'border-white text-white' : 'border-transparent text-zinc-600 hover:text-zinc-300'}`}><Archive size={21} /></button>
         </nav>
 
-        {tab === 'posts' ? <section>{regularPosts.length === 0 ? <p className="py-16 text-center text-sm text-zinc-600">등록된 게시물이 없습니다.</p> : <div className="grid grid-cols-3 gap-px bg-zinc-950">{regularPosts.map((post) => post.media[0] ? <MediaThumb key={post.id} media={post.media[0]} label={`${profile.profile_name} 게시물`} /> : <div key={post.id} className="flex aspect-square items-center justify-center bg-zinc-900 text-zinc-700"><ImageIcon size={20} /></div>)}</div>}</section> : <section className="space-y-6 px-5 py-5">{storyGroups.length === 0 ? <p className="py-12 text-center text-sm text-zinc-600">보관된 스토리가 없습니다.</p> : storyGroups.map((group) => <div key={group[0].id}><h3 className="mb-2 text-xs font-medium text-zinc-500">{formatArchiveDate(group[0].posted_at)}</h3><div className="grid grid-cols-4 gap-1">{group.map((story) => story.media[0] ? <MediaThumb key={story.id} media={story.media[0]} label={`${profile.profile_name} 스토리`} /> : <div key={story.id} className="flex aspect-square items-center justify-center bg-zinc-900 text-zinc-700"><ImageIcon size={18} /></div>)}</div></div>)}</section>}
+        {tab === 'posts' ? <section>{regularPosts.length === 0 ? <p className="py-16 text-center text-sm text-zinc-600">등록된 게시물이 없습니다.</p> : <div className="grid grid-cols-3 gap-px bg-zinc-950">{regularPosts.map((post) => <Link key={post.id} href={`/bongstagram/post/${post.id}`} aria-label="게시물 상세 보기" className="block aspect-square overflow-hidden bg-black">{post.media[0] ? <MediaThumb media={post.media[0]} label={`${profile.profile_name} 게시물`} /> : <div className="flex h-full items-center justify-center bg-zinc-900 text-zinc-700"><ImageIcon size={20} /></div>}</Link>)}</div>}</section> : <section className="space-y-6 px-5 py-5">{storyGroups.length === 0 ? <p className="py-12 text-center text-sm text-zinc-600">보관된 스토리가 없습니다.</p> : storyGroups.map((group) => <div key={group[0].id}><h3 className="mb-2 text-xs font-medium text-zinc-500">{formatArchiveDate(group[0].posted_at)}</h3><div className="grid grid-cols-4 gap-1">{group.map((story) => story.media[0] ? <MediaThumb key={story.id} media={story.media[0]} label={`${profile.profile_name} 스토리`} /> : <div key={story.id} className="flex aspect-square items-center justify-center bg-zinc-900 text-zinc-700"><ImageIcon size={18} /></div>)}</div></div>)}</section>}
       </main>
     </>
   )

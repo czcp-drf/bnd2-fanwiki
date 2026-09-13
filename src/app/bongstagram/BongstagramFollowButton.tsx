@@ -12,7 +12,7 @@ function subscribeFollowing(callback: () => void) {
   }
 }
 
-export default function BongstagramFollowButton({ characterId }: { characterId: string }) {
+export default function BongstagramFollowButton({ characterId, className = '' }: { characterId: string; className?: string }) {
   const following = useSyncExternalStore(
     subscribeFollowing,
     () => readBongstagramFollowing().includes(characterId),
@@ -25,7 +25,7 @@ export default function BongstagramFollowButton({ characterId }: { characterId: 
   }
 
   return (
-    <button type="button" onClick={toggle} aria-pressed={following} className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${following ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-sky-500 !text-white hover:bg-sky-400'}`}>
+    <button type="button" onClick={toggle} aria-pressed={following} className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${following ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-sky-500 !text-white hover:bg-sky-400'} ${className}`}>
       {following ? '팔로잉' : '팔로우'}
     </button>
   )

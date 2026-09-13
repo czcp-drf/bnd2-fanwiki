@@ -69,7 +69,7 @@ function SearchPostGrid({ posts }: { posts: ProfilePost[] }) {
   ) : (
     <div className="grid grid-cols-3 gap-px bg-zinc-900">
       {posts.map((post) => (
-        <Link key={post.id} href={`/bongstagram/${post.character_id}`} aria-label="게시물 프로필 보기" className="relative block aspect-square overflow-hidden bg-black">
+        <Link key={post.id} href={`/bongstagram/post/${post.id}`} aria-label="게시물 상세 보기" className="relative block aspect-square overflow-hidden bg-black">
           {post.media_type === 'video' ? <video muted playsInline preload="metadata" src={post.media_url} className="h-full w-full object-cover" aria-label="동영상 게시물" /> : <AppImage src={post.media_url} alt="게시물" width={180} height={180} className="h-full w-full object-cover" />}
           {post.media_type === 'video' && <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md bg-white text-zinc-950 shadow-sm"><Play size={14} fill="currentColor" strokeWidth={1.5} /></span>}
         </Link>
