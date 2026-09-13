@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/auth'
 
-const BSS_MEDIA_BUCKET = 'bss-media'
+const BBS_MEDIA_BUCKET = 'bbs-media'
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 const MAX_MEDIA_COUNT = 5
 const ALLOWED_IMAGE_TYPES = new Map([
@@ -13,13 +13,13 @@ const ALLOWED_IMAGE_TYPES = new Map([
   ['image/gif', 'gif'],
   ['image/avif', 'avif'],
 ])
-const BSS_CATEGORIES = new Set(['info', 'incident', 'economy', 'column', 'other'])
+const BBS_CATEGORIES = new Set(['info', 'incident', 'economy', 'column', 'other'])
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const STORAGE_PATH_PATTERN = /^articles\/[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png|webp|gif|avif)$/i
 
 type ActionResult = { success?: true; id?: string; error?: string }
 
-export type BssArticleInput = {
+export type BbsArticleInput = {
   title: string
   category: string
   summary: string
@@ -53,7 +53,7 @@ function validateUrl(value: string, label: string) {
   }
 }
 
-function validateArticleInput(input: BssArticleInput): { error: string } | { data: ValidatedArticleInput } {
+function validateArticleInput(input: BbsArticleInput): { error: string } | { data: ValidatedArticleInput } {
   const title = input.title.trim()
   const category = input.category.trim()
   const summary = input.summary.trim()
@@ -70,7 +70,7 @@ function validateArticleInput(input: BssArticleInput): { error: string } | { dat
 
   if (!title) return { error: '기사 제목을 입력해 주세요.' }
   if (title.length > 200) return { error: '기사 제목은 200자 이내로 입력해 주세요.' }
-  if (!BSS_CATEGORIES.has(category)) return { error: '기사 말머리를 선택해 주세요.' }
+  if (!BBS_CATEGORIES.has(category)) return { error: '기사 말머리를 선택해 주세요.' }
   if (summary.length > 500) return { error: '기사 요약은 500자 이내로 입력해 주세요.' }
   if (content.length > 50000) return { error: '기사 본문은 50,000자 이내로 입력해 주세요.' }
   if (!UUID_PATTERN.test(reporterCharacterId)) return { error: '담당기자를 선택해 주세요.' }
@@ -115,7 +115,7 @@ function extractStoragePath(imageUrl: string) {
   try {
     const url = new URL(imageUrl)
     const origin = new URL(supabaseUrl).origin
-    const prefix = `/storage/v1/object/public/${BSS_MEDIA_BUCKET}/`
+    const prefix = `/storage/v1/object/public/${BBS_MEDIA_BUCKET}/`
     if (url.origin !== origin || !url.pathname.startsWith(prefix)) return null
     const path = decodeURIComponent(url.pathname.slice(prefix.length))
     return STORAGE_PATH_PATTERN.test(path) ? path : null
@@ -127,17 +127,17 @@ function extractStoragePath(imageUrl: string) {
 async function removeStoragePaths(supabase: Awaited<ReturnType<typeof requireAdmin>>, paths: string[]) {
   const validPaths = [...new Set(paths)].filter((path) => STORAGE_PATH_PATTERN.test(path))
   if (!validPaths.length) return
-  const { error } = await supabase.storage.from(BSS_MEDIA_BUCKET).remove(validPaths)
-  if (error) console.error('BSS storage cleanup failed:', error.message)
+  const { error } = await supabase.storage.from(BBS_MEDIA_BUCKET).remove(validPaths)
+  if (error) console.error('BBS storage cleanup failed:', error.message)
 }
 
-function revalidateBss(articleId?: string) {
-  revalidatePath('/admin/bss')
-  revalidatePath('/bss')
-  if (articleId) revalidatePath(`/bss/article/${articleId}`)
+function revalidateBbs(articleId?: string) {
+  revalidatePath('/admin/bbs')
+  revalidatePath('/bbs')
+  if (articleId) revalidatePath(`/bbs/article/${articleId}`)
 }
 
-export async function createBssUploadUrl(data: { fileName: string; contentType: string; size: number }) {
+export async function createBbsUploadUrl(data: { fileName: string; contentType: string; size: number }) {
   const contentType = data.contentType.trim().toLowerCase()
   const extension = ALLOWED_IMAGE_TYPES.get(contentType)
   const fileName = data.fileName.trim()
@@ -150,31 +150,31 @@ export async function createBssUploadUrl(data: { fileName: string; contentType: 
   const supabase = await requireAdmin()
   const path = `articles/${crypto.randomUUID()}/${crypto.randomUUID()}.${extension}`
   const { data: signedUpload, error } = await supabase.storage
-    .from(BSS_MEDIA_BUCKET)
+    .from(BBS_MEDIA_BUCKET)
     .createSignedUploadUrl(path)
 
   if (error || !signedUpload) {
-    console.error('BSS upload URL create failed:', error?.message)
-    return { error: 'Storage 업로드 주소를 만들지 못했습니다. 034 migration과 bss-media 버킷을 확인해 주세요.' }
+    console.error('BBS upload URL create failed:', error?.message)
+    return { error: 'Storage 업로드 주소를 만들지 못했습니다. 034, 035 migration과 bbs-media 버킷을 확인해 주세요.' }
   }
 
-  const { data: publicData } = supabase.storage.from(BSS_MEDIA_BUCKET).getPublicUrl(path)
+  const { data: publicData } = supabase.storage.from(BBS_MEDIA_BUCKET).getPublicUrl(path)
   return { path, token: signedUpload.token, publicUrl: publicData.publicUrl }
 }
 
-export async function deleteBssUploadedMedia(paths: string[]): Promise<ActionResult> {
+export async function deleteBbsUploadedMedia(paths: string[]): Promise<ActionResult> {
   const supabase = await requireAdmin()
   await removeStoragePaths(supabase, paths)
   return { success: true }
 }
 
-async function saveBssMedia(
+async function saveBbsMedia(
   supabase: Awaited<ReturnType<typeof requireAdmin>>,
   articleId: string,
   media: ValidatedArticleInput['media'],
 ) {
   const { data: oldMedia, error: oldMediaError } = await supabase
-    .from('bss_article_media')
+    .from('bbs_article_media')
     .select('image_url')
     .eq('article_id', articleId)
   if (oldMediaError) return { error: oldMediaError, oldPaths: [] as string[] }
@@ -182,11 +182,11 @@ async function saveBssMedia(
   const oldPaths = (oldMedia ?? [])
     .map((item) => extractStoragePath(item.image_url))
     .filter((path): path is string => Boolean(path))
-  const { error: deleteError } = await supabase.from('bss_article_media').delete().eq('article_id', articleId)
+  const { error: deleteError } = await supabase.from('bbs_article_media').delete().eq('article_id', articleId)
   if (deleteError) return { error: deleteError, oldPaths }
 
   if (media.length) {
-    const { error } = await supabase.from('bss_article_media').insert(media.map((item, index) => ({
+    const { error } = await supabase.from('bbs_article_media').insert(media.map((item, index) => ({
       article_id: articleId,
       image_url: item.imageUrl,
       sort_order: index,
@@ -199,7 +199,7 @@ async function saveBssMedia(
   return { error: null, oldPaths: [] as string[] }
 }
 
-export async function createBssArticle(input: BssArticleInput): Promise<ActionResult> {
+export async function createBbsArticle(input: BbsArticleInput): Promise<ActionResult> {
   const validated = validateArticleInput(input)
   if ('error' in validated) return validated
 
@@ -212,7 +212,7 @@ export async function createBssArticle(input: BssArticleInput): Promise<ActionRe
   if (reporterError || !reporter) return { error: '담당기자를 확인하지 못했습니다.' }
 
   const { data: article, error } = await supabase
-    .from('bss_articles')
+    .from('bbs_articles')
     .insert({
       title: validated.data.title,
       category: validated.data.category,
@@ -226,23 +226,23 @@ export async function createBssArticle(input: BssArticleInput): Promise<ActionRe
     .select('id')
     .single()
   if (error || !article) {
-    console.error('BSS article create failed:', error?.code, error?.message)
+    console.error('BBS article create failed:', error?.code, error?.message)
     return { error: '기사를 등록하지 못했습니다. 입력값과 migration 적용 상태를 확인해 주세요.' }
   }
 
-  const mediaResult = await saveBssMedia(supabase, article.id, validated.data.media)
+  const mediaResult = await saveBbsMedia(supabase, article.id, validated.data.media)
   if (mediaResult.error) {
-    await supabase.from('bss_articles').delete().eq('id', article.id)
+    await supabase.from('bbs_articles').delete().eq('id', article.id)
     await removeStoragePaths(supabase, validated.data.media.map((item) => item.storagePath).filter((path): path is string => Boolean(path)))
-    console.error('BSS article media create failed:', mediaResult.error.code, mediaResult.error.message)
+    console.error('BBS article media create failed:', mediaResult.error.code, mediaResult.error.message)
     return { error: '기사 이미지를 등록하지 못했습니다.' }
   }
 
-  revalidateBss(article.id)
+  revalidateBbs(article.id)
   return { success: true, id: article.id }
 }
 
-export async function updateBssArticle(id: string, input: BssArticleInput): Promise<ActionResult> {
+export async function updateBbsArticle(id: string, input: BbsArticleInput): Promise<ActionResult> {
   const articleId = id.trim()
   if (!UUID_PATTERN.test(articleId)) return { error: '수정할 기사를 찾을 수 없습니다.' }
   const validated = validateArticleInput(input)
@@ -256,7 +256,7 @@ export async function updateBssArticle(id: string, input: BssArticleInput): Prom
     .maybeSingle()
   if (reporterError || !reporter) return { error: '담당기자를 확인하지 못했습니다.' }
 
-  const { error } = await supabase.from('bss_articles').update({
+  const { error } = await supabase.from('bbs_articles').update({
     title: validated.data.title,
     category: validated.data.category,
     summary: validated.data.summary,
@@ -267,33 +267,33 @@ export async function updateBssArticle(id: string, input: BssArticleInput): Prom
     reporter_character_id: validated.data.reporterCharacterId,
   }).eq('id', articleId)
   if (error) {
-    console.error('BSS article update failed:', error.code, error.message)
+    console.error('BBS article update failed:', error.code, error.message)
     return { error: '기사를 수정하지 못했습니다.' }
   }
 
-  const mediaResult = await saveBssMedia(supabase, articleId, validated.data.media)
+  const mediaResult = await saveBbsMedia(supabase, articleId, validated.data.media)
   if (mediaResult.error) {
-    console.error('BSS article media update failed:', mediaResult.error.code, mediaResult.error.message)
+    console.error('BBS article media update failed:', mediaResult.error.code, mediaResult.error.message)
     return { error: '기사 이미지를 수정하지 못했습니다.' }
   }
 
-  revalidateBss(articleId)
+  revalidateBbs(articleId)
   return { success: true }
 }
 
-export async function deleteBssArticle(id: string): Promise<ActionResult> {
+export async function deleteBbsArticle(id: string): Promise<ActionResult> {
   const articleId = id.trim()
   if (!UUID_PATTERN.test(articleId)) return { error: '삭제할 기사를 찾을 수 없습니다.' }
 
   const supabase = await requireAdmin()
-  const { data: media } = await supabase.from('bss_article_media').select('image_url').eq('article_id', articleId)
-  const { error } = await supabase.from('bss_articles').delete().eq('id', articleId)
+  const { data: media } = await supabase.from('bbs_article_media').select('image_url').eq('article_id', articleId)
+  const { error } = await supabase.from('bbs_articles').delete().eq('id', articleId)
   if (error) {
-    console.error('BSS article delete failed:', error.code, error.message)
+    console.error('BBS article delete failed:', error.code, error.message)
     return { error: '기사를 삭제하지 못했습니다.' }
   }
 
   await removeStoragePaths(supabase, (media ?? []).map((item) => extractStoragePath(item.image_url)).filter((path): path is string => Boolean(path)))
-  revalidateBss(articleId)
+  revalidateBbs(articleId)
   return { success: true }
 }

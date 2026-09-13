@@ -12,13 +12,13 @@ const markdownComponents = {
   li: ({ children }: { children?: ReactNode }) => <li className="pl-1">{children}</li>,
   strong: ({ children }: { children?: ReactNode }) => <strong className="font-bold">{children}</strong>,
   em: ({ children }: { children?: ReactNode }) => <em className="italic">{children}</em>,
-  del: ({ children }: { children?: ReactNode }) => <del className="text-[var(--bss-subtle-text)]">{children}</del>,
+  del: ({ children }: { children?: ReactNode }) => <del className="text-[var(--bbs-subtle-text)]">{children}</del>,
   a: ({ children, href }: { children?: ReactNode; href?: string }) => <a href={href} className="text-[#d7432d] underline underline-offset-2" target="_blank" rel="noreferrer">{children}</a>,
 }
 
-export default function BssArticleContent({ content, className = '' }: { content: string; className?: string }) {
+export default function BbsArticleContent({ content, className = '' }: { content: string; className?: string }) {
   return (
-    <div className={`space-y-5 text-[15px] leading-[1.9] text-[var(--bss-text)] sm:text-base ${className}`}>
+    <div className={`space-y-5 text-[15px] leading-[1.9] text-[var(--bbs-text)] sm:text-base ${className}`}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{content}</ReactMarkdown>
     </div>
   )

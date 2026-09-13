@@ -1,5 +1,5 @@
 import { Newspaper, Radio, Building2 } from 'lucide-react'
-import type { BssArticle } from '@/lib/bss/articles'
+import type { BbsArticle } from '@/lib/bbs/articles'
 
 const toneStyles = {
   broadcast: 'from-[#8b2c27] via-[#d55c36] to-[#f0a048]',
@@ -13,7 +13,7 @@ const toneIcons = {
   field: Newspaper,
 }
 
-export default function BssArticleVisual({ article, detail = false }: { article: BssArticle; detail?: boolean }) {
+export default function BbsArticleVisual({ article, detail = false }: { article: BbsArticle; detail?: boolean }) {
   const Icon = toneIcons[article.imageTone]
 
   return (

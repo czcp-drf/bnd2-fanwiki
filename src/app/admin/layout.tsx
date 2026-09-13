@@ -11,7 +11,7 @@ const navItems = [
   { href: '/admin/streamers', label: '스트리머 관리', icon: Tv2 },
   { href: '/admin/bongstagram', label: 'Bongstagram 프로필', icon: Camera },
   { href: '/admin/bongstagram/posts', label: 'Bongstagram 게시물', icon: Images },
-  { href: '/admin/bss', label: 'BBS 기사', icon: Newspaper },
+  { href: '/admin/bbs', label: 'BBS 기사', icon: Newspaper },
   { href: '/admin/map', label: '거점 지도', icon: Map },
   { href: '/admin/reports', label: '제보 관리', icon: FileText },
   { href: '/admin/blocked-ips', label: 'IP 차단', icon: ShieldOff },

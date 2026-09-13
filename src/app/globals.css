@@ -167,28 +167,28 @@
   background: linear-gradient(to bottom, #52525b, #27272a);
 }
 
-.bss-theme {
-  --bss-page: #e9e9e9;
-  --bss-surface: #ededed;
-  --bss-card: #ffffff;
-  --bss-nav: rgb(241 241 241 / 0.95);
-  --bss-muted: rgb(212 212 216 / 0.8);
-  --bss-border: #d4d4d8;
-  --bss-hover: #f3f3f3;
-  --bss-text: #27272a;
-  --bss-subtle-text: #71717a;
+.bbs-theme {
+  --bbs-page: #e9e9e9;
+  --bbs-surface: #ededed;
+  --bbs-card: #ffffff;
+  --bbs-nav: rgb(241 241 241 / 0.95);
+  --bbs-muted: rgb(212 212 216 / 0.8);
+  --bbs-border: #d4d4d8;
+  --bbs-hover: #f3f3f3;
+  --bbs-text: #27272a;
+  --bbs-subtle-text: #71717a;
 }
 
-html[data-bongstagram-theme="dark"] .bss-theme {
-  --bss-page: #101216;
-  --bss-surface: #171a20;
-  --bss-card: #1d2128;
-  --bss-nav: rgb(23 26 32 / 0.95);
-  --bss-muted: rgb(39 43 51 / 0.9);
-  --bss-border: #343943;
-  --bss-hover: #262b34;
-  --bss-text: #f4f4f5;
-  --bss-subtle-text: #a1a1aa;
+html[data-bongstagram-theme="dark"] .bbs-theme {
+  --bbs-page: #101216;
+  --bbs-surface: #171a20;
+  --bbs-card: #1d2128;
+  --bbs-nav: rgb(23 26 32 / 0.95);
+  --bbs-muted: rgb(39 43 51 / 0.9);
+  --bbs-border: #343943;
+  --bbs-hover: #262b34;
+  --bbs-text: #f4f4f5;
+  --bbs-subtle-text: #a1a1aa;
 }
 
 .bongstagram-story-backdrop {

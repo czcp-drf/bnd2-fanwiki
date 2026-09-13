@@ -18,7 +18,7 @@ const navItems = [
   { href: '/characters', label: '캐릭터' },
   { href: '/organizations', label: '조직' },
   { href: '/bongstagram', label: 'Bongstagram' },
-  { href: '/bss', label: 'BBS' },
+  { href: '/bbs', label: 'BBS' },
   { href: '/map', label: '지도' },
   { href: '/events', label: '사건' },
   { href: '/report', label: '제보' },
@@ -81,7 +81,7 @@ function RedPillToggle({ compact = false }: { compact?: boolean }) {
 
 export default function Header() {
   const pathname = usePathname()
-  const isThemeRoute = pathname === '/bongstagram' || pathname.startsWith('/bongstagram/') || pathname === '/bss' || pathname.startsWith('/bss/')
+  const isThemeRoute = pathname === '/bongstagram' || pathname.startsWith('/bongstagram/') || pathname === '/bbs' || pathname.startsWith('/bbs/')
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)

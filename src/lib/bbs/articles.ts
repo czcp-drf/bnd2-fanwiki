@@ -1,10 +1,10 @@
-export const BSS_CATEGORIES = ['전체', '정보', '사건사고', '경제', '칼럼', '기타'] as const
+export const BBS_CATEGORIES = ['전체', '정보', '사건사고', '경제', '칼럼', '기타'] as const
 
-export type BssCategory = (typeof BSS_CATEGORIES)[number]
+export type BbsCategory = (typeof BBS_CATEGORIES)[number]
 
-export type BssArticle = {
+export type BbsArticle = {
   id: string
-  category: Exclude<BssCategory, '전체'>
+  category: Exclude<BbsCategory, '전체'>
   title: string
   summary: string
   author: string
@@ -15,9 +15,9 @@ export type BssArticle = {
   imageTone: 'broadcast' | 'city' | 'field'
 }
 
-export const BSS_ARTICLES: BssArticle[] = [
+export const BBS_ARTICLES: BbsArticle[] = [
   {
-    id: 'bss-opening',
+    id: 'bbs-opening',
     category: '정보',
     title: '봉누도 전문 방송국 BBS 개국, 보도국장 이윤진 외 9명',
     summary: '봉누도 곳곳의 소식을 빠르게 전하는 BBS가 첫 방송을 시작했습니다.',
@@ -67,6 +67,6 @@ export const BSS_ARTICLES: BssArticle[] = [
   },
 ]
 
-export function getBssArticle(id: string) {
-  return BSS_ARTICLES.find((article) => article.id === id) ?? null
+export function getBbsArticle(id: string) {
+  return BBS_ARTICLES.find((article) => article.id === id) ?? null
 }

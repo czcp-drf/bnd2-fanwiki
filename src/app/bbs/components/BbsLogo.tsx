@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-export default function BssLogo({ compact = false, className }: { compact?: boolean; className?: string }) {
+export default function BbsLogo({ compact = false, className }: { compact?: boolean; className?: string }) {
   return (
     <span className={cn('inline-flex items-start gap-2', className)}>
       <span className="relative mt-0.5 inline-flex h-10 w-12 shrink-0 items-center justify-center rounded-sm bg-[#d7432d] text-[15px] font-black tracking-tight text-white shadow-[3px_3px_0_#f28a2e] after:absolute after:-bottom-1 after:left-2 after:h-3 after:w-3 after:-skew-x-12 after:bg-[#d7432d]">

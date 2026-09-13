@@ -6,8 +6,8 @@ import { Check, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
-import { createBssArticle, createBssUploadUrl, deleteBssArticle, deleteBssUploadedMedia, updateBssArticle, type BssArticleInput } from './actions'
-import BssArticleContent from '@/app/bss/components/BssArticleContent'
+import { createBbsArticle, createBbsUploadUrl, deleteBbsArticle, deleteBbsUploadedMedia, updateBbsArticle, type BbsArticleInput } from './actions'
+import BbsArticleContent from '@/app/bbs/components/BbsArticleContent'
 
 type Reporter = { id: string; name: string; avatar_url: string | null }
 type Media = { id: string; image_url: string; sort_order: number }
@@ -129,7 +129,7 @@ function MarkdownEditor({ value, onChange, disabled }: { value: string; onChange
       </div>
       <textarea ref={textareaRef} value={value} maxLength={50000} onChange={(event) => onChange(event.target.value)} rows={14} className="block w-full resize-y border-0 bg-transparent px-3 py-3 text-sm leading-7 text-zinc-200 placeholder:text-zinc-600 focus:outline-none" placeholder="기사 본문을 입력해 주세요. 선택한 텍스트에 서식을 적용할 수 있습니다." disabled={disabled} />
       <p className="border-t border-zinc-800 px-3 py-2 text-[11px] text-zinc-600">Markdown 형식으로 저장되며 제목 3(가장 큼)·굵게·기울임·취소선·점 목록·번호 목록을 지원합니다.</p>
-      {value.trim() && <div className="border-t border-zinc-800 px-3 py-4"><p className="mb-2 text-[11px] font-semibold text-zinc-600">미리보기</p><BssArticleContent content={value} /></div>}
+      {value.trim() && <div className="border-t border-zinc-800 px-3 py-4"><p className="mb-2 text-[11px] font-semibold text-zinc-600">미리보기</p><BbsArticleContent content={value} /></div>}
     </div>
   )
 }
@@ -157,9 +157,9 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
     setError('')
     setUploading(true)
     try {
-      const result = await createBssUploadUrl({ fileName: file.name, contentType: file.type, size: file.size })
+      const result = await createBbsUploadUrl({ fileName: file.name, contentType: file.type, size: file.size })
       if (result.error || !result.path || !result.token || !result.publicUrl) throw new Error(result.error ?? '업로드 주소를 만들지 못했습니다.')
-      const { error: uploadError } = await supabase.storage.from('bss-media').uploadToSignedUrl(result.path, result.token, file, { contentType: file.type })
+      const { error: uploadError } = await supabase.storage.from('bbs-media').uploadToSignedUrl(result.path, result.token, file, { contentType: file.type })
       if (uploadError) throw new Error('이미지 업로드에 실패했습니다.')
       if (target === 'thumbnail') setThumbnailUrl(result.publicUrl)
       else setMedia((current) => [...current, { imageUrl: result.publicUrl, storagePath: result.path }])
@@ -174,14 +174,14 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
     const item = media[index]
     setMedia((current) => current.filter((_, itemIndex) => itemIndex !== index))
     if (item?.imageUrl === thumbnailUrl) setThumbnailUrl('')
-    if (item?.storagePath) void deleteBssUploadedMedia([item.storagePath])
+    if (item?.storagePath) void deleteBbsUploadedMedia([item.storagePath])
   }
 
   function save() {
     setError('')
     startTransition(async () => {
-      const input: BssArticleInput = { title, category, summary, content, thumbnailUrl, reporterCharacterId: reporterId, approvedAt: toIsoDateTime(approvedAt), isPublished, media }
-      const result = isEdit ? await updateBssArticle(article!.id, input) : await createBssArticle(input)
+      const input: BbsArticleInput = { title, category, summary, content, thumbnailUrl, reporterCharacterId: reporterId, approvedAt: toIsoDateTime(approvedAt), isPublished, media }
+      const result = isEdit ? await updateBbsArticle(article!.id, input) : await createBbsArticle(input)
       if (result.error) setError(result.error)
       else onDone()
     })
@@ -225,7 +225,7 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
   )
 }
 
-export default function BssArticleManager({ articles, reporters }: { articles: Article[]; reporters: Reporter[] }) {
+export default function BbsArticleManager({ articles, reporters }: { articles: Article[]; reporters: Reporter[] }) {
   const router = useRouter()
   const [editing, setEditing] = useState<Article | null>(null)
   const [showCreate, setShowCreate] = useState(false)
@@ -269,7 +269,7 @@ export default function BssArticleManager({ articles, reporters }: { articles: A
     if (!window.confirm(`'${article.title}' 기사를 삭제할까요?`)) return
     setError('')
     startTransition(async () => {
-      const result = await deleteBssArticle(article.id)
+      const result = await deleteBbsArticle(article.id)
       if (result.error) setError(result.error)
       else router.refresh()
     })
@@ -284,7 +284,7 @@ export default function BssArticleManager({ articles, reporters }: { articles: A
         {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
         {filteredArticles.length === 0 ? <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center text-sm text-zinc-600">조건에 맞는 기사가 없습니다.</div> : <div className="space-y-2">{filteredArticles.map((article) => { const reporter = reporterById.get(article.reporter_character_id); return <article key={article.id} className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:flex-row sm:items-center"><div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-zinc-950">{article.thumbnail_url ? <AppImage src={article.thumbnail_url} alt="" fill sizes="112px" className="object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-zinc-700">이미지 없음</div>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-[11px]"><span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-amber-300">{categoryOptions.find((option) => !option.separator && option.value === article.category)?.label}</span><span className={article.is_published ? 'text-emerald-400' : 'text-zinc-500'}>{article.is_published ? '공개' : '비공개'}</span></div><h3 className="mt-1 line-clamp-2 text-sm font-bold text-zinc-100">{article.title}</h3><p className="mt-1 text-xs text-zinc-500">담당기자 {reporter?.name ?? '알 수 없음'} · {formatDate(article.approved_at)} · 첨부 {article.media.length}장</p></div><div className="flex shrink-0 items-center gap-1"><button type="button" onClick={() => requestEdit(article)} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"><Pencil size={12} />수정</button><button type="button" onClick={() => remove(article)} disabled={isPending} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 size={12} />삭제</button></div></article> })}</div>}
       </section>
-      {pendingEdit && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="presentation"><div role="dialog" aria-modal="true" aria-labelledby="bss-edit-warning-title" className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"><h2 id="bss-edit-warning-title" className="text-base font-bold text-white">작성 중인 기사를 바꿀까요?</h2><p className="mt-2 text-sm leading-6 text-zinc-400">현재 등록 중인 기사 내용은 사라집니다. ‘{pendingEdit.title}’ 기사 수정으로 이동할까요?</p><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setPendingEdit(null)} className="cursor-pointer rounded-lg bg-zinc-800 px-3.5 py-2 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white">취소</button><button type="button" onClick={confirmEdit} className="cursor-pointer rounded-lg bg-amber-400 px-3.5 py-2 text-xs font-bold text-zinc-950 transition-colors hover:bg-amber-300">확인</button></div></div></div>}
+      {pendingEdit && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="presentation"><div role="dialog" aria-modal="true" aria-labelledby="bbs-edit-warning-title" className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"><h2 id="bbs-edit-warning-title" className="text-base font-bold text-white">작성 중인 기사를 바꿀까요?</h2><p className="mt-2 text-sm leading-6 text-zinc-400">현재 등록 중인 기사 내용은 사라집니다. ‘{pendingEdit.title}’ 기사 수정으로 이동할까요?</p><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setPendingEdit(null)} className="cursor-pointer rounded-lg bg-zinc-800 px-3.5 py-2 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white">취소</button><button type="button" onClick={confirmEdit} className="cursor-pointer rounded-lg bg-amber-400 px-3.5 py-2 text-xs font-bold text-zinc-950 transition-colors hover:bg-amber-300">확인</button></div></div></div>}
     </div>
   )
 }
