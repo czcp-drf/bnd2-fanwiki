@@ -6,6 +6,7 @@ import AppImage from '@/components/ui/AppImage'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
 import { getBongstagramPost, getBongstagramPostEngagement } from '@/lib/bongstagram/public-data'
+import { getBongstagramLikeMode } from '@/lib/bongstagram/like-mode'
 import BongstagramBottomNav from '../../BongstagramBottomNav'
 import BongstagramBackButton from '../../BongstagramBackButton'
 import BongstagramDisplayName from '../../BongstagramDisplayName'
@@ -45,7 +46,7 @@ async function getPostCounts(postId: string) {
   const ipHash = await getBongstagramIpHash()
   const [{ likeCounts, commentCounts }, viewerLikesResult] = await Promise.all([
     getBongstagramPostEngagement([postId]),
-    ipHash
+    ipHash && getBongstagramLikeMode() === 'server'
       ? adminSupabase.from('bongstagram_post_likes').select('post_id').eq('post_id', postId).eq('ip_hash', ipHash)
       : Promise.resolve({ data: [], error: null }),
   ])
@@ -97,6 +98,7 @@ export async function generateMetadata({ params }: { params: Promise<{ postId: s
 export default async function BongstagramPostPage({ params }: { params: Promise<{ postId: string }> }) {
   const { postId } = await params
   const data = await getPostData(postId)
+  const likeMode = getBongstagramLikeMode()
 
   return (
     <div className="bongstagram-theme">
@@ -119,7 +121,7 @@ export default async function BongstagramPostPage({ params }: { params: Promise<
             {data.post.media.length > 0 ? <MediaCarousel>{data.post.media.map((media) => <div key={media.id} className="w-full min-w-0 max-w-full flex-none snap-center"><PostMedia media={media} label={data.profile.profile_name} /></div>)}</MediaCarousel> : <div className="flex min-h-56 items-center justify-center bg-black text-zinc-600"><ImageIcon size={28} /></div>}
 
             <div className="space-y-3 px-4 py-3">
-              <BongstagramLikeCountProvider postIds={[data.post.id]} initialLikeCounts={{ [data.post.id]: data.likeCount }}><BongstagramPostInteractions postId={data.post.id} initialLikeCount={data.likeCount} initialCommentCount={data.commentCount} initialLiked={data.likedByViewer} caption={data.post.content ? <PostCaption post={data.post} profileName={data.profile.profile_name} streamerName={data.streamer?.display_name ?? null} /> : null} /></BongstagramLikeCountProvider>
+              <BongstagramLikeCountProvider postIds={[data.post.id]} initialLikeCounts={{ [data.post.id]: data.likeCount }} initialLikedPostIds={data.likedByViewer ? [data.post.id] : []} likeMode={likeMode}><BongstagramPostInteractions postId={data.post.id} initialLikeCount={data.likeCount} initialCommentCount={data.commentCount} initialLiked={data.likedByViewer} likeMode={likeMode} caption={data.post.content ? <PostCaption post={data.post} profileName={data.profile.profile_name} streamerName={data.streamer?.display_name ?? null} /> : null} /></BongstagramLikeCountProvider>
               <p className="text-[11px] text-zinc-500">{formatPostTime(data.post.posted_at)}</p>
             </div>
           </article>

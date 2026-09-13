@@ -4,6 +4,7 @@ import BongstagramStoryRail from './BongstagramStoryRail'
 import BongstagramInfiniteFeed from './BongstagramInfiniteFeed'
 import BongstagramBottomNav from './BongstagramBottomNav'
 import { getBongstagramFeedPage, getBongstagramStoryFeed } from '@/lib/bongstagram/feed-data'
+import { getBongstagramLikeMode } from '@/lib/bongstagram/like-mode'
 import {
   Heart,
   Image as ImageIcon,
@@ -22,6 +23,7 @@ export default async function BongstagramPage() {
     getBongstagramStoryFeed(),
   ])
   const { posts } = initialPage
+  const likeMode = getBongstagramLikeMode()
 
   return (
     <div className="bongstagram-theme">
@@ -41,10 +43,10 @@ export default async function BongstagramPage() {
           </div>
           </header>
 
-        <BongstagramStoryRail stories={stories} />
+        <BongstagramStoryRail stories={stories} likeMode={likeMode} />
 
         <main>
-          {posts.length > 0 ? <BongstagramInfiniteFeed initialPosts={posts} initialCursor={initialPage.nextCursor} initialHasMore={initialPage.hasMore} /> : (
+          {posts.length > 0 ? <BongstagramInfiniteFeed initialPosts={posts} initialCursor={initialPage.nextCursor} initialHasMore={initialPage.hasMore} likeMode={likeMode} /> : (
           <article className="border-b border-zinc-800">
             <header className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">

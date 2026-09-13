@@ -1,9 +1,10 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Heart, MessageCircle, Send } from 'lucide-react'
 import { getBongstagramComments, getBongstagramLikeCounts, toggleBongstagramLike, type BongstagramComment } from './actions'
+import type { BongstagramLikeMode } from '@/lib/bongstagram/like-mode'
 import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 
@@ -70,36 +71,109 @@ function CommentThread({ comment, repliesByParent, depth = 0 }: { comment: Bongs
 }
 
 const LIKE_COUNT_REFRESH_MS = 60_000
+const LOCAL_POST_LIKES_STORAGE_KEY = 'bongstagram-local-post-likes'
+
+function readStoredPostLikes() {
+  if (typeof window === 'undefined') return new Set<string>()
+  try {
+    const value: unknown = JSON.parse(window.localStorage.getItem(LOCAL_POST_LIKES_STORAGE_KEY) ?? '[]')
+    return new Set(Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [])
+  } catch {
+    return new Set<string>()
+  }
+}
+
+function writeStoredPostLikes(likedIds: Set<string>) {
+  window.localStorage.setItem(LOCAL_POST_LIKES_STORAGE_KEY, JSON.stringify(Array.from(likedIds)))
+  window.dispatchEvent(new Event('bongstagram-local-post-likes-change'))
+}
+
+function subscribeStoredPostLikes(callback: () => void) {
+  window.addEventListener('storage', callback)
+  window.addEventListener('bongstagram-local-post-likes-change', callback)
+  return () => {
+    window.removeEventListener('storage', callback)
+    window.removeEventListener('bongstagram-local-post-likes-change', callback)
+  }
+}
+
+function getStoredPostLikesSnapshot() {
+  return window.localStorage.getItem(LOCAL_POST_LIKES_STORAGE_KEY) ?? '[]'
+}
+
+function getServerStoredPostLikesSnapshot() {
+  return '[]'
+}
+
+function parseStoredPostLikes(snapshot: string) {
+  try {
+    const value: unknown = JSON.parse(snapshot)
+    return new Set(Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [])
+  } catch {
+    return new Set<string>()
+  }
+}
+
 type LikeCountContextValue = {
+  mode: BongstagramLikeMode
   counts: Map<string, number>
+  isLiked: (postId: string) => boolean
+  toggleLocalLike: (postId: string) => void
   adjust: (postId: string, delta: number) => void
 }
 
 const LikeCountContext = createContext<LikeCountContextValue | null>(null)
 
-export function BongstagramLikeCountProvider({ postIds, initialLikeCounts, children }: { postIds: string[]; initialLikeCounts: Record<string, number>; children: ReactNode }) {
+export function BongstagramLikeCountProvider({ postIds, initialLikeCounts, initialLikedPostIds = [], likeMode, children }: { postIds: string[]; initialLikeCounts: Record<string, number>; initialLikedPostIds?: string[]; likeMode: BongstagramLikeMode; children: ReactNode }) {
   const normalizedPostIds = useMemo(() => Array.from(new Set(postIds)), [postIds])
-  const [likeCounts, setLikeCounts] = useState(() => new Map(Object.entries(initialLikeCounts)))
+  const storedPostLikesSnapshot = useSyncExternalStore(subscribeStoredPostLikes, getStoredPostLikesSnapshot, getServerStoredPostLikesSnapshot)
+  const localLikedPostIds = useMemo(() => parseStoredPostLikes(storedPostLikesSnapshot), [storedPostLikesSnapshot])
+  const [refreshedLikeCounts, setRefreshedLikeCounts] = useState<Map<string, number> | null>(null)
+  const [likeAdjustments, setLikeAdjustments] = useState<Map<string, number>>(() => new Map())
+
+  const baseLikeCounts = useMemo(() => {
+    const next = new Map(Object.entries(initialLikeCounts))
+    refreshedLikeCounts?.forEach((count, postId) => next.set(postId, count))
+    return next
+  }, [initialLikeCounts, refreshedLikeCounts])
+
   const adjustLikeCount = useCallback((postId: string, delta: number) => {
-    setLikeCounts((current) => {
+    setLikeAdjustments((current) => {
       const next = new Map(current)
-      next.set(postId, Math.max(0, (next.get(postId) ?? 0) + delta))
+      next.set(postId, (next.get(postId) ?? 0) + delta)
       return next
     })
   }, [])
+
+  const toggleLocalLike = useCallback((postId: string) => {
+    const next = new Set(parseStoredPostLikes(getStoredPostLikesSnapshot()))
+    if (next.has(postId)) next.delete(postId)
+    else next.add(postId)
+    writeStoredPostLikes(next)
+  }, [])
+
+  const counts = useMemo(() => {
+    const next = new Map(baseLikeCounts)
+    likeAdjustments.forEach((delta, postId) => next.set(postId, Math.max(0, (next.get(postId) ?? 0) + delta)))
+    if (likeMode === 'local') {
+      initialLikedPostIds.forEach((postId) => next.set(postId, Math.max(0, (next.get(postId) ?? 0) - 1)))
+      localLikedPostIds.forEach((postId) => next.set(postId, (next.get(postId) ?? 0) + 1))
+    }
+    return next
+  }, [baseLikeCounts, initialLikedPostIds, likeAdjustments, likeMode, localLikedPostIds])
+
+  const isLiked = useCallback((postId: string) => localLikedPostIds.has(postId), [localLikedPostIds])
 
   useEffect(() => {
     let cancelled = false
 
     async function refreshLikeCounts() {
+      if (likeMode === 'local') return
       if (document.visibilityState !== 'visible') return
       const result = await getBongstagramLikeCounts(normalizedPostIds)
       if (cancelled || !result.counts) return
-      setLikeCounts((current) => {
-        const next = new Map(current)
-        Object.entries(result.counts ?? {}).forEach(([postId, count]) => next.set(postId, count))
-        return next
-      })
+      setRefreshedLikeCounts(new Map(Object.entries(result.counts)))
+      setLikeAdjustments(new Map())
     }
 
     const intervalId = window.setInterval(refreshLikeCounts, LIKE_COUNT_REFRESH_MS)
@@ -113,9 +187,9 @@ export function BongstagramLikeCountProvider({ postIds, initialLikeCounts, child
       window.clearInterval(intervalId)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [normalizedPostIds])
+  }, [likeMode, normalizedPostIds])
 
-  const contextValue = useMemo(() => ({ counts: likeCounts, adjust: adjustLikeCount }), [adjustLikeCount, likeCounts])
+  const contextValue = useMemo(() => ({ mode: likeMode, counts, isLiked, toggleLocalLike, adjust: adjustLikeCount }), [adjustLikeCount, counts, isLiked, likeMode, toggleLocalLike])
   return <LikeCountContext.Provider value={contextValue}>{children}</LikeCountContext.Provider>
 }
 
@@ -125,17 +199,20 @@ export default function BongstagramPostInteractions({
   initialCommentCount = 0,
   initialLiked = false,
   caption,
+  likeMode,
 }: {
   postId: string
   initialLikeCount?: number
   initialCommentCount?: number
   initialLiked?: boolean
   caption?: ReactNode
+  likeMode?: BongstagramLikeMode
 }) {
   const [liked, setLiked] = useState(initialLiked)
   const [localLikeCount, setLocalLikeCount] = useState(initialLikeCount)
   const likeCountContext = useContext(LikeCountContext)
   const likeCount = likeCountContext?.counts.get(postId) ?? localLikeCount
+  const displayedLiked = likeCountContext?.mode === 'local' ? likeCountContext.isLiked(postId) : liked
   const [comments, setComments] = useState<BongstagramComment[]>([])
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [commentsLoaded, setCommentsLoaded] = useState(false)
@@ -145,6 +222,20 @@ export default function BongstagramPostInteractions({
   const handleLike = () => {
     if (isPending) return
     setError('')
+    if (likeCountContext?.mode === 'local' || likeMode === 'local') {
+      if (likeCountContext) {
+        likeCountContext.toggleLocalLike(postId)
+      } else {
+        const storedLikes = readStoredPostLikes()
+        const nextLiked = !storedLikes.has(postId)
+        if (nextLiked) storedLikes.add(postId)
+        else storedLikes.delete(postId)
+        writeStoredPostLikes(storedLikes)
+        setLiked(nextLiked)
+        setLocalLikeCount((current) => Math.max(0, current + (nextLiked ? 1 : -1)))
+      }
+      return
+    }
     startTransition(async () => {
       const result = await toggleBongstagramLike(postId)
       if (result.error) {
@@ -182,13 +273,13 @@ export default function BongstagramPostInteractions({
       <div className="flex items-center gap-4 text-zinc-300">
         <button
           type="button"
-          aria-label={liked ? '좋아요 취소' : '좋아요'}
-          aria-pressed={liked}
+          aria-label={displayedLiked ? '좋아요 취소' : '좋아요'}
+          aria-pressed={displayedLiked}
           disabled={isPending}
           onClick={handleLike}
           className="transition-colors hover:text-rose-400 disabled:cursor-wait disabled:opacity-60"
         >
-          <Heart size={23} fill={liked ? 'currentColor' : 'none'} className={liked ? 'text-rose-500' : ''} />
+          <Heart size={23} fill={displayedLiked ? 'currentColor' : 'none'} className={displayedLiked ? 'text-rose-500' : ''} />
         </button>
         <button
           type="button"

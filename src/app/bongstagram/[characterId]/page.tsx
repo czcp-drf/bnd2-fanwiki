@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
 import { getBongstagramProfile } from '@/lib/bongstagram/public-data'
 import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
+import { getBongstagramLikeMode } from '@/lib/bongstagram/like-mode'
 import BongstagramBottomNav from '../BongstagramBottomNav'
 import BongstagramProfileScreen from '../BongstagramProfileScreen'
 
@@ -41,7 +42,7 @@ async function getProfileData(characterId: string) {
   const storyIds = profilePosts.filter((post) => post.post_type === 'story').map((post) => post.id)
   let likedStoryIds = new Set<string>()
 
-  if (storyIds.length > 0) {
+  if (storyIds.length > 0 && getBongstagramLikeMode() === 'server') {
     const adminSupabase = createAdminClient()
     const ipHash = await getBongstagramIpHash()
     const viewerLikesResult = ipHash
@@ -75,12 +76,13 @@ export async function generateMetadata({ params }: { params: Promise<{ character
 export default async function BongstagramProfilePage({ params }: { params: Promise<{ characterId: string }> }) {
   const { characterId } = await params
   const data = await getProfileData(characterId)
+  const likeMode = getBongstagramLikeMode()
 
   return (
     <div className="bongstagram-theme">
       <div className="bongstagram-font min-h-screen bg-zinc-950 pb-20">
         <div className="mx-auto min-h-screen w-full max-w-[540px] border-x border-zinc-900 bg-zinc-950">
-          <BongstagramProfileScreen profile={data.profile} character={data.character} streamer={data.streamer} posts={data.posts} />
+          <BongstagramProfileScreen profile={data.profile} character={data.character} streamer={data.streamer} posts={data.posts} likeMode={likeMode} />
         </div>
       </div>
       <BongstagramBottomNav />

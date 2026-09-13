@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Heart, Plus, Send, Volume2, VolumeX, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import { toggleBongstagramStoryLike } from './actions'
+import type { BongstagramLikeMode } from '@/lib/bongstagram/like-mode'
 import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 import {
@@ -103,18 +104,19 @@ function StoryAvatar({ story, mark }: { story: BongstagramStory; mark: string })
   )
 }
 
-export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, onClose, onChange }: {
+export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, onClose, onChange, likeMode }: {
   slideGroups: StorySlide[][]
   activeGroupIndex: number
   activeSlideIndex: number
   onClose: () => void
   onChange: (groupIndex: number, slideIndex: number) => void
+  likeMode: BongstagramLikeMode
 }) {
   const activeGroup = slideGroups[activeGroupIndex] ?? []
   const active = activeGroup[activeSlideIndex] ?? activeGroup[0]
   const [progress, setProgress] = useState(0)
   const [isPendingVideo, setIsPendingVideo] = useState(false)
-  const [storyLiked, setStoryLiked] = useState(() => active.story.liked_by_viewer ?? readStoredStoryLikes().has(active.story.id))
+  const [storyLiked, setStoryLiked] = useState(() => likeMode === 'local' ? readStoredStoryLikes().has(active.story.id) : (active.story.liked_by_viewer ?? false))
   const [storyLikeError, setStoryLikeError] = useState('')
   const [isLikePending, startLikeTransition] = useTransition()
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
@@ -143,6 +145,15 @@ export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, o
   function handleStoryLike() {
     if (isLikePending) return
     setStoryLikeError('')
+    if (likeMode === 'local') {
+      const liked = !storyLiked
+      setStoryLiked(liked)
+      const storedLikes = readStoredStoryLikes()
+      if (liked) storedLikes.add(active.story.id)
+      else storedLikes.delete(active.story.id)
+      writeStoredStoryLikes(storedLikes)
+      return
+    }
     startLikeTransition(async () => {
       const result = await toggleBongstagramStoryLike(active.story.id)
       if (result.error) {
@@ -311,7 +322,7 @@ export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, o
   )
 }
 
-export default function BongstagramStoryRail({ stories }: { stories: BongstagramStory[] }) {
+export default function BongstagramStoryRail({ stories, likeMode }: { stories: BongstagramStory[]; likeMode: BongstagramLikeMode }) {
   const [open, setOpen] = useState(false)
   const [activeGroupIndex, setActiveGroupIndex] = useState(0)
   const [activeSlideIndex, setActiveSlideIndex] = useState(0)
@@ -402,7 +413,7 @@ export default function BongstagramStoryRail({ stories }: { stories: Bongstagram
         })}
         </section>
       </div>
-      {open && slideGroups.length > 0 && <StoryViewer key={`${activeGroupIndex}-${activeSlideIndex}`} slideGroups={slideGroups} activeGroupIndex={activeGroupIndex} activeSlideIndex={activeSlideIndex} onClose={() => setOpen(false)} onChange={(groupIndex, slideIndex) => { setActiveGroupIndex(groupIndex); setActiveSlideIndex(slideIndex) }} />}
+      {open && slideGroups.length > 0 && <StoryViewer key={`${activeGroupIndex}-${activeSlideIndex}`} slideGroups={slideGroups} activeGroupIndex={activeGroupIndex} activeSlideIndex={activeSlideIndex} onClose={() => setOpen(false)} onChange={(groupIndex, slideIndex) => { setActiveGroupIndex(groupIndex); setActiveSlideIndex(slideIndex) }} likeMode={likeMode} />}
     </>
   )
 }

@@ -314,6 +314,7 @@ src/
 - [x] 관리자 게시물 작성 시 Supabase Storage 직접 업로드 (이미지 10MB·동영상 100MB, 일회성 업로드 URL, 파일 삭제 시 Storage 정리)
 - [ ] 게시물 상세 페이지
 - [x] 피드 좋아요 — IP 해시 기준 게시물별 1회 등록·취소
+- [x] 좋아요 비상 전환 — `BONGSTAGRAM_LIKES_MODE=server`(기본) 또는 `local`로 게시물·스토리 좋아요 저장 방식을 전환하며, local 모드에서는 서버 쓰기·방문자별 DB 조회·주기 집계를 중단하고 브라우저 localStorage만 사용
 - [x] 피드 댓글 조회창 — 공개 조회만 지원하며 공개 작성은 차단
 - [x] 관리자 댓글 등록·수정·삭제 및 작성 시간 지정, 게시물별 직접 댓글 관리와 1단계 답글 등록 (`/admin/bongstagram/posts`)
 - [x] 댓글창 빨간약 표시 — Bongstagram 프로필과 연결된 댓글 작성자의 이름·프로필 이미지를 토글 상태에 따라 표시
@@ -332,6 +333,7 @@ src/
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 서비스 롤 key (어드민, 업로드 스크립트) |
 | `BONGSTAGRAM_SERVER_FINAL_DATE` | 서버 마지막 종료일 (`YYYY-MM-DD`, 해당일 오전 3시에 스토리 전체 종료) |
+| `BONGSTAGRAM_LIKES_MODE` | 좋아요 저장 모드 (`server` 기본값, `local`은 브라우저 localStorage만 사용) |
 | `ADMIN_PASSWORD` | 어드민 로그인 비밀번호 |
 | `ADMIN_TOKEN` | 어드민 쿠키 검증 토큰 |
 | `NEXT_PUBLIC_MAP_TILE_BASE` | 지도 타일 CDN 베이스 URL (Supabase Storage, 미설정 시 public/ 직접 서빙) |
@@ -429,6 +431,8 @@ src/
 - Supabase 캐시·조회 최적화 (`feat/bonstagram`): 홈 스토리 조회를 만료 시각이 지난 행까지 읽지 않도록 `story_expires_at` 조건을 포함한 60초 캐시 함수로 분리했습니다. 댓글 조회는 댓글별로 전체 프로필·캐릭터·스트리머를 반복 조회하지 않고 캐시된 Bongstagram 디렉터리를 재사용하며, 좋아요 수 주기 갱신도 캐시된 engagement 조회를 사용합니다. 피드 커서·활성 스토리 조회 인덱스를 담은 `027_bongstagram_query_indexes.sql`을 추가했고, 사용자가 Supabase SQL Editor에서 운영 DB 적용을 완료했습니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `feat/bonstagram`이며 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
 
 - 검색엔진 임시 차단 (`feat/bonstagram`): 루트 metadata에 `noindex`, `nofollow`, `noarchive`와 Googlebot 세부 지시를 추가해 전체 페이지가 검색 결과에 새로 색인되지 않도록 했습니다. robots.txt로 크롤링 자체를 차단하지 않아 이미 색인된 주소가 noindex 지시를 확인할 수 있도록 구성했습니다. 생성 HTML의 robots·googlebot 메타 태그를 확인했으며 대상 브랜치는 `feat/bonstagram`, 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
+
+- Bongstagram 좋아요 비상 전환 준비 (`feat/bonstagram`, 커밋 대기): `BONGSTAGRAM_LIKES_MODE` 환경변수로 서버 저장과 브라우저 localStorage 전용 모드를 전환할 수 있도록 게시물·스토리 좋아요 UI와 Server Action을 연결했습니다. local 모드에서는 좋아요 등록·취소 Server Action을 서버에서 거부하고, 사용자별 DB 좋아요 조회와 60초 집계 갱신도 건너뜁니다. server 모드는 기존 IP 해시 제한 동작을 유지합니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며, 아직 커밋·푸시하지 않았습니다.
 
 - Bongstagram 조회 페이지네이션·스토리 레일 개선 (`feat/bonstagram`): 메인 피드는 최초 12개, 검색·해시태그 게시물 그리드는 최초 24개를 cursor 기반으로 조회하고 하단 접근 시 다음 페이지를 무한 스크롤로 추가합니다. `posted_at`과 `id`를 함께 cursor로 사용해 정렬 경계의 중복·누락을 줄였으며, 기존 전체 게시물 일괄 그리드 컴포넌트를 제거했습니다. 홈 스토리 레일에는 모바일 스와이프와 PC 드래그를 유지하고 좌우 이동 버튼은 제거했으며 텍스트 선택도 방지했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치 `feat/bonstagram`에 커밋하고 원격 `deploy/feat/bonstagram`으로 푸시합니다.
 

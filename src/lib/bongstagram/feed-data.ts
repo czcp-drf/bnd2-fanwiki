@@ -9,6 +9,7 @@ import {
 import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
 import type { BongstagramFeedPost, BongstagramPostCursor } from '@/lib/bongstagram/types'
 import { extractBongstagramHashtags } from '@/lib/bongstagram/hashtags'
+import { getBongstagramLikeMode } from '@/lib/bongstagram/like-mode'
 
 const FEED_PAGE_SIZE = 12
 const GRID_PAGE_SIZE = 24
@@ -48,7 +49,7 @@ function mapFeedPost(
 }
 
 async function getViewerPostLikeIds(postIds: string[]) {
-  if (postIds.length === 0) return new Set<string>()
+  if (postIds.length === 0 || getBongstagramLikeMode() === 'local') return new Set<string>()
   const ipHash = await getBongstagramIpHash()
   if (!ipHash) return new Set<string>()
 
@@ -90,7 +91,7 @@ export async function getBongstagramFeedPage(cursor?: BongstagramPostCursor | nu
 }
 
 async function getViewerStoryLikeIds(storyIds: string[]) {
-  if (storyIds.length === 0) return new Set<string>()
+  if (storyIds.length === 0 || getBongstagramLikeMode() === 'local') return new Set<string>()
   const ipHash = await getBongstagramIpHash()
   if (!ipHash) return new Set<string>()
 

@@ -12,6 +12,7 @@ import BongstagramFeedOrder from './BongstagramFeedOrder'
 import BongstagramFollowButton from './BongstagramFollowButton'
 import { getBongstagramFeedPage, type BongstagramFeedPageResult } from './actions'
 import type { BongstagramFeedMedia, BongstagramFeedPost, BongstagramPostCursor } from '@/lib/bongstagram/types'
+import type { BongstagramLikeMode } from '@/lib/bongstagram/like-mode'
 
 function FeedMedia({ media, label }: { media: BongstagramFeedMedia; label: string }) {
   return media.media_type === 'video'
@@ -56,7 +57,7 @@ function PostCaption({ post }: { post: BongstagramFeedPost }) {
   )
 }
 
-function FeedPostCard({ post }: { post: BongstagramFeedPost }) {
+function FeedPostCard({ post, likeMode }: { post: BongstagramFeedPost; likeMode: BongstagramLikeMode }) {
   return (
     <article className="border-b border-zinc-800">
       <header className="flex items-center justify-between px-4 py-3">
@@ -98,6 +99,7 @@ function FeedPostCard({ post }: { post: BongstagramFeedPost }) {
           initialLikeCount={post.like_count}
           initialCommentCount={post.comment_count}
           initialLiked={post.liked_by_viewer}
+          likeMode={likeMode}
           caption={post.content ? <PostCaption post={post} /> : null}
         />
         <p className="text-[11px] text-zinc-500">{formatPostTime(post.posted_at)}</p>
@@ -110,10 +112,12 @@ export default function BongstagramInfiniteFeed({
   initialPosts,
   initialCursor,
   initialHasMore,
+  likeMode,
 }: {
   initialPosts: BongstagramFeedPost[]
   initialCursor: BongstagramPostCursor | null
   initialHasMore: boolean
+  likeMode: BongstagramLikeMode
 }) {
   const [posts, setPosts] = useState(initialPosts)
   const [cursor, setCursor] = useState(initialCursor)
@@ -151,11 +155,11 @@ export default function BongstagramInfiniteFeed({
 
   const postIds = posts.map((post) => post.id)
   const initialLikeCounts = Object.fromEntries(posts.map((post) => [post.id, post.like_count ?? 0]))
-  const items = posts.map((post) => ({ characterId: post.character_id, element: <FeedPostCard key={post.id} post={post} /> }))
+  const items = posts.map((post) => ({ characterId: post.character_id, element: <FeedPostCard key={post.id} post={post} likeMode={likeMode} /> }))
 
   return (
     <>
-      <BongstagramLikeCountProvider postIds={postIds} initialLikeCounts={initialLikeCounts}>
+      <BongstagramLikeCountProvider postIds={postIds} initialLikeCounts={initialLikeCounts} initialLikedPostIds={posts.filter((post) => post.liked_by_viewer).map((post) => post.id)} likeMode={likeMode}>
         <BongstagramFeedOrder items={items} />
       </BongstagramLikeCountProvider>
       <div ref={sentinelRef} className="flex min-h-16 items-center justify-center py-5 text-xs text-zinc-600" aria-live="polite">

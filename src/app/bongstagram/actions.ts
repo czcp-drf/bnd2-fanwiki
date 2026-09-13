@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
+import { getBongstagramLikeMode } from '@/lib/bongstagram/like-mode'
 import {
   getBongstagramComments as getCachedBongstagramComments,
   getBongstagramPostEngagement,
@@ -68,6 +69,8 @@ export async function getBongstagramHashtagGridPage(tag: string, cursor: Bongsta
 }
 
 export async function toggleBongstagramLike(postId: string): Promise<LikeActionResult> {
+  if (getBongstagramLikeMode() === 'local') return { error: '현재 좋아요는 이 브라우저에서만 처리됩니다.' }
+
   const id = postId.trim()
   if (!isValidPostId(id)) return { error: '좋아요를 처리할 게시물을 찾을 수 없습니다.' }
 
@@ -134,6 +137,8 @@ export async function getBongstagramLikeCounts(postIds: string[]): Promise<LikeC
 }
 
 export async function toggleBongstagramStoryLike(storyId: string): Promise<StoryLikeActionResult> {
+  if (getBongstagramLikeMode() === 'local') return { error: '현재 좋아요는 이 브라우저에서만 처리됩니다.' }
+
   const id = storyId.trim()
   if (!isValidPostId(id)) return { error: '좋아요를 처리할 스토리를 찾을 수 없습니다.' }
 
