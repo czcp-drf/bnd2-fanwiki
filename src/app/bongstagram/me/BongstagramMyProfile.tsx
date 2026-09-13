@@ -32,7 +32,7 @@ export default function BongstagramMyProfile({ profiles, characters, streamers }
     const streamer = character?.streamer_id ? streamerById.get(character.streamer_id) : null
     return profile && { profile, character, streamer }
   }).filter((item): item is { profile: Profile; character: Character | undefined; streamer: Streamer | null | undefined } => Boolean(item))
-  const filteredFollowingProfiles = followingProfiles.filter(({ profile, character, streamer }) => `${profile.profile_name} ${character?.name ?? ''} ${streamer?.display_name ?? ''}`.toLocaleLowerCase().includes(followingSearch.trim().toLocaleLowerCase()))
+  const filteredFollowingProfiles = followingProfiles.filter(({ profile, character, streamer }) => `${profile.profile_name} ${character?.name ?? ''}${isRedPill ? ` ${streamer?.display_name ?? ''}` : ''}`.toLocaleLowerCase().includes(followingSearch.trim().toLocaleLowerCase()))
 
   function openFollowing() {
     setFollowingIds(readBongstagramFollowing())

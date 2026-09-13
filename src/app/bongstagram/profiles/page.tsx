@@ -21,7 +21,7 @@ export default async function BongstagramProfilesPage() {
       <div className="bongstagram-font min-h-screen bg-zinc-950 pb-20">
         <div className="mx-auto min-h-screen w-full max-w-[540px] border-x border-zinc-900 bg-zinc-950">
           <header className="flex h-16 items-center border-b border-zinc-800 px-5"><h1 className="text-xl font-medium tracking-tight text-white">프로필</h1></header>
-          <BongstagramProfileSearch profiles={profiles ?? []} characters={characters ?? []} streamers={streamers ?? []} />
+          <BongstagramProfileSearch profiles={profiles ?? []} characters={characters ?? []} streamers={streamers ?? []} posts={[]} />
         </div>
       </div>
       <BongstagramBottomNav />
