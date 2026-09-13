@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import BongstagramProfileManager from './BongstagramProfileManager'
+import BongstagramCacheRefreshButton from './BongstagramCacheRefreshButton'
 
 export const metadata: Metadata = { title: 'Bongstagram 관리' }
 
@@ -66,9 +67,12 @@ export default async function AdminBongstagramPage() {
 
   return (
     <div className="space-y-6 p-8">
-      <div>
+      <div className="flex items-start justify-between gap-4">
+        <div>
         <h1 className="text-xl font-black text-white">Bongstagram 관리</h1>
         <p className="mt-1 text-sm text-zinc-500">기존 캐릭터에 Bongstagram 프로필을 연결하고 관리합니다.</p>
+        </div>
+        <BongstagramCacheRefreshButton />
       </div>
 
       <BongstagramProfileManager

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import BongstagramPostManager from '../BongstagramPostManager'
 import BongstagramCommentManager from '../BongstagramCommentManager'
 import BongstagramAdminTabs from '../BongstagramAdminTabs'
+import BongstagramCacheRefreshButton from '../BongstagramCacheRefreshButton'
 
 export const metadata: Metadata = { title: 'Bongstagram 게시물 관리' }
 export const dynamic = 'force-dynamic'
@@ -125,9 +126,12 @@ export default async function AdminBongstagramPostsPage() {
 
   return (
     <div className="space-y-6 p-8">
-      <div>
+      <div className="flex items-start justify-between gap-4">
+        <div>
         <h1 className="text-xl font-black text-white">Bongstagram 게시물 관리</h1>
         <p className="mt-1 text-sm text-zinc-500">프로필별 게시글과 스토리를 등록하고 관리합니다.</p>
+        </div>
+        <BongstagramCacheRefreshButton />
       </div>
       <BongstagramAdminTabs
         comments={<BongstagramCommentManager posts={posts.map(({ id, character_id, post_type, posted_at }) => ({ id, character_id, post_type, posted_at }))} profiles={profiles.map(({ character_id, profile_name }) => ({ character_id, profile_name }))} characters={characters.map(({ id, name }) => ({ id, name }))} comments={comments} />}

@@ -74,6 +74,12 @@ function revalidateBongstagram() {
   updateTag(BONGSTAGRAM_ENGAGEMENT_TAG)
 }
 
+export async function refreshBongstagramCache(): Promise<ActionResult> {
+  await requireAdmin()
+  revalidateBongstagram()
+  return { success: true }
+}
+
 export async function upsertBongstagramProfile(data: ProfileInput): Promise<ActionResult> {
   const input = validateProfileInput(data)
   if ('error' in input) return input
