@@ -151,6 +151,57 @@ export type Database = {
         Insert: Omit<Database['public']['Tables']['reports']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['reports']['Insert']>
       }
+      bss_articles: {
+        Row: {
+          id: string
+          title: string
+          category: 'info' | 'incident' | 'economy' | 'column' | 'other'
+          summary: string | null
+          content: string
+          thumbnail_url: string | null
+          approved_at: string | null
+          is_published: boolean
+          reporter_character_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['bss_articles']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['bss_articles']['Insert']>
+      }
+      bss_article_media: {
+        Row: {
+          id: string
+          article_id: string
+          image_url: string
+          sort_order: number
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['bss_article_media']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['bss_article_media']['Insert']>
+      }
+      bss_article_reactions: {
+        Row: {
+          id: string
+          article_id: string
+          ip_hash: string
+          reaction: 'like' | 'dislike'
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['bss_article_reactions']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['bss_article_reactions']['Insert']>
+      }
+      bss_article_comments: {
+        Row: {
+          id: string
+          article_id: string
+          author_character_id: string | null
+          author_name: string
+          content: string
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['bss_article_comments']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['bss_article_comments']['Insert']>
+      }
       map_locations: {
         Row: {
           id: string
@@ -253,6 +304,7 @@ export type Event = Database['public']['Tables']['events']['Row']
 export type EventParticipant = Database['public']['Tables']['event_participants']['Row']
 export type EventClip = Database['public']['Tables']['event_clips']['Row']
 export type Report = Database['public']['Tables']['reports']['Row']
+export type BssArticleRecord = Database['public']['Tables']['bss_articles']['Row']
 export type BongstagramProfile = Database['public']['Tables']['bongstagram_profiles']['Row']
 export type BongstagramPost = Database['public']['Tables']['bongstagram_posts']['Row']
 export type BongstagramPostMedia = Database['public']['Tables']['bongstagram_post_media']['Row']

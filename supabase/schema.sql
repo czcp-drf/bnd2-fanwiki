@@ -387,3 +387,122 @@ create policy "public read Bongstagram post comments" on bongstagram_post_commen
     where bongstagram_posts.id = bongstagram_post_comments.post_id
   )
 );
+
+-- bss_articles
+-- 담당기자는 characters.id로 연결해 현재 캐릭터명을 기사에 표시한다.
+create table bss_articles (
+  id                    uuid primary key default gen_random_uuid(),
+  title                 text not null,
+  category              text not null default 'other',
+  summary               text,
+  content               text not null default '',
+  thumbnail_url         text,
+  approved_at           timestamptz,
+  is_published          boolean not null default false,
+  reporter_character_id uuid not null references characters(id) on delete restrict,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now(),
+  constraint bss_articles_title_length
+    check (char_length(btrim(title)) between 1 and 200),
+  constraint bss_articles_category
+    check (category in ('info', 'incident', 'economy', 'column', 'other')),
+  constraint bss_articles_summary_length
+    check (summary is null or char_length(summary) <= 500),
+  constraint bss_articles_content_length
+    check (char_length(content) <= 50000),
+  constraint bss_articles_thumbnail_url_format
+    check (thumbnail_url is null or thumbnail_url ~* '^https?://'),
+  constraint bss_articles_published_requires_approval
+    check (not is_published or approved_at is not null)
+);
+
+create index bss_articles_approved_at_idx
+  on bss_articles(is_published, approved_at desc, id desc);
+create index bss_articles_category_approved_at_idx
+  on bss_articles(category, is_published, approved_at desc, id desc);
+create index bss_articles_reporter_character_idx
+  on bss_articles(reporter_character_id);
+
+create trigger bss_articles_updated_at before update on bss_articles
+  for each row execute function update_updated_at();
+
+alter table bss_articles enable row level security;
+create policy "public read published BSS articles" on bss_articles for select using (
+  is_published = true
+);
+
+-- bss_article_media
+-- 기사당 최대 5장(순서 0~4)의 첨부 이미지를 저장한다.
+create table bss_article_media (
+  id         uuid primary key default gen_random_uuid(),
+  article_id uuid not null references bss_articles(id) on delete cascade,
+  image_url  text not null,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  constraint bss_article_media_image_url_format
+    check (image_url ~* '^https?://'),
+  constraint bss_article_media_sort_order
+    check (sort_order between 0 and 4),
+  unique (article_id, sort_order)
+);
+
+create index bss_article_media_article_order_idx
+  on bss_article_media(article_id, sort_order);
+
+alter table bss_article_media enable row level security;
+create policy "public read published BSS article media" on bss_article_media for select using (
+  exists (
+    select 1 from bss_articles
+    where bss_articles.id = bss_article_media.article_id
+      and bss_articles.is_published = true
+  )
+);
+
+-- bss_article_reactions
+-- 좋아요와 싫어요는 원본 IP를 저장하지 않고 서버 해시 기준으로 한 기사당 1회 처리한다.
+create table bss_article_reactions (
+  id         uuid primary key default gen_random_uuid(),
+  article_id uuid not null references bss_articles(id) on delete cascade,
+  ip_hash    text not null,
+  reaction   text not null,
+  created_at timestamptz not null default now(),
+  constraint bss_article_reactions_ip_hash_length
+    check (char_length(ip_hash) = 64),
+  constraint bss_article_reactions_type
+    check (reaction in ('like', 'dislike')),
+  unique (article_id, ip_hash)
+);
+
+create index bss_article_reactions_article_type_idx
+  on bss_article_reactions(article_id, reaction);
+
+alter table bss_article_reactions enable row level security;
+
+-- bss_article_comments
+-- 공개 사용자는 조회만 가능하며 등록은 서비스 롤 관리자 작업으로 제한한다.
+create table bss_article_comments (
+  id                  uuid primary key default gen_random_uuid(),
+  article_id          uuid not null references bss_articles(id) on delete cascade,
+  author_character_id uuid references characters(id) on delete set null,
+  author_name         text not null,
+  content             text not null,
+  created_at          timestamptz not null default now(),
+  constraint bss_article_comments_author_name_length
+    check (char_length(btrim(author_name)) between 1 and 40),
+  constraint bss_article_comments_content_length
+    check (char_length(btrim(content)) between 1 and 1000)
+);
+
+create index bss_article_comments_article_created_idx
+  on bss_article_comments(article_id, created_at asc);
+create index bss_article_comments_author_character_idx
+  on bss_article_comments(author_character_id);
+
+alter table bss_article_comments enable row level security;
+create policy "public read published BSS article comments" on bss_article_comments for select using (
+  exists (
+    select 1 from bss_articles
+    where bss_articles.id = bss_article_comments.article_id
+      and bss_articles.is_published = true
+  )
+);

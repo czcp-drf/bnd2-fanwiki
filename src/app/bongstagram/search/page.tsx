@@ -14,8 +14,8 @@ export default async function BongstagramSearchPage() {
 
   return (
     <div className="bongstagram-theme">
-      <div className="bongstagram-font min-h-screen bg-zinc-950 pb-20">
-        <div className="mx-auto min-h-screen w-full max-w-[540px] border-x border-zinc-900 bg-zinc-950">
+      <div className="bongstagram-font min-h-[calc(100dvh-3.5rem)] bg-zinc-950">
+        <div className="mx-auto min-h-[calc(100dvh-3.5rem)] w-full max-w-[540px] border-x border-zinc-900 bg-zinc-950 pb-20">
           <BongstagramProfileSearch
             profiles={profiles}
             characters={characters}

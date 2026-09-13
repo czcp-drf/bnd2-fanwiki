@@ -8,7 +8,7 @@ export type BssArticle = {
   title: string
   summary: string
   author: string
-  publishedAt: string
+  approvedAt: string
   body: string[]
   likes: number
   comments: number
@@ -22,7 +22,7 @@ export const BSS_ARTICLES: BssArticle[] = [
     title: '봉누도 전문 방송국 BBS 개국, 보도국장 이윤진 외 9명',
     summary: '봉누도 곳곳의 소식을 빠르게 전하는 BBS가 첫 방송을 시작했습니다.',
     author: '선비희',
-    publishedAt: '2026-09-12T21:46:00+09:00',
+    approvedAt: '2026-09-12T21:46:00+09:00',
     body: [
       'today(오늘) 9월 12일, 봉누도에서 BBS 방송국을 개국(open)했다.',
       '이윤진 보도국장을 시작으로 총 9명의 기자들이 취재에 나섰다.',
@@ -40,7 +40,7 @@ export const BSS_ARTICLES: BssArticle[] = [
     title: '봉누도 곳곳에서 포착된 새로운 움직임',
     summary: '시민 제보를 바탕으로 오늘의 주요 현장을 정리했습니다.',
     author: 'BBS 취재팀',
-    publishedAt: '2026-09-12T18:10:00+09:00',
+    approvedAt: '2026-09-12T18:10:00+09:00',
     body: [
       'BBS 취재팀은 오늘 접수된 시민 제보를 바탕으로 주요 현장을 확인했다.',
       '현장 관계자들의 이야기를 종합하면 추가 상황이 이어질 가능성도 남아 있다.',
@@ -56,7 +56,7 @@ export const BSS_ARTICLES: BssArticle[] = [
     title: '이번 주 봉누도 경제 브리핑',
     summary: '시장과 상점가에서 확인된 주요 경제 소식을 살펴봅니다.',
     author: 'BBS 경제부',
-    publishedAt: '2026-09-11T15:30:00+09:00',
+    approvedAt: '2026-09-11T15:30:00+09:00',
     body: [
       '이번 주 봉누도 시장에서는 여러 품목의 거래가 활발하게 이어졌다.',
       '상점가 관계자들은 다음 주에도 비슷한 흐름이 이어질 것으로 전망했다.',

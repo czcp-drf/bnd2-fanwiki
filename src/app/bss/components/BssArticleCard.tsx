@@ -17,7 +17,7 @@ export default function BssArticleCard({ article }: { article: BssArticle }) {
           <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--bss-subtle-text)]">
             <span>{article.author}</span>
             <span aria-hidden="true">·</span>
-            <time dateTime={article.publishedAt}>{formatArticleTime(article.publishedAt)}</time>
+            <time dateTime={article.approvedAt}>{formatArticleTime(article.approvedAt)}</time>
           </div>
         </div>
         <ChevronRight size={19} className="shrink-0 text-[#e14b32] transition-transform group-hover:translate-x-0.5" />

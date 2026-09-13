@@ -330,7 +330,15 @@ src/
 - [x] 반응형 BSS 메인·기사 상세 화면 (`/bss`, `/bss/article/[id]`) — 모바일 하단 카테고리 고정, 데스크톱 가로 카테고리 메뉴
 - [x] 기존 글로벌 라이트·다크 테마 토글 연동 — BSS에서도 헤더 토글을 활성화하고 Bongstagram과 테마 상태를 공유
 - [x] 라이브 방송 기능 제외 — BSS는 인게임 기사 시스템으로만 구성
-- [ ] BSS 기사 Supabase 스키마·어드민 등록/수정/삭제
+- [x] BSS 기사 기본 스키마 migration 작성 (`030_bss_articles.sql`) — 제목, 카테고리, 요약·본문, 대표 이미지, 승인일시, 공개 여부, 담당기자 캐릭터 연결
+- [x] BSS 기사 migration 운영 DB 적용 (`030_bss_articles.sql`, 사용자 확인)
+- [x] BSS 기사 첨부 이미지 스키마 migration 작성 (`031_bss_article_media.sql`) — 기사당 이미지 최대 5장, 순서 지정
+- [x] BSS 기사 첨부 이미지 migration 운영 DB 적용 (`031_bss_article_media.sql`, 사용자 확인)
+- [x] BSS 기사 승인일시 migration 작성 (`032_bss_article_approval.sql`) — 기존 `published_at`을 `approved_at`으로 변경하고 공개 시 승인일시 필수
+- [x] BSS 기사 승인일시 migration 운영 DB 적용 (`032_bss_article_approval.sql`, 사용자 확인)
+- [x] BSS 기사 좋아요·싫어요·댓글 스키마 migration 작성 (`033_bss_article_interactions.sql`) — 기사당 IP별 반응 1개, 관리자 댓글 조회 구조
+- [x] BSS 기사 상호작용 migration 운영 DB 적용 (`033_bss_article_interactions.sql`, 사용자 확인)
+- [ ] BSS 기사 어드민 등록/수정/삭제
 
 ---
 
@@ -373,7 +381,14 @@ src/
 
 ## 최근 작업 기록
 
-- BSS 반응형 초기 화면 및 테마 정리 (`feat/bss`): `public/bss`의 모바일 참고 화면을 기준으로 BSS 메인·기사 상세 라우트를 추가했습니다. 모바일에서는 기사 카드·하단 고정 카테고리 메뉴를 사용하고, 데스크톱에서는 중앙 콘텐츠와 가로 카테고리 메뉴로 확장합니다. BSS는 기존 글로벌 Bongstagram 라이트·다크 테마 토글과 상태를 공유하며, 라이브 방송 기능은 인게임 시스템 범위에서 제외했습니다. 두 서비스의 다크모드 페이지 배경은 BSS 기준 색상 `#101216`으로 통일했습니다. Bongstagram 스토리 뷰어의 다크모드 외부 배경 오버레이 불투명도는 `72%`로 조정했습니다. 기사는 이후 Supabase·어드민 기능을 연결할 수 있도록 별도 데이터 타입과 샘플 데이터로 분리했습니다. 글로벌 헤더에 BSS 링크와 not-found 복귀 경로를 추가했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며 `feat/bss` 커밋·원격 푸시를 완료합니다.
+- Bongstagram 빈 화면 세로 스크롤 수정 (`feat/bss`, 커밋 대기): 전역 헤더 아래 페이지가 `min-h-screen`으로 다시 전체 뷰포트 높이를 차지하던 구조를 헤더 제외 높이 기준으로 조정했습니다. 검색·프로필·내 프로필·게시물 상세·해시태그·로딩 화면에 동일한 레이아웃 기준을 적용해 콘텐츠가 없을 때 불필요한 세로 스크롤이 생기지 않도록 했습니다. 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다.
+
+- BSS 반응형 초기 화면 및 테마 정리 (`feat/bss`): `public/bss`의 모바일 참고 화면을 기준으로 BSS 메인·기사 상세 라우트를 추가했습니다. 모바일에서는 기사 카드·하단 고정 카테고리 메뉴를 사용하고, 데스크톱에서는 중앙 콘텐츠와 가로 카테고리 메뉴로 확장합니다. BSS는 기존 글로벌 Bongstagram 라이트·다크 테마 토글과 상태를 공유하며, 라이브 방송 기능은 인게임 시스템 범위에서 제외했습니다. 두 서비스의 다크모드 페이지 배경은 BSS 기준 색상 `#101216`으로 통일했습니다. Bongstagram 스토리 뷰어의 다크모드 외부 배경 오버레이 불투명도는 `72%`로 조정했습니다. 기사는 이후 Supabase·어드민 기능을 연결할 수 있도록 별도 데이터 타입과 샘플 데이터로 분리했습니다. 글로벌 헤더에 BSS 링크와 not-found 복귀 경로를 추가했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며 `feat/bss` 커밋·원격 푸시를 완료했습니다.
+
+- BSS 기사 스키마 적용 (`feat/bss`, migration 030 운영 DB 적용 완료): `bss_articles` 테이블을 추가해 제목, 안정적인 카테고리 키(`info`, `incident`, `economy`, `column`, `other`), 요약·본문, 대표 이미지 URL, KST 기준 승인일시, 공개 여부를 저장하도록 했습니다. 담당기자는 `characters.id` 외래키로 연결해 기사 조회 시 DB의 현재 캐릭터명을 사용하도록 설계했으며, 공개 읽기는 `is_published = true`인 기사만 허용합니다. 공개 처리 시 승인일시가 필수이고, 미승인 기사는 승인일시를 비워둘 수 있습니다. 사용자가 `030_bss_articles.sql`의 운영 DB 적용을 완료했습니다.
+- BSS 기사 첨부 이미지 스키마 (`feat/bss`, migration 031 적용 대기): `bss_article_media` 테이블을 추가해 기사당 첨부 이미지를 최대 5장까지 저장하고 `sort_order` 0~4로 순서를 관리하도록 했습니다. 대표이미지는 기존 `bss_articles.thumbnail_url`로 유지하며, 공개 기사에 연결된 이미지 파일만 공개 조회할 수 있습니다. `031_bss_article_media.sql`은 Supabase SQL Editor 적용이 필요합니다.
+
+- BSS 기사 승인일시 및 상호작용 스키마 (`feat/bss`, migration 032·033 운영 DB 적용 완료): 이미 적용된 030을 직접 수정하지 않고 `032_bss_article_approval.sql`에서 `published_at`을 `approved_at`으로 변경하도록 분리했습니다. 미승인 기사는 승인일시를 비워둘 수 있고 공개 처리 시 승인일시가 필요합니다. `033_bss_article_interactions.sql`에는 기사별 좋아요·싫어요와 IP 해시 중복 제한, 관리자 관리형 댓글 및 공개 조회 정책을 추가했습니다. 사용자가 `032`, `033` migration의 운영 DB 적용을 완료했습니다.
 
 - `feat/bonstagram` main 병합 완료: 좋아요 1초 제한, 제보 30초 제한과 클라이언트 제보 버튼 카운트다운, 공개 제보 참고 링크 URL 검증을 포함한 최신 기능을 `main`에 fast-forward 병합했습니다. 사용자가 migration 028·029의 Supabase 적용을 완료했으며, TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`이며 문서 갱신 후 원격 푸시를 진행합니다.
 

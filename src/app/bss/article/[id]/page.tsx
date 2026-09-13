@@ -45,7 +45,7 @@ export default async function BssArticlePage({ params }: Props) {
         <main className="bg-[var(--bss-surface)] px-5 pb-8 pt-7 sm:px-10 sm:pb-12 sm:pt-10">
           <div className="mb-5 flex items-center gap-2 text-xs font-semibold text-[#d7432d]">
             <span className="rounded-full bg-[#d7432d]/10 px-2.5 py-1">{article.category}</span>
-            <time dateTime={article.publishedAt} className="font-medium text-[var(--bss-subtle-text)]">송고 {formatArticleDate(article.publishedAt)}</time>
+            <time dateTime={article.approvedAt} className="font-medium text-[var(--bss-subtle-text)]">승인 {formatArticleDate(article.approvedAt)}</time>
           </div>
           <h1 className="text-2xl font-black leading-tight tracking-tight text-[var(--bss-text)] sm:text-3xl">{article.title}</h1>
           <p className="mt-3 text-sm leading-relaxed text-[var(--bss-subtle-text)]">{article.summary}</p>

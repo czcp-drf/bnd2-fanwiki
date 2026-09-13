@@ -102,8 +102,8 @@ export default async function BongstagramPostPage({ params }: { params: Promise<
 
   return (
     <div className="bongstagram-theme">
-      <div className="bongstagram-font min-h-screen bg-zinc-950 pb-20">
-        <div className="mx-auto min-h-screen w-full max-w-[540px] border-x border-zinc-900 bg-zinc-950">
+      <div className="bongstagram-font min-h-[calc(100dvh-3.5rem)] bg-zinc-950">
+        <div className="mx-auto min-h-[calc(100dvh-3.5rem)] w-full max-w-[540px] border-x border-zinc-900 bg-zinc-950 pb-20">
           <header className="relative flex h-16 items-center border-b border-zinc-800 px-5">
             <BongstagramBackButton />
             <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold text-white">게시물</h1>
