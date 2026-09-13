@@ -106,6 +106,13 @@ export default function MediaCarousel({ children }: { children: ReactNode }) {
           <ArrowDisc direction="right" />
         </button>
       )}
+      {count > 1 && (
+        <div className="flex items-center justify-center gap-1.5 py-2.5" role="status" aria-label={`${index + 1}번째 미디어, 전체 ${count}개`}>
+          {Array.from({ length: count }, (_, dotIndex) => (
+            <span key={dotIndex} className={`h-1.5 w-1.5 rounded-full ${dotIndex === index ? 'bg-sky-500' : 'bg-zinc-500'}`} aria-hidden="true" />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

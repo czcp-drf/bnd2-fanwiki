@@ -58,11 +58,15 @@ async function getPostCounts(postId: string) {
 }
 
 function formatPostTime(value: string) {
-  const elapsed = Date.now() - new Date(value).getTime()
+  const elapsed = Math.max(0, Date.now() - new Date(value).getTime())
+  const minuteMs = 60 * 1000
   const day = 24 * 60 * 60 * 1000
+
+  if (elapsed < minuteMs) return '방금 전'
   if (elapsed < day) {
-    const hours = Math.floor(Math.max(0, elapsed) / (60 * 60 * 1000))
-    return hours === 0 ? '방금 전' : `${hours}시간 전`
+    const hour = 60 * minuteMs
+    if (elapsed < hour) return `${Math.floor(elapsed / minuteMs)}분 전`
+    return `${Math.floor(elapsed / hour)}시간 전`
   }
   const parts = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric' }).formatToParts(new Date(value))
   return `${parts.find((part) => part.type === 'month')?.value}월 ${parts.find((part) => part.type === 'day')?.value}일`

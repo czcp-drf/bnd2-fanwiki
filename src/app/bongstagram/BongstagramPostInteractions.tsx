@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react'
+import Link from 'next/link'
 import { ArrowLeft, Heart, MessageCircle, Send } from 'lucide-react'
 import { getBongstagramComments, getBongstagramLikeCounts, toggleBongstagramLike, type BongstagramComment } from './actions'
 import BongstagramDisplayName from './BongstagramDisplayName'
@@ -28,22 +29,36 @@ function formatCommentDate(value: string) {
 
 function CommentThread({ comment, repliesByParent, depth = 0 }: { comment: BongstagramComment; repliesByParent: Map<string, BongstagramComment[]>; depth?: number }) {
   const replies = repliesByParent.get(comment.id) ?? []
+  const profileHref = comment.author_character_id ? `/bongstagram/${comment.author_character_id}` : null
   return (
     <div>
       <article className={`flex items-start gap-3 ${depth > 0 ? 'ml-10' : ''}`}>
         <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-semibold text-zinc-300">
-          <BongstagramProfileAvatar
-            profileAvatarUrl={comment.profile_avatar_url}
-            streamerAvatarUrl={comment.streamer_avatar_url}
-            profileName={comment.author_name}
-            streamerName={comment.streamer_name}
-            fallbackText={comment.author_name.trim().slice(0, 1) || '?'}
-            className="h-full w-full object-cover"
-          />
+          {profileHref ? (
+            <Link href={profileHref} aria-label={`${comment.author_name} 프로필 보기`} className="flex h-full w-full cursor-pointer items-center justify-center">
+              <BongstagramProfileAvatar
+                profileAvatarUrl={comment.profile_avatar_url}
+                streamerAvatarUrl={comment.streamer_avatar_url}
+                profileName={comment.author_name}
+                streamerName={comment.streamer_name}
+                fallbackText={comment.author_name.trim().slice(0, 1) || '?'}
+                className="h-full w-full object-cover"
+              />
+            </Link>
+          ) : (
+            <BongstagramProfileAvatar
+              profileAvatarUrl={comment.profile_avatar_url}
+              streamerAvatarUrl={comment.streamer_avatar_url}
+              profileName={comment.author_name}
+              streamerName={comment.streamer_name}
+              fallbackText={comment.author_name.trim().slice(0, 1) || '?'}
+              className="h-full w-full object-cover"
+            />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <p className="shrink-0 text-sm font-semibold text-zinc-200"><BongstagramDisplayName profileName={comment.author_name} streamerName={comment.streamer_name} /></p>
+            <p className="shrink-0 text-sm font-semibold text-zinc-200">{profileHref ? <Link href={profileHref} className="cursor-pointer transition-colors hover:text-fuchsia-300"><BongstagramDisplayName profileName={comment.author_name} streamerName={comment.streamer_name} /></Link> : <BongstagramDisplayName profileName={comment.author_name} streamerName={comment.streamer_name} />}</p>
             <p className="min-w-0 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-400">{comment.content}</p>
           </div>
           <time className="mt-0.5 block text-[11px] text-zinc-600" dateTime={comment.created_at}>{formatCommentDate(comment.created_at)}</time>

@@ -408,31 +408,27 @@ type CommentInput = {
   postId: string
   parentCommentId?: string | null
   authorCharacterId?: string | null
-  authorName: string
   content: string
   createdAt?: string
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-function validateCommentInput(data: CommentInput): { error: string } | { data: { postId: string; parentCommentId: string | null; authorCharacterId: string | null; authorName: string; content: string; createdAt: string } } {
+function validateCommentInput(data: CommentInput): { error: string } | { data: { postId: string; parentCommentId: string | null; authorCharacterId: string; content: string; createdAt: string } } {
   const postId = data.postId.trim()
   const parentCommentId = data.parentCommentId?.trim() || null
-  const authorCharacterId = data.authorCharacterId?.trim() || null
-  const authorName = data.authorName.trim()
+  const authorCharacterId = data.authorCharacterId?.trim() || ''
   const content = data.content.trim()
   const createdAt = data.createdAt?.trim() || new Date().toISOString()
 
   if (!UUID_PATTERN.test(postId)) return { error: '댓글을 등록할 게시물을 선택해 주세요.' }
   if (parentCommentId && !UUID_PATTERN.test(parentCommentId)) return { error: '답글을 등록할 댓글을 찾을 수 없습니다.' }
-  if (authorCharacterId && !UUID_PATTERN.test(authorCharacterId)) return { error: '댓글 작성자 프로필을 확인해 주세요.' }
-  if (!authorName) return { error: '댓글 작성자 프로필을 선택해 주세요.' }
-  if (authorName.length > 40) return { error: '댓글 작성자명은 40자 이내로 입력해 주세요.' }
+  if (!authorCharacterId || !UUID_PATTERN.test(authorCharacterId)) return { error: '댓글 작성자 프로필을 선택해 주세요.' }
   if (!content) return { error: '댓글 내용을 입력해 주세요.' }
   if (content.length > 1000) return { error: '댓글은 1000자 이내로 입력해 주세요.' }
   if (Number.isNaN(new Date(createdAt).getTime())) return { error: '댓글 작성 시간을 확인해 주세요.' }
 
-  return { data: { postId, parentCommentId, authorCharacterId, authorName, content, createdAt: new Date(createdAt).toISOString() } }
+  return { data: { postId, parentCommentId, authorCharacterId, content, createdAt: new Date(createdAt).toISOString() } }
 }
 
 export async function createBongstagramComment(data: CommentInput): Promise<ActionResult> {
@@ -454,22 +450,12 @@ export async function createBongstagramComment(data: CommentInput): Promise<Acti
   }
   if (!post) return { error: '댓글을 등록할 게시물이 존재하지 않습니다.' }
 
-  let authorCharacterId = input.data.authorCharacterId
-  if (authorCharacterId) {
-    const { data: profile, error: profileError } = await supabase
-      .from('bongstagram_profiles')
-      .select('character_id')
-      .eq('character_id', authorCharacterId)
-      .maybeSingle()
-    if (profileError || !profile) return { error: '댓글 작성자 Bongstagram 프로필을 찾을 수 없습니다.' }
-  } else {
-    const { data: profile } = await supabase
-      .from('bongstagram_profiles')
-      .select('character_id')
-      .eq('profile_name', input.data.authorName)
-      .maybeSingle()
-    authorCharacterId = profile?.character_id ?? null
-  }
+  const { data: authorProfile, error: authorProfileError } = await supabase
+    .from('bongstagram_profiles')
+    .select('character_id, profile_name')
+    .eq('character_id', input.data.authorCharacterId)
+    .maybeSingle()
+  if (authorProfileError || !authorProfile) return { error: '댓글 작성자 Bongstagram 프로필을 찾을 수 없습니다.' }
 
   if (input.data.parentCommentId) {
     const { data: parent, error: parentError } = await supabase
@@ -485,8 +471,8 @@ export async function createBongstagramComment(data: CommentInput): Promise<Acti
   const { error } = await supabase.from('bongstagram_post_comments').insert({
     post_id: input.data.postId,
     parent_comment_id: input.data.parentCommentId,
-    author_character_id: authorCharacterId,
-    author_name: input.data.authorName,
+    author_character_id: authorProfile.character_id,
+    author_name: authorProfile.profile_name,
     content: input.data.content,
     created_at: input.data.createdAt,
   })
@@ -508,25 +494,15 @@ export async function updateBongstagramComment(id: string, data: Omit<CommentInp
   if ('error' in input) return input
 
   const supabase = await requireAdmin()
-  let authorCharacterId = input.data.authorCharacterId
-  if (authorCharacterId) {
-    const { data: profile, error: profileError } = await supabase
-      .from('bongstagram_profiles')
-      .select('character_id')
-      .eq('character_id', authorCharacterId)
-      .maybeSingle()
-    if (profileError || !profile) return { error: '댓글 작성자 Bongstagram 프로필을 찾을 수 없습니다.' }
-  } else {
-    const { data: profile } = await supabase
-      .from('bongstagram_profiles')
-      .select('character_id')
-      .eq('profile_name', input.data.authorName)
-      .maybeSingle()
-    authorCharacterId = profile?.character_id ?? null
-  }
+  const { data: authorProfile, error: authorProfileError } = await supabase
+    .from('bongstagram_profiles')
+    .select('character_id, profile_name')
+    .eq('character_id', input.data.authorCharacterId)
+    .maybeSingle()
+  if (authorProfileError || !authorProfile) return { error: '댓글 작성자 Bongstagram 프로필을 찾을 수 없습니다.' }
   const { error } = await supabase
     .from('bongstagram_post_comments')
-    .update({ author_name: input.data.authorName, author_character_id: authorCharacterId, content: input.data.content, created_at: input.data.createdAt })
+    .update({ author_name: authorProfile.profile_name, author_character_id: authorProfile.character_id, content: input.data.content, created_at: input.data.createdAt })
     .eq('id', commentId)
 
   if (error) {

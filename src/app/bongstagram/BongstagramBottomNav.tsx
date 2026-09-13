@@ -22,7 +22,7 @@ export default function BongstagramBottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-[540px] items-center justify-around border-x border-t border-zinc-800 bg-zinc-950/95 px-3 py-3 backdrop-blur" aria-label="Bongstagram 메뉴">
-      <Link href="/bongstagram" aria-label="홈" aria-current={homeActive ? 'page' : undefined} className={`transition-all ${homeActive ? activeClass : inactiveClass}`}>
+      <Link href="/bongstagram" aria-label="홈" aria-current={homeActive ? 'page' : undefined} onClick={(event) => { if (homeActive) { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) } }} className={`transition-all ${homeActive ? activeClass : inactiveClass}`}>
         <FilledHomeIcon />
       </Link>
       <Link href="/bongstagram/search" aria-label="검색" aria-current={searchActive ? 'page' : undefined} className={`transition-all ${searchActive ? activeClass : inactiveClass}`}>

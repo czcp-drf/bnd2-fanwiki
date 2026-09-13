@@ -341,6 +341,8 @@ const getCachedComments = unstable_cache(
         const streamer = character?.streamer_id ? streamerById.get(character.streamer_id) : null
         return {
           ...comment,
+          author_character_id: profile?.character_id ?? comment.author_character_id,
+          author_name: profile?.profile_name ?? comment.author_name,
           streamer_name: streamer?.display_name ?? null,
           profile_avatar_url: profile?.avatar_url ?? null,
           streamer_avatar_url: streamer?.profile_image_url ?? null,

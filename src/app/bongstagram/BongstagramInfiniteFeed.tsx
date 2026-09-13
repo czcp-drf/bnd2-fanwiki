@@ -23,12 +23,15 @@ function FeedMedia({ media, label }: { media: BongstagramFeedMedia; label: strin
 
 function formatPostTime(value: string) {
   const date = new Date(value)
-  const elapsed = Date.now() - date.getTime()
+  const elapsed = Math.max(0, Date.now() - date.getTime())
+  const minuteMs = 60 * 1000
   const dayMs = 24 * 60 * 60 * 1000
 
+  if (elapsed < minuteMs) return '방금 전'
   if (elapsed < dayMs) {
-    const hours = Math.floor(Math.max(0, elapsed) / (60 * 60 * 1000))
-    return hours === 0 ? '방금 전' : `${hours}시간 전`
+    const hour = 60 * minuteMs
+    if (elapsed < hour) return `${Math.floor(elapsed / minuteMs)}분 전`
+    return `${Math.floor(elapsed / hour)}시간 전`
   }
 
   const dateParts = new Intl.DateTimeFormat('ko-KR', {

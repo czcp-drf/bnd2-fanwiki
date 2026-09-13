@@ -352,14 +352,16 @@ export default function BongstagramStoryRail({ stories }: { stories: Bongstagram
   function handleRailPointerDown(event: React.PointerEvent<HTMLElement>) {
     pointerStart.current = { x: event.clientX, scrollLeft: event.currentTarget.scrollLeft }
     suppressStoryClick.current = false
-    event.currentTarget.setPointerCapture(event.pointerId)
   }
 
   function handleRailPointerMove(event: React.PointerEvent<HTMLElement>) {
     const start = pointerStart.current
     if (!start) return
     const distance = event.clientX - start.x
-    if (Math.abs(distance) > 4) suppressStoryClick.current = true
+    if (Math.abs(distance) > 4) {
+      suppressStoryClick.current = true
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.setPointerCapture(event.pointerId)
+    }
     event.currentTarget.scrollLeft = start.scrollLeft - distance
   }
 
