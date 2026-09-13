@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Play, Search, X } from 'lucide-react'
-import AppImage from '@/components/ui/AppImage'
+import { Search, X } from 'lucide-react'
 import BongstagramDisplayName from '../BongstagramDisplayName'
+import BongstagramPostGrid from '../BongstagramPostGrid'
 import BongstagramProfileAvatar from '../BongstagramProfileAvatar'
 import { useRedPill } from '@/lib/context/RedPillContext'
 
@@ -59,21 +59,6 @@ function ProfileSearchRow({
         </div>
       </Link>
       {onRemove && <button type="button" onClick={onRemove} aria-label={`${profile.profile_name} 최근 검색에서 삭제`} className="cursor-pointer p-2 text-zinc-400 transition-colors hover:text-white"><X size={25} strokeWidth={1.8} /></button>}
-    </div>
-  )
-}
-
-function SearchPostGrid({ posts }: { posts: ProfilePost[] }) {
-  return posts.length === 0 ? (
-    <p className="px-5 py-20 text-center text-sm text-zinc-600">등록된 게시물이 없습니다.</p>
-  ) : (
-    <div className="grid grid-cols-3 gap-px bg-zinc-900">
-      {posts.map((post) => (
-        <Link key={post.id} href={`/bongstagram/post/${post.id}`} aria-label="게시물 상세 보기" className="relative block aspect-square overflow-hidden bg-black">
-          {post.media_type === 'video' ? <video muted playsInline preload="metadata" src={post.media_url} className="h-full w-full object-cover" aria-label="동영상 게시물" /> : <AppImage src={post.media_url} alt="게시물" width={180} height={180} className="h-full w-full object-cover" />}
-          {post.media_type === 'video' && <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md bg-white text-zinc-950 shadow-sm"><Play size={14} fill="currentColor" strokeWidth={1.5} /></span>}
-        </Link>
-      ))}
     </div>
   )
 }
@@ -169,7 +154,7 @@ export default function BongstagramProfileSearch({
           </div>
           {(normalizedSearch ? filteredProfiles : recentProfiles).length === 0 && <p className="py-16 text-center text-sm text-zinc-500">{normalizedSearch ? '검색 결과가 없습니다.' : '최근 검색 항목이 없습니다.'}</p>}
         </section>
-      ) : <SearchPostGrid posts={posts} />}
+      ) : <BongstagramPostGrid posts={posts} />}
     </main>
   )
 }

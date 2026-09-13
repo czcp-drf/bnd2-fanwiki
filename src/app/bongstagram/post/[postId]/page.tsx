@@ -94,7 +94,7 @@ function PostCaption({ post, profileName, streamerName }: { post: Post; profileN
   return (
     <p className="whitespace-pre-wrap break-words text-sm text-zinc-300">
       <Link href={`/bongstagram/${post.character_id}`} className="font-bold text-zinc-200 transition-colors hover:text-fuchsia-300"><BongstagramDisplayName profileName={profileName} streamerName={streamerName} /></Link>{' '}
-      {parts.map((part, index) => part.startsWith('#') ? <span key={`${part}-${index}`} className="text-sky-400">{part}</span> : <span key={`${part}-${index}`}>{part}</span>)}
+      {parts.map((part, index) => part.startsWith('#') ? <Link key={`${part}-${index}`} href={`/bongstagram/hashtag/${encodeURIComponent(part.slice(1))}`} className="text-sky-400 hover:underline">{part}</Link> : <span key={`${part}-${index}`}>{part}</span>)}
     </p>
   )
 }

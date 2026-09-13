@@ -205,7 +205,7 @@ function PostCaption({ post }: { post: FeedPost }) {
     <p className="whitespace-pre-wrap break-words text-sm text-zinc-300">
       <Link href={`/bongstagram/${post.character_id}`} className="font-bold text-zinc-200 transition-colors hover:text-fuchsia-300"><BongstagramDisplayName profileName={post.profile_name} streamerName={post.streamer_name} /></Link>{' '}
       {parts.map((part, index) => part.startsWith('#')
-        ? <span key={`${part}-${index}`} className="text-sky-400">{part}</span>
+        ? <Link key={`${part}-${index}`} href={`/bongstagram/hashtag/${encodeURIComponent(part.slice(1))}`} className="text-sky-400 hover:underline">{part}</Link>
         : <span key={`${part}-${index}`}>{part}</span>)}
     </p>
   )

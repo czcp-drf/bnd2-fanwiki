@@ -362,6 +362,8 @@ src/
 
 ## 최근 작업 기록
 
+- Bongstagram 해시태그 탐색 추가 (`feat/bonstagram`): 피드와 게시물 상세 본문의 해시태그를 클릭 가능한 링크로 연결하고, `/bongstagram/hashtag/[태그]`에서 동일 태그가 포함된 게시물을 최신순 3열 그리드로 표시합니다. 이미지·동영상 게시물 그리드를 공용 컴포넌트로 통합했으며, 태그 비교는 대소문자를 구분하지 않습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
+
 - Bongstagram 스토리 공개·프로필 보정 (`feat/bonstagram`): 공개 스토리 뷰어에서는 좋아요 개수를 숨기고 좋아요 상태만 표시하도록 정리했으며, 좋아요 개수는 어드민 게시물 관리에서만 확인할 수 있도록 유지했습니다. 프로필 스토리는 24시간 이내 스토리만 현재 스토리 뷰어에 연결하고, 해당 스토리가 있으면 프로필 이미지에 메인 스토리 레일과 같은 그라데이션 테두리와 기본 아바타 배경을 표시합니다. 24시간 이상 지난 스토리 시간은 KST 기준 `N월 N일`로 표시합니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
 
 - Bongstagram 스토리 좋아요·어드민 정렬·시간대 통일 (`feat/bonstagram`): migration 026으로 스토리별 IP 해시 좋아요 테이블을 추가하고, 좋아요 등록·취소·개수 집계와 스토리당 IP 1회 제한을 구현했습니다. 좋아요한 스토리 ID는 브라우저 localStorage에도 저장하며 조회 기록과 DM·메시지 기능은 추가하지 않았습니다. 홈 및 프로필 보관함 스토리 뷰어에 좋아요 상태·개수를 연결하고, 어드민 게시물 관리에서 게시글·스토리 좋아요 수를 표시하며 좋아요 많은 순·적은 순 필터 정렬을 지원합니다. 게시물·스토리·댓글의 표시 시간과 관리자 입력 시간을 Asia/Seoul(KST) 기준으로 통일하고 새 게시물 입력 기본값도 KST로 설정했습니다. 사용자가 `026_bongstagram_story_likes.sql` 운영 DB 적용을 완료했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
