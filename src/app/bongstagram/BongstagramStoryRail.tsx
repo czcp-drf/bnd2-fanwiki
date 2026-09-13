@@ -14,14 +14,14 @@ import {
 } from './BongstagramVideoPlayer'
 import { BONGSTAGRAM_FOLLOWING_EVENT, readBongstagramFollowingSnapshot } from '@/lib/bongstagram/following'
 
-type StoryMedia = {
+export type StoryMedia = {
   id: string
   media_type: 'image' | 'video'
   media_url: string
   sort_order: number
 }
 
-type StorySlide = {
+export type StorySlide = {
   story: BongstagramStory
   media: StoryMedia | null
 }
@@ -79,7 +79,7 @@ function StoryAvatar({ story, mark }: { story: BongstagramStory; mark: string })
   )
 }
 
-function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, onClose, onChange }: {
+export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, onClose, onChange }: {
   slideGroups: StorySlide[][]
   activeGroupIndex: number
   activeSlideIndex: number

@@ -8,6 +8,7 @@ import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramBackButton from './BongstagramBackButton'
 import BongstagramFollowButton from './BongstagramFollowButton'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
+import { StoryViewer, type BongstagramStory, type StorySlide } from './BongstagramStoryRail'
 
 type Profile = { character_id: string; profile_name: string; avatar_url: string | null; bio: string | null }
 type Character = { id: string; name: string; avatar_url: string | null }
@@ -27,6 +28,7 @@ function formatArchiveDate(value: string) {
 
 export default function BongstagramProfileScreen({ profile, character, streamer, posts }: { profile: Profile; character: Character; streamer: Streamer; posts: ProfilePost[] }) {
   const [tab, setTab] = useState<'posts' | 'archive'>('posts')
+  const [activeStory, setActiveStory] = useState<{ groupIndex: number; slideIndex: number } | null>(null)
   const regularPosts = posts.filter((post) => post.post_type === 'post')
   const storyGroups = useMemo(() => {
     const groups = new Map<string, ProfilePost[]>()
@@ -36,7 +38,29 @@ export default function BongstagramProfileScreen({ profile, character, streamer,
     })
     return Array.from(groups.values())
   }, [posts])
-  const latestStory = storyGroups[0]?.[0]
+  const storySlideGroups = useMemo<StorySlide[][]>(() => storyGroups.map((group) => {
+    const slides: StorySlide[] = []
+    group.forEach((post) => {
+      const story: BongstagramStory = {
+        id: post.id,
+        character_id: character.id,
+        content: post.content,
+        posted_at: post.posted_at,
+        media: post.media,
+        profile_name: profile.profile_name,
+        profile_avatar_url: profile.avatar_url,
+        character_avatar_url: character.avatar_url,
+        streamer_name: streamer?.display_name ?? null,
+        streamer_avatar_url: streamer?.profile_image_url ?? null,
+      }
+      if (post.media.length > 0) {
+        post.media.forEach((media) => slides.push({ story, media }))
+      } else {
+        slides.push({ story, media: null })
+      }
+    })
+    return slides
+  }), [character.avatar_url, character.id, profile.avatar_url, profile.profile_name, storyGroups, streamer])
 
   return (
     <>
@@ -64,15 +88,14 @@ export default function BongstagramProfileScreen({ profile, character, streamer,
           <div className="mt-4 flex"><BongstagramFollowButton characterId={character.id} className="w-full py-2.5 text-base" /></div>
         </section>
 
-        {latestStory && <section className="border-y border-zinc-800 px-5 py-4"><div className="flex w-20 flex-col items-center gap-1.5"><div className="rounded-full bg-gradient-to-tr from-amber-300 via-fuchsia-500 to-sky-400 p-[2px]"><div className="h-14 w-14 overflow-hidden rounded-full bg-zinc-900 p-[2px]"><div className="h-full w-full overflow-hidden rounded-full bg-zinc-800">{latestStory.media[0] ? <MediaThumb media={latestStory.media[0]} label="스토리 하이라이트" /> : <div className="flex h-full items-center justify-center text-zinc-600"><ImageIcon size={18} /></div>}</div></div></div><span className="w-full truncate text-center text-[11px] text-zinc-400">{formatArchiveDate(latestStory.posted_at)}</span></div></section>}
-
         <nav className="flex border-b border-zinc-800" aria-label="프로필 콘텐츠 탭">
           <button type="button" onClick={() => setTab('posts')} aria-label="게시물 보기" aria-pressed={tab === 'posts'} className={`flex flex-1 cursor-pointer justify-center border-b-2 py-3 transition-colors ${tab === 'posts' ? 'border-white text-white' : 'border-transparent text-zinc-600 hover:text-zinc-300'}`}><Grid3X3 size={21} /></button>
           <button type="button" onClick={() => setTab('archive')} aria-label="스토리 보관함 보기" aria-pressed={tab === 'archive'} className={`flex flex-1 cursor-pointer justify-center border-b-2 py-3 transition-colors ${tab === 'archive' ? 'border-white text-white' : 'border-transparent text-zinc-600 hover:text-zinc-300'}`}><Archive size={21} /></button>
         </nav>
 
-        {tab === 'posts' ? <section>{regularPosts.length === 0 ? <p className="py-16 text-center text-sm text-zinc-600">등록된 게시물이 없습니다.</p> : <div className="grid grid-cols-3 gap-px bg-zinc-950">{regularPosts.map((post) => <Link key={post.id} href={`/bongstagram/post/${post.id}`} aria-label="게시물 상세 보기" className="block aspect-square overflow-hidden bg-black">{post.media[0] ? <MediaThumb media={post.media[0]} label={`${profile.profile_name} 게시물`} /> : <div className="flex h-full items-center justify-center bg-zinc-900 text-zinc-700"><ImageIcon size={20} /></div>}</Link>)}</div>}</section> : <section className="space-y-6 px-5 py-5">{storyGroups.length === 0 ? <p className="py-12 text-center text-sm text-zinc-600">보관된 스토리가 없습니다.</p> : storyGroups.map((group) => <div key={group[0].id}><h3 className="mb-2 text-xs font-medium text-zinc-500">{formatArchiveDate(group[0].posted_at)}</h3><div className="grid grid-cols-4 gap-1">{group.map((story) => story.media[0] ? <MediaThumb key={story.id} media={story.media[0]} label={`${profile.profile_name} 스토리`} /> : <div key={story.id} className="flex aspect-square items-center justify-center bg-zinc-900 text-zinc-700"><ImageIcon size={18} /></div>)}</div></div>)}</section>}
+        {tab === 'posts' ? <section>{regularPosts.length === 0 ? <p className="py-16 text-center text-sm text-zinc-600">등록된 게시물이 없습니다.</p> : <div className="grid grid-cols-3 gap-px bg-zinc-950">{regularPosts.map((post) => <Link key={post.id} href={`/bongstagram/post/${post.id}`} aria-label="게시물 상세 보기" className="block aspect-square overflow-hidden bg-black">{post.media[0] ? <MediaThumb media={post.media[0]} label={`${profile.profile_name} 게시물`} /> : <div className="flex h-full items-center justify-center bg-zinc-900 text-zinc-700"><ImageIcon size={20} /></div>}</Link>)}</div>}</section> : <section className="space-y-6 px-5 py-5">{storyGroups.length === 0 ? <p className="py-12 text-center text-sm text-zinc-600">보관된 스토리가 없습니다.</p> : storyGroups.map((group, groupIndex) => <div key={group[0].id}><h3 className="mb-2 text-xs font-medium text-zinc-500">{formatArchiveDate(group[0].posted_at)}</h3><div className="grid grid-cols-4 gap-1">{group.map((story) => { const slideIndex = storySlideGroups[groupIndex]?.findIndex((slide) => slide.story.id === story.id) ?? 0; return story.media[0] ? <button key={story.id} type="button" onClick={() => setActiveStory({ groupIndex, slideIndex: Math.max(0, slideIndex) })} aria-label={`${formatArchiveDate(story.posted_at)} 스토리 보기`} className="block aspect-square cursor-pointer overflow-hidden bg-black text-left"><MediaThumb media={story.media[0]} label={`${profile.profile_name} 스토리`} /></button> : <button key={story.id} type="button" onClick={() => setActiveStory({ groupIndex, slideIndex: Math.max(0, slideIndex) })} aria-label={`${formatArchiveDate(story.posted_at)} 스토리 보기`} className="flex aspect-square cursor-pointer items-center justify-center bg-zinc-900 text-zinc-700"><ImageIcon size={18} /></button>})}</div></div>)}</section>}
       </main>
+      {activeStory && storySlideGroups.length > 0 && <StoryViewer slideGroups={storySlideGroups} activeGroupIndex={activeStory.groupIndex} activeSlideIndex={activeStory.slideIndex} onClose={() => setActiveStory(null)} onChange={(groupIndex, slideIndex) => setActiveStory({ groupIndex, slideIndex })} />}
     </>
   )
 }
