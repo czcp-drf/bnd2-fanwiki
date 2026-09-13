@@ -1,0 +1,66 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { ArrowLeft, Heart, MessageCircle, Share2 } from 'lucide-react'
+import { notFound } from 'next/navigation'
+import BssArticleVisual from '../../components/BssArticleVisual'
+import BssLogo from '../../components/BssLogo'
+import { getBssArticle } from '@/lib/bss/articles'
+
+type Props = {
+  params: Promise<{ id: string }>
+}
+
+function formatArticleDate(value: string) {
+  return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false }).format(new Date(value))
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const article = getBssArticle(id)
+  return article ? { title: article.title, description: article.summary } : { title: '기사를 찾을 수 없습니다' }
+}
+
+export default async function BssArticlePage({ params }: Props) {
+  const { id } = await params
+  const article = getBssArticle(id)
+  if (!article) notFound()
+
+  return (
+    <div className="bss-theme min-h-[calc(100vh-3.5rem)] bg-[var(--bss-page)] px-0 py-0 text-[var(--bss-text)] md:px-4 md:py-8">
+        <article className="mx-auto max-w-3xl overflow-hidden bg-[var(--bss-surface)] md:rounded-3xl md:border md:border-[var(--bss-border)] md:shadow-xl">
+        <header className="flex items-center gap-3 border-b border-[var(--bss-border)] px-4 py-4 sm:px-6">
+          <Link href="/bss" aria-label="BSS 기사 목록으로 돌아가기" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-[#d7432d]">
+            <ArrowLeft size={21} />
+          </Link>
+          <BssLogo compact className="scale-[0.78] origin-left" />
+          <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-bold text-[var(--bss-text)]">{article.title}</p>
+            <p className="mt-0.5 text-[10px] text-[var(--bss-subtle-text)]">{article.author}</p>
+          </div>
+          <button type="button" aria-label="기사 공유" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-[#d7432d] transition-colors hover:bg-[#d7432d]/10">
+            <Share2 size={18} />
+          </button>
+        </header>
+
+        <main className="bg-[var(--bss-surface)] px-5 pb-8 pt-7 sm:px-10 sm:pb-12 sm:pt-10">
+          <div className="mb-5 flex items-center gap-2 text-xs font-semibold text-[#d7432d]">
+            <span className="rounded-full bg-[#d7432d]/10 px-2.5 py-1">{article.category}</span>
+            <time dateTime={article.publishedAt} className="font-medium text-[var(--bss-subtle-text)]">송고 {formatArticleDate(article.publishedAt)}</time>
+          </div>
+          <h1 className="text-2xl font-black leading-tight tracking-tight text-[var(--bss-text)] sm:text-3xl">{article.title}</h1>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--bss-subtle-text)]">{article.summary}</p>
+          <div className="my-6 h-px bg-[var(--bss-border)]" />
+          <BssArticleVisual article={article} detail />
+          <div className="mt-7 space-y-5 text-[15px] leading-[1.9] text-[var(--bss-text)] sm:text-base">
+            {article.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+          </div>
+          <div className="mt-8 flex items-center gap-5 border-t border-[var(--bss-border)] pt-4 text-sm text-[var(--bss-subtle-text)]">
+            <span className="inline-flex items-center gap-1.5 text-[#e14b32]"><Heart size={18} fill="currentColor" />{article.likes}</span>
+            <span className="inline-flex items-center gap-1.5"><MessageCircle size={18} />{article.comments}</span>
+            <button type="button" aria-label="기사 공유" className="ml-auto cursor-pointer text-[#d7432d] transition-colors hover:text-[#a82f23]"><Share2 size={18} /></button>
+          </div>
+        </main>
+        </article>
+    </div>
+  )
+}

@@ -53,6 +53,7 @@ src/
 │   │       └── OrgMiniMapWrapper.tsx  # Client Component 래퍼 (ssr:false dynamic import)
 │   ├── events/                 # 사건 목록 / 상세 / 연대표 [ISR 300s]
 │   ├── bongstagram/page.tsx    # Bongstagram 기본 피드 화면 (1단계)
+│   ├── bss/                    # BSS 반응형 메인·기사 상세 화면 (초기 샘플 데이터)
 │   ├── map/                    # 공개 거점 지도 [ISR 300s]
 │   │   ├── page.tsx            # 서버 컴포넌트 (orgs + locations 패치)
 │   │   ├── MapView.tsx         # 클라이언트 래퍼 (카테고리 필터, 위치 토글)
@@ -325,6 +326,12 @@ src/
 - [x] 공개 제보 보호 — 참고 링크는 `http/https`만 허용하고, IP 해시 기준 30초 제출 제한과 클라이언트 카운트다운을 적용 (`029_report_rate_limit.sql`)
 - [ ] 릴스 기능 — 범위에서 제외
 
+### BSS (Bongnudo Broadcasting System)
+- [x] 반응형 BSS 메인·기사 상세 화면 (`/bss`, `/bss/article/[id]`) — 모바일 하단 카테고리 고정, 데스크톱 가로 카테고리 메뉴
+- [x] 기존 글로벌 라이트·다크 테마 토글 연동 — BSS에서도 헤더 토글을 활성화하고 Bongstagram과 테마 상태를 공유
+- [x] 라이브 방송 기능 제외 — BSS는 인게임 기사 시스템으로만 구성
+- [ ] BSS 기사 Supabase 스키마·어드민 등록/수정/삭제
+
 ---
 
 ## 환경변수
@@ -365,6 +372,8 @@ src/
 ---
 
 ## 최근 작업 기록
+
+- BSS 반응형 초기 화면 및 테마 정리 (`feat/bss`): `public/bss`의 모바일 참고 화면을 기준으로 BSS 메인·기사 상세 라우트를 추가했습니다. 모바일에서는 기사 카드·하단 고정 카테고리 메뉴를 사용하고, 데스크톱에서는 중앙 콘텐츠와 가로 카테고리 메뉴로 확장합니다. BSS는 기존 글로벌 Bongstagram 라이트·다크 테마 토글과 상태를 공유하며, 라이브 방송 기능은 인게임 시스템 범위에서 제외했습니다. 두 서비스의 다크모드 페이지 배경은 BSS 기준 색상 `#101216`으로 통일했습니다. Bongstagram 스토리 뷰어의 다크모드 외부 배경 오버레이 불투명도는 `72%`로 조정했습니다. 기사는 이후 Supabase·어드민 기능을 연결할 수 있도록 별도 데이터 타입과 샘플 데이터로 분리했습니다. 글로벌 헤더에 BSS 링크와 not-found 복귀 경로를 추가했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며 `feat/bss` 커밋·원격 푸시를 완료합니다.
 
 - `feat/bonstagram` main 병합 완료: 좋아요 1초 제한, 제보 30초 제한과 클라이언트 제보 버튼 카운트다운, 공개 제보 참고 링크 URL 검증을 포함한 최신 기능을 `main`에 fast-forward 병합했습니다. 사용자가 migration 028·029의 Supabase 적용을 완료했으며, TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`이며 문서 갱신 후 원격 푸시를 진행합니다.
 

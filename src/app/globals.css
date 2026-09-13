@@ -167,8 +167,44 @@
   background: linear-gradient(to bottom, #52525b, #27272a);
 }
 
+.bss-theme {
+  --bss-page: #e9e9e9;
+  --bss-surface: #ededed;
+  --bss-card: #ffffff;
+  --bss-nav: rgb(241 241 241 / 0.95);
+  --bss-muted: rgb(212 212 216 / 0.8);
+  --bss-border: #d4d4d8;
+  --bss-hover: #f3f3f3;
+  --bss-text: #27272a;
+  --bss-subtle-text: #71717a;
+}
+
+html[data-bongstagram-theme="dark"] .bss-theme {
+  --bss-page: #101216;
+  --bss-surface: #171a20;
+  --bss-card: #1d2128;
+  --bss-nav: rgb(23 26 32 / 0.95);
+  --bss-muted: rgb(39 43 51 / 0.9);
+  --bss-border: #343943;
+  --bss-hover: #262b34;
+  --bss-text: #f4f4f5;
+  --bss-subtle-text: #a1a1aa;
+}
+
+.bongstagram-story-backdrop {
+  background-color: rgb(0 0 0 / 0.85);
+}
+
+html[data-bongstagram-theme="dark"] .bongstagram-story-backdrop {
+  background-color: rgb(0 0 0 / 0.72);
+}
+
 html[data-bongstagram-theme="light"] .bongstagram-theme .bg-zinc-950 {
   background-color: #ffffff;
+}
+
+html[data-bongstagram-theme="dark"] .bongstagram-theme .bg-zinc-950 {
+  background-color: #101216;
 }
 
 html[data-bongstagram-theme="light"] .bongstagram-theme .bg-zinc-900 {

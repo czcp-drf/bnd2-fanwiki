@@ -214,7 +214,7 @@ export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, o
   }, [activeSlideIndex, muted])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-0 sm:p-4" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
+    <div className="bongstagram-story-backdrop fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <section
         className="relative flex h-dvh w-full max-w-[540px] select-none flex-col overflow-hidden bg-black sm:h-[min(900px,calc(100dvh-2rem))] sm:rounded-2xl"
         role="dialog"

@@ -18,6 +18,7 @@ const navItems = [
   { href: '/characters', label: '캐릭터' },
   { href: '/organizations', label: '조직' },
   { href: '/bongstagram', label: 'Bongstagram' },
+  { href: '/bss', label: 'BSS' },
   { href: '/map', label: '지도' },
   { href: '/events', label: '사건' },
   { href: '/report', label: '제보' },
@@ -80,7 +81,7 @@ function RedPillToggle({ compact = false }: { compact?: boolean }) {
 
 export default function Header() {
   const pathname = usePathname()
-  const isBongstagramRoute = pathname === '/bongstagram' || pathname.startsWith('/bongstagram/')
+  const isThemeRoute = pathname === '/bongstagram' || pathname.startsWith('/bongstagram/') || pathname === '/bss' || pathname.startsWith('/bss/')
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -157,7 +158,7 @@ export default function Header() {
           )}
 
           <RedPillToggle />
-          <BongstagramThemeToggle disabled={!isBongstagramRoute} />
+          <BongstagramThemeToggle disabled={!isThemeRoute} />
 
           {/* 모바일 메뉴 */}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -178,7 +179,7 @@ export default function Header() {
                 </span>
                 <div className="flex items-center gap-3">
                   <RedPillToggle compact />
-                  <BongstagramThemeToggle disabled={!isBongstagramRoute} />
+                  <BongstagramThemeToggle disabled={!isThemeRoute} />
                 </div>
               </div>
               <nav className="flex flex-col gap-1 p-4">
