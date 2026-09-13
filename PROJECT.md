@@ -385,6 +385,8 @@ src/
 
 ## 최근 작업 기록
 
+- `feat/bss` → `main` 병합 및 브랜치 정리 (`main`, 커밋 대기): BBS 공개·관리자 기능, 24시간 콘텐츠 캐시와 관리자 수동 갱신, 봉스타그램 캐시 정책 및 관리자 수동 갱신, 신규 기사 승인일시 자동 입력을 `--ff-only`로 `main`에 병합했습니다. 병합 전 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 `deploy/main` 푸시와 `feat/bss` 브랜치 삭제를 진행합니다.
+
 - BBS 신규 기사 승인일시 자동 입력 (`dfc4b34`, `feat/bss`): 새 기사 등록 폼을 열 때 현재 한국 시간(KST)을 승인일시 입력값으로 자동 설정하고, 기존 기사 수정 시에는 저장된 승인일시를 유지하도록 했습니다. hydration 불일치를 피하는 초기화 처리를 포함했으며 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다. 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
 
 - Bongstagram 관리자 수동 캐시 갱신 (`a18859d`, `feat/bss`): 프로필 관리와 게시물·스토리 관리 화면에 캐시 갱신 버튼을 추가했습니다. 관리자 인증 후 게시물·스토리·프로필·댓글·반응 관련 태그를 즉시 만료하고 관리자 화면을 새로고침하도록 연결했습니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
