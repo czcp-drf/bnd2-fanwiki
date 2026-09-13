@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, MessageCircle, Pencil, Plus, ThumbsDown, ThumbsUp, Trash2, Upload, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
@@ -170,6 +170,13 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
   const supabase = createSupabaseBrowserClient()
+
+  useEffect(() => {
+    if (isEdit || approvedAt) return
+    // Hydration 이후에만 현재 시각을 읽어 서버·클라이언트 초기 렌더 불일치를 피합니다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setApprovedAt(toLocalDateTime(new Date().toISOString()))
+  }, [approvedAt, isEdit])
 
   const reporterOptions: SelectOption[] = reporters.map((reporter) => ({ value: reporter.id, label: reporter.name }))
   const inputClass = 'w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/60 focus:outline-none disabled:opacity-50'
