@@ -1,9 +1,9 @@
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import { createClient } from '@/lib/supabase/server'
 import { getBbsCategoryKey, getBbsCategoryLabel, type BbsArticle, type BbsArticleMedia, type BbsCategoryKey } from './articles'
 
 export const BBS_ARTICLES_TAG = 'bbs-articles'
+const BBS_CACHE_REVALIDATE_SECONDS = 60 * 60
 
 export type BbsReporterOption = {
   id: string
@@ -84,8 +84,8 @@ function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: Repor
     })
 }
 
-async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }) {
-  const supabase = await createClient()
+async function loadArticlesUncached(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }) {
+  const supabase = createPublicClient()
   let query = supabase
     .from('bbs_articles')
     .select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id', { count: 'exact' })
@@ -131,6 +131,37 @@ async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, re
   if (streamerError) console.error('BBS public streamer load failed:', streamerError.message)
 
   return { articles: mapArticles(articles, (mediaData ?? []) as MediaRow[], reporterRows, (streamerData ?? []) as StreamerRow[]), total: articleCount ?? articles.length }
+}
+
+function serializeReporterIds(reporterIds?: string[]) {
+  return [...new Set((reporterIds ?? []).map((id) => id.trim()).filter(Boolean))].sort().join(',')
+}
+
+const getCachedBbsArticles = unstable_cache(
+  async (
+    categoryKey: BbsCategoryKey | undefined,
+    articleId: string | undefined,
+    reporterIdsKey: string,
+    page: number | undefined,
+    pageSize: number | undefined,
+  ) => loadArticlesUncached(
+    categoryKey,
+    articleId,
+    reporterIdsKey ? reporterIdsKey.split(',') : undefined,
+    page !== undefined && pageSize !== undefined ? { page, pageSize } : undefined,
+  ),
+  ['bbs-public-articles'],
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
+)
+
+async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }) {
+  return getCachedBbsArticles(
+    categoryKey,
+    articleId,
+    serializeReporterIds(reporterIds),
+    pagination?.page,
+    pagination?.pageSize,
+  )
 }
 
 export async function getPublishedBbsArticles(category?: string, reporterIds?: string[]) {
@@ -196,7 +227,7 @@ const getCachedBbsReporterOptions = unstable_cache(
     }))
   },
   ['bbs-reporter-options-v2'],
-  { revalidate: 60, tags: [BBS_ARTICLES_TAG] },
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
 )
 
 export function getBbsReporterOptions() {

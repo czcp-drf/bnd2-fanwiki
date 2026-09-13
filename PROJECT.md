@@ -385,6 +385,8 @@ src/
 
 ## 최근 작업 기록
 
+- BBS 기사 캐시 및 관리자 수동 갱신 (`a3bd83f`, `feat/bss`): 공개 기사 목록·상세·담당기자 목록·최신 기사 데이터를 1시간 캐시로 전환하고, 관리자 기사 변경 시 `updateTag`로 즉시 캐시를 만료하도록 수정했습니다. `/admin/bbs`에 관리자 인증을 거치는 기사 캐시 갱신 버튼을 추가했으며 댓글·좋아요·싫어요 조회는 실시간으로 유지했습니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
+
 - Bongstagram 모바일 영상 음소거 버튼 표시 보완 (`3d665fb`, `feat/bss`): 모바일 환경에서는 hover가 없어도 음소거 버튼이 항상 보이도록 조정하고, PC에서는 기존처럼 hover·focus 시 표시되도록 유지했습니다. 영상 위 레이어 순서를 보완했으며 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다. 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
 
 - BBS 어드민 반응 집계·필터 추가 (`feat/bss`, 커밋 및 원격 푸시): 어드민 기사 목록에서 기사별 좋아요·싫어요 수를 확인할 수 있도록 반응 데이터를 집계해 표시했습니다. 좋아요 있음·싫어요 있음·반응 없음 필터와 좋아요·싫어요 수 기준 오름차순·내림차순 정렬을 추가했으며, 현재 `BBS_REACTIONS_MODE=local`에서는 새 반응이 DB에 저장되지 않아 서버에 저장된 반응만 집계됩니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치 `feat/bss`, 원격 `deploy/feat/bss`로 푸시합니다.

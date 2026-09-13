@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/auth'
 import { BBS_ARTICLES_TAG } from '@/lib/bbs/data'
 
@@ -148,8 +148,15 @@ async function removeStoragePaths(supabase: Awaited<ReturnType<typeof requireAdm
 function revalidateBbs(articleId?: string) {
   revalidatePath('/admin/bbs')
   revalidatePath('/bbs')
-  revalidateTag(BBS_ARTICLES_TAG, 'max')
+  updateTag(BBS_ARTICLES_TAG)
   if (articleId) revalidatePath(`/bbs/article/${articleId}`)
+}
+
+export async function refreshBbsCache(): Promise<ActionResult> {
+  await requireAdmin()
+  revalidatePath('/bbs')
+  updateTag(BBS_ARTICLES_TAG)
+  return { success: true }
 }
 
 export async function createBbsUploadUrl(data: { fileName: string; contentType: string; size: number }) {

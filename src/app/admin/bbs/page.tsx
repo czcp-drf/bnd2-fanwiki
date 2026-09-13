@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import BbsArticleManager from './BbsArticleManager'
+import BbsCacheRefreshButton from './BbsCacheRefreshButton'
 
 export const metadata: Metadata = { title: 'BBS 기사 관리' }
 export const dynamic = 'force-dynamic'
@@ -80,5 +81,5 @@ async function getBbsAdminData() {
 
 export default async function AdminBbsPage() {
   const { articles, reporters, characters, comments } = await getBbsAdminData()
-  return <div className="space-y-6 p-8"><div><h1 className="text-xl font-black text-white">BBS 기사 관리</h1><p className="mt-1 text-sm text-zinc-500">인게임 기사 등록, 공개 상태와 첨부 이미지를 관리합니다.</p></div><BbsArticleManager articles={articles} reporters={reporters} characters={characters} comments={comments} /></div>
+  return <div className="space-y-6 p-8"><div className="flex items-start justify-between gap-4"><div><h1 className="text-xl font-black text-white">BBS 기사 관리</h1><p className="mt-1 text-sm text-zinc-500">인게임 기사 등록, 공개 상태와 첨부 이미지를 관리합니다.</p></div><BbsCacheRefreshButton /></div><BbsArticleManager articles={articles} reporters={reporters} characters={characters} comments={comments} /></div>
 }
