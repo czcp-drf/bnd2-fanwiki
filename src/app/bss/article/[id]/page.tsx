@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft, Heart, MessageCircle, Share2 } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import BssArticleVisual from '../../components/BssArticleVisual'
+import BssArticleContent from '../../components/BssArticleContent'
 import BssLogo from '../../components/BssLogo'
 import { getBssArticle } from '@/lib/bss/articles'
 
@@ -29,7 +30,7 @@ export default async function BssArticlePage({ params }: Props) {
     <div className="bss-theme min-h-[calc(100vh-3.5rem)] bg-[var(--bss-page)] px-0 py-0 text-[var(--bss-text)] md:px-4 md:py-8">
         <article className="mx-auto max-w-3xl overflow-hidden bg-[var(--bss-surface)] md:rounded-3xl md:border md:border-[var(--bss-border)] md:shadow-xl">
         <header className="flex items-center gap-3 border-b border-[var(--bss-border)] px-4 py-4 sm:px-6">
-          <Link href="/bss" aria-label="BSS 기사 목록으로 돌아가기" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-[#d7432d]">
+          <Link href="/bss" aria-label="BBS 기사 목록으로 돌아가기" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-[#d7432d]">
             <ArrowLeft size={21} />
           </Link>
           <BssLogo compact className="scale-[0.78] origin-left" />
@@ -51,9 +52,7 @@ export default async function BssArticlePage({ params }: Props) {
           <p className="mt-3 text-sm leading-relaxed text-[var(--bss-subtle-text)]">{article.summary}</p>
           <div className="my-6 h-px bg-[var(--bss-border)]" />
           <BssArticleVisual article={article} detail />
-          <div className="mt-7 space-y-5 text-[15px] leading-[1.9] text-[var(--bss-text)] sm:text-base">
-            {article.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-          </div>
+          <BssArticleContent content={article.body.join('\n\n')} className="mt-7" />
           <div className="mt-8 flex items-center gap-5 border-t border-[var(--bss-border)] pt-4 text-sm text-[var(--bss-subtle-text)]">
             <span className="inline-flex items-center gap-1.5 text-[#e14b32]"><Heart size={18} fill="currentColor" />{article.likes}</span>
             <span className="inline-flex items-center gap-1.5"><MessageCircle size={18} />{article.comments}</span>

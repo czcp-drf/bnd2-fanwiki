@@ -10,7 +10,7 @@ const PATH_ACTIONS: { match: RegExp; label: string; href: string }[] = [
   { match: /^\/streamers/, label: '스트리머 목록', href: '/streamers' },
   { match: /^\/map/, label: '거점 지도', href: '/map' },
   { match: /^\/search/, label: '검색', href: '/search' },
-  { match: /^\/bss/, label: 'BSS', href: '/bss' },
+  { match: /^\/bss/, label: 'BBS', href: '/bss' },
   { match: /^\/admin/, label: '어드민 대시보드', href: '/admin' },
 ]
 

@@ -18,7 +18,7 @@ const navItems = [
   { href: '/characters', label: '캐릭터' },
   { href: '/organizations', label: '조직' },
   { href: '/bongstagram', label: 'Bongstagram' },
-  { href: '/bss', label: 'BSS' },
+  { href: '/bss', label: 'BBS' },
   { href: '/map', label: '지도' },
   { href: '/events', label: '사건' },
   { href: '/report', label: '제보' },

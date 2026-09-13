@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createBssArticle, createBssUploadUrl, deleteBssArticle, deleteBssUploadedMedia, updateBssArticle, type BssArticleInput } from './actions'
+import BssArticleContent from '@/app/bss/components/BssArticleContent'
 
 type Reporter = { id: string; name: string; avatar_url: string | null }
 type Media = { id: string; image_url: string; sort_order: number }
@@ -38,6 +39,20 @@ const statusOptions: SelectOption[] = [
   { value: 'draft', label: '비공개 기사' },
 ]
 
+type MarkdownTool = { label: string; title: string; action: 'plain' | 'h1' | 'h2' | 'h3' | 'bold' | 'italic' | 'strike' | 'bullet' | 'ordered' }
+
+const markdownTools: MarkdownTool[] = [
+  { label: '본문', title: '본문 크기', action: 'plain' },
+  { label: '제목 1', title: '제목 1', action: 'h1' },
+  { label: '제목 2', title: '제목 2', action: 'h2' },
+  { label: '제목 3', title: '제목 3', action: 'h3' },
+  { label: 'B', title: '굵게', action: 'bold' },
+  { label: 'I', title: '기울임', action: 'italic' },
+  { label: 'S', title: '취소선', action: 'strike' },
+  { label: '• 목록', title: '점 목록', action: 'bullet' },
+  { label: '1. 목록', title: '번호 목록', action: 'ordered' },
+]
+
 function toLocalDateTime(value: string | null) {
   if (!value) return ''
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -56,6 +71,67 @@ function toIsoDateTime(value: string) {
 function formatDate(value: string | null) {
   if (!value) return '승인일시 없음'
   return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hourCycle: 'h23' }).format(new Date(value))
+}
+
+function MarkdownEditor({ value, onChange, disabled }: { value: string; onChange: (value: string) => void; disabled: boolean }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  function replaceSelection(replacement: string, selectionStart: number, selectionEnd: number) {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const nextValue = `${value.slice(0, textarea.selectionStart)}${replacement}${value.slice(textarea.selectionEnd)}`
+    onChange(nextValue)
+    requestAnimationFrame(() => {
+      textarea.focus()
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+    })
+  }
+
+  function applyTool(action: MarkdownTool['action']) {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selected = value.slice(start, end)
+
+    if (action === 'plain' || action === 'h1' || action === 'h2' || action === 'h3' || action === 'bullet' || action === 'ordered') {
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1
+      const lineEndIndex = value.indexOf('\n', end)
+      const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex
+      const lines = value.slice(lineStart, lineEnd).split('\n')
+        // 인게임 편집기 기준으로 제목 3이 가장 크므로 Markdown heading 단계는 역순으로 사용한다.
+        const prefix = action === 'h1' ? '### ' : action === 'h2' ? '## ' : action === 'h3' ? '# ' : action === 'bullet' ? '- ' : action === 'ordered' ? '1. ' : ''
+      const transformed = lines.map((line, index) => {
+        const withoutBlockPrefix = line.replace(/^#{1,3}\s+/, '')
+        if (action === 'plain') return withoutBlockPrefix
+        if (action === 'bullet') return /^[-*+]\s+/.test(withoutBlockPrefix) ? withoutBlockPrefix : `${prefix}${withoutBlockPrefix}`
+        if (action === 'ordered') return /^\d+\.\s+/.test(withoutBlockPrefix) ? withoutBlockPrefix : `${index + 1}. ${withoutBlockPrefix}`
+        return `${prefix}${withoutBlockPrefix}`
+      }).join('\n')
+      const nextValue = `${value.slice(0, lineStart)}${transformed}${value.slice(lineEnd)}`
+      onChange(nextValue)
+      requestAnimationFrame(() => {
+        textarea.focus()
+        textarea.setSelectionRange(lineStart, lineStart + transformed.length)
+      })
+      return
+    }
+
+    const marks = action === 'bold' ? ['**', '**'] : action === 'italic' ? ['*', '*'] : ['~~', '~~']
+    const inner = selected || '텍스트'
+    replaceSelection(`${marks[0]}${inner}${marks[1]}`, start + marks[0].length, start + marks[0].length + inner.length)
+  }
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950 focus-within:border-amber-400/60">
+      <div className="flex flex-wrap items-center gap-1 border-b border-zinc-800 bg-zinc-900 px-2 py-1.5">
+        {markdownTools.map((tool) => <button key={tool.action} type="button" title={tool.title} onMouseDown={(event) => event.preventDefault()} onClick={() => applyTool(tool.action)} disabled={disabled} className="cursor-pointer rounded px-2 py-1 text-[11px] font-semibold text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40">{tool.label}</button>)}
+      </div>
+      <textarea ref={textareaRef} value={value} maxLength={50000} onChange={(event) => onChange(event.target.value)} rows={14} className="block w-full resize-y border-0 bg-transparent px-3 py-3 text-sm leading-7 text-zinc-200 placeholder:text-zinc-600 focus:outline-none" placeholder="기사 본문을 입력해 주세요. 선택한 텍스트에 서식을 적용할 수 있습니다." disabled={disabled} />
+      <p className="border-t border-zinc-800 px-3 py-2 text-[11px] text-zinc-600">Markdown 형식으로 저장되며 제목 3(가장 큼)·굵게·기울임·취소선·점 목록·번호 목록을 지원합니다.</p>
+      {value.trim() && <div className="border-t border-zinc-800 px-3 py-4"><p className="mb-2 text-[11px] font-semibold text-zinc-600">미리보기</p><BssArticleContent content={value} /></div>}
+    </div>
+  )
 }
 
 function ArticleForm({ article, reporters, onDone }: { article?: Article; reporters: Reporter[]; onDone: () => void }) {
@@ -97,6 +173,7 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
   function removeMedia(index: number) {
     const item = media[index]
     setMedia((current) => current.filter((_, itemIndex) => itemIndex !== index))
+    if (item?.imageUrl === thumbnailUrl) setThumbnailUrl('')
     if (item?.storagePath) void deleteBssUploadedMedia([item.storagePath])
   }
 
@@ -120,16 +197,17 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
       <div className="grid gap-4 md:grid-cols-2">
         <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-zinc-500">제목 *</span><input value={title} maxLength={200} onChange={(event) => setTitle(event.target.value)} className={inputClass} placeholder="기사 제목" disabled={isPending || uploading} /></label>
         <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">말머리 *</span><Select value={category} onChange={setCategory} options={categoryOptions} fullWidth disabled={isPending || uploading} /></label>
-        <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">담당기자 *</span><Select value={reporterId} onChange={setReporterId} options={reporterOptions} placeholder="담당기자 선택" searchable searchPlaceholder="기자 캐릭터 검색" fullWidth disabled={isPending || uploading} /></label>
+        <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">담당기자 (언론 조직 소속) *</span><Select value={reporterId} onChange={setReporterId} options={reporterOptions} placeholder="담당기자 선택" searchable searchPlaceholder="기자 캐릭터 검색" fullWidth disabled={isPending || uploading} /></label>
         <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">승인일시 (KST) {isPublished && '*'}</span><input type="datetime-local" value={approvedAt} onChange={(event) => setApprovedAt(event.target.value)} className={`${inputClass} [color-scheme:dark]`} disabled={isPending || uploading} /></label>
         <label className="flex items-end gap-2 pb-2 text-sm text-zinc-400"><input type="checkbox" checked={isPublished} onChange={(event) => setIsPublished(event.target.checked)} className="accent-amber-400" disabled={isPending || uploading} /> 공개 기사로 표시</label>
         <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-zinc-500">요약</span><input value={summary} maxLength={500} onChange={(event) => setSummary(event.target.value)} className={inputClass} placeholder="기사 목록에 표시할 요약" disabled={isPending || uploading} /></label>
-        <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-zinc-500">본문</span><textarea value={content} maxLength={50000} onChange={(event) => setContent(event.target.value)} rows={12} className={`${inputClass} resize-y`} placeholder="기사 본문을 입력해 주세요." disabled={isPending || uploading} /><span className="block text-right text-[11px] text-zinc-600">{content.length}/50000</span></label>
+        <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-zinc-500">본문</span><MarkdownEditor value={content} onChange={setContent} disabled={isPending || uploading} /><span className="block text-right text-[11px] text-zinc-600">{content.length}/50000</span></label>
       </div>
 
       <div className="space-y-2">
         <span className="text-xs font-medium text-zinc-500">대표 이미지</span>
         <div className="flex flex-col gap-2 sm:flex-row"><input value={thumbnailUrl} onChange={(event) => setThumbnailUrl(event.target.value)} className={`${inputClass} flex-1`} placeholder="이미지 URL (선택)" disabled={isPending || uploading} /><label className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"><Upload size={13} /> 파일 업로드<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" className="sr-only" disabled={isPending || uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadFile(file, 'thumbnail'); event.currentTarget.value = '' }} /></label></div>
+        {media.length > 0 && <div className="space-y-2"><p className="text-[11px] text-zinc-500">첨부 이미지에서 대표 이미지를 선택하면 같은 파일을 다시 업로드하지 않습니다.</p><div className="grid grid-cols-5 gap-2">{media.map((item, index) => <button key={`thumbnail-${item.imageUrl}-${index}`} type="button" onClick={() => setThumbnailUrl(item.imageUrl)} disabled={isPending || uploading} className={`relative aspect-square cursor-pointer overflow-hidden rounded-lg border-2 bg-black transition-colors disabled:cursor-not-allowed ${thumbnailUrl === item.imageUrl ? 'border-amber-400' : 'border-zinc-800 hover:border-zinc-500'}`}><AppImage src={item.imageUrl} alt={`첨부 이미지 ${index + 1}에서 대표 이미지 선택`} fill sizes="100px" className="object-cover" />{thumbnailUrl === item.imageUrl && <span className="absolute inset-x-0 bottom-0 bg-amber-400/90 py-0.5 text-[9px] font-bold text-zinc-950">대표</span>}</button>)}</div></div>}
         {thumbnailUrl && <div className="relative h-32 w-56 overflow-hidden rounded-lg border border-zinc-800 bg-black"><AppImage src={thumbnailUrl} alt="대표 이미지 미리보기" fill sizes="224px" className="object-contain" /></div>}
       </div>
 
@@ -151,6 +229,7 @@ export default function BssArticleManager({ articles, reporters }: { articles: A
   const router = useRouter()
   const [editing, setEditing] = useState<Article | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [pendingEdit, setPendingEdit] = useState<Article | null>(null)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
   const [status, setStatus] = useState('all')
@@ -170,6 +249,22 @@ export default function BssArticleManager({ articles, reporters }: { articles: A
     router.refresh()
   }
 
+  function requestEdit(article: Article) {
+    if (showCreate) {
+      setPendingEdit(article)
+      return
+    }
+    setShowCreate(false)
+    setEditing(article)
+  }
+
+  function confirmEdit() {
+    if (!pendingEdit) return
+    setShowCreate(false)
+    setEditing(pendingEdit)
+    setPendingEdit(null)
+  }
+
   function remove(article: Article) {
     if (!window.confirm(`'${article.title}' 기사를 삭제할까요?`)) return
     setError('')
@@ -182,13 +277,14 @@ export default function BssArticleManager({ articles, reporters }: { articles: A
 
   return (
     <div className="space-y-5">
-      {(showCreate || editing) && <ArticleForm article={editing ?? undefined} reporters={reporters} onDone={closeForm} />}
+      {(showCreate || editing) && <ArticleForm key={editing?.id ?? 'new'} article={editing ?? undefined} reporters={reporters} onDone={closeForm} />}
       <section className="space-y-3">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><h2 className="text-sm font-bold text-white">등록된 기사</h2><p className="mt-1 text-xs text-zinc-500">총 {filteredArticles.length}개 / 전체 {articles.length}개</p></div><button type="button" onClick={() => { setEditing(null); setShowCreate(true) }} className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-zinc-950 transition-colors hover:bg-amber-300"><Plus size={13} />새 기사 등록</button></div>
         <div className="grid gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-3 md:grid-cols-[minmax(0,1fr)_180px_180px]"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="제목·요약·담당기자 검색" className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/60 focus:outline-none" /><Select value={category} onChange={setCategory} options={[{ value: 'all', label: '전체 말머리' }, ...categoryOptions]} fullWidth /><Select value={status} onChange={setStatus} options={statusOptions} fullWidth /></div>
         {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
-        {filteredArticles.length === 0 ? <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center text-sm text-zinc-600">조건에 맞는 기사가 없습니다.</div> : <div className="space-y-2">{filteredArticles.map((article) => { const reporter = reporterById.get(article.reporter_character_id); return <article key={article.id} className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:flex-row sm:items-center"><div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-zinc-950">{article.thumbnail_url ? <AppImage src={article.thumbnail_url} alt="" fill sizes="112px" className="object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-zinc-700">이미지 없음</div>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-[11px]"><span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-amber-300">{categoryOptions.find((option) => !option.separator && option.value === article.category)?.label}</span><span className={article.is_published ? 'text-emerald-400' : 'text-zinc-500'}>{article.is_published ? '공개' : '비공개'}</span></div><h3 className="mt-1 line-clamp-2 text-sm font-bold text-zinc-100">{article.title}</h3><p className="mt-1 text-xs text-zinc-500">담당기자 {reporter?.name ?? '알 수 없음'} · {formatDate(article.approved_at)} · 첨부 {article.media.length}장</p></div><div className="flex shrink-0 items-center gap-1"><button type="button" onClick={() => { setShowCreate(false); setEditing(article) }} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"><Pencil size={12} />수정</button><button type="button" onClick={() => remove(article)} disabled={isPending} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 size={12} />삭제</button></div></article> })}</div>}
+        {filteredArticles.length === 0 ? <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-12 text-center text-sm text-zinc-600">조건에 맞는 기사가 없습니다.</div> : <div className="space-y-2">{filteredArticles.map((article) => { const reporter = reporterById.get(article.reporter_character_id); return <article key={article.id} className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:flex-row sm:items-center"><div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-zinc-950">{article.thumbnail_url ? <AppImage src={article.thumbnail_url} alt="" fill sizes="112px" className="object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-zinc-700">이미지 없음</div>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-[11px]"><span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-amber-300">{categoryOptions.find((option) => !option.separator && option.value === article.category)?.label}</span><span className={article.is_published ? 'text-emerald-400' : 'text-zinc-500'}>{article.is_published ? '공개' : '비공개'}</span></div><h3 className="mt-1 line-clamp-2 text-sm font-bold text-zinc-100">{article.title}</h3><p className="mt-1 text-xs text-zinc-500">담당기자 {reporter?.name ?? '알 수 없음'} · {formatDate(article.approved_at)} · 첨부 {article.media.length}장</p></div><div className="flex shrink-0 items-center gap-1"><button type="button" onClick={() => requestEdit(article)} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"><Pencil size={12} />수정</button><button type="button" onClick={() => remove(article)} disabled={isPending} className="flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 size={12} />삭제</button></div></article> })}</div>}
       </section>
+      {pendingEdit && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="presentation"><div role="dialog" aria-modal="true" aria-labelledby="bss-edit-warning-title" className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"><h2 id="bss-edit-warning-title" className="text-base font-bold text-white">작성 중인 기사를 바꿀까요?</h2><p className="mt-2 text-sm leading-6 text-zinc-400">현재 등록 중인 기사 내용은 사라집니다. ‘{pendingEdit.title}’ 기사 수정으로 이동할까요?</p><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setPendingEdit(null)} className="cursor-pointer rounded-lg bg-zinc-800 px-3.5 py-2 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white">취소</button><button type="button" onClick={confirmEdit} className="cursor-pointer rounded-lg bg-amber-400 px-3.5 py-2 text-xs font-bold text-zinc-950 transition-colors hover:bg-amber-300">확인</button></div></div></div>}
     </div>
   )
 }

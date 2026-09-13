@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import BssArticleManager from './BssArticleManager'
 
-export const metadata: Metadata = { title: 'BSS 기사 관리' }
+export const metadata: Metadata = { title: 'BBS 기사 관리' }
 export const dynamic = 'force-dynamic'
 
 type ArticleRow = {
@@ -17,16 +17,27 @@ type ArticleRow = {
   reporter_character_id: string
 }
 type MediaRow = { id: string; article_id: string; image_url: string; sort_order: number }
+type ReporterOrganizationRow = { id: string }
+type ReporterMembershipRow = { character_id: string; organization_id: string }
+type ReporterRow = { id: string; name: string; avatar_url: string | null }
 
 async function getBssAdminData() {
   const supabase = createAdminClient()
-  const [{ data: articles, error: articleError }, { data: media, error: mediaError }, { data: reporters, error: reporterError }] = await Promise.all([
+  const [{ data: articles, error: articleError }, { data: media, error: mediaError }, { data: characters, error: characterError }, { data: journalistOrganizations, error: organizationError }] = await Promise.all([
     supabase.from('bss_articles').select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id').order('approved_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }),
     supabase.from('bss_article_media').select('id, article_id, image_url, sort_order').order('sort_order'),
     supabase.from('characters').select('id, name, avatar_url').order('name'),
+    supabase.from('organizations').select('id').eq('type', 'journalist').eq('is_active', true),
   ])
-  if (articleError || mediaError || reporterError) {
-    console.error('BSS admin data load failed:', articleError?.message, mediaError?.message, reporterError?.message)
+  const journalistOrganizationIds = ((journalistOrganizations ?? []) as ReporterOrganizationRow[]).map((organization) => organization.id)
+  const { data: journalistMembers, error: membershipError } = journalistOrganizationIds.length
+    ? await supabase.from('organization_members').select('character_id, organization_id').in('organization_id', journalistOrganizationIds).is('left_at', null)
+    : { data: [], error: null }
+  const reporterIds = new Set(((journalistMembers ?? []) as ReporterMembershipRow[]).map((member) => member.character_id))
+  const reporters = ((characters ?? []) as ReporterRow[]).filter((character) => reporterIds.has(character.id))
+
+  if (articleError || mediaError || characterError || organizationError || membershipError) {
+    console.error('BBS admin data load failed:', articleError?.message, mediaError?.message, characterError?.message, organizationError?.message, membershipError?.message)
   }
 
   const mediaByArticleId = new Map<string, MediaRow[]>()
@@ -44,5 +55,5 @@ async function getBssAdminData() {
 
 export default async function AdminBssPage() {
   const { articles, reporters } = await getBssAdminData()
-  return <div className="space-y-6 p-8"><div><h1 className="text-xl font-black text-white">BSS 기사 관리</h1><p className="mt-1 text-sm text-zinc-500">인게임 기사 등록, 공개 상태와 첨부 이미지를 관리합니다.</p></div><BssArticleManager articles={articles} reporters={reporters} /></div>
+  return <div className="space-y-6 p-8"><div><h1 className="text-xl font-black text-white">BBS 기사 관리</h1><p className="mt-1 text-sm text-zinc-500">인게임 기사 등록, 공개 상태와 첨부 이미지를 관리합니다.</p></div><BssArticleManager articles={articles} reporters={reporters} /></div>
 }

@@ -5,8 +5,8 @@ import BssHeader from './components/BssHeader'
 import { BSS_ARTICLES, BSS_CATEGORIES, type BssCategory } from '@/lib/bss/articles'
 
 export const metadata: Metadata = {
-  title: 'BSS',
-  description: '봉누도 방송국 BSS의 최신 기사와 소식',
+  title: 'BBS',
+  description: '봉누도 방송국 BBS의 최신 기사와 소식',
 }
 
 type Props = {
@@ -28,7 +28,7 @@ export default async function BssPage({ searchParams }: Props) {
             {articles.length === 0 ? (
               <div className="rounded-2xl border border-[var(--bss-border)] bg-[var(--bss-card)] px-5 py-20 text-center text-sm text-[var(--bss-subtle-text)]">등록된 기사가 없습니다.</div>
             ) : (
-              <section aria-label="BSS 기사 목록" className="grid gap-4 md:grid-cols-2">
+              <section aria-label="BBS 기사 목록" className="grid gap-4 md:grid-cols-2">
                 {articles.map((article) => <BssArticleCard key={article.id} article={article} />)}
               </section>
             )}
