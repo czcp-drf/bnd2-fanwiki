@@ -6,13 +6,13 @@ import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 import BongstagramStoryRail from './BongstagramStoryRail'
 import MediaCarousel from './MediaCarousel'
-import BongstagramPostInteractions from './BongstagramPostInteractions'
+import BongstagramPostInteractions, { BongstagramLikeCountProvider } from './BongstagramPostInteractions'
 import BongstagramBottomNav from './BongstagramBottomNav'
 import BongstagramFeedOrder from './BongstagramFeedOrder'
 import BongstagramFollowButton from './BongstagramFollowButton'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
+import { getBongstagramDirectory, getBongstagramPostEngagement, getBongstagramPosts } from '@/lib/bongstagram/public-data'
 import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
 import {
   Heart,
@@ -53,36 +53,12 @@ type FeedPost = {
 }
 
 async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[] }> {
-  const supabase = await createClient()
-  const [{ data: posts, error: postsError }, { data: profiles }, { data: characters }, { data: streamers }] = await Promise.all([
-    supabase
-      .from('bongstagram_posts')
-      .select('id, character_id, post_type, content, posted_at, story_expires_at, bongstagram_post_media ( id, media_type, media_url, sort_order )')
-      .order('posted_at', { ascending: false }),
-    supabase
-      .from('bongstagram_profiles')
-      .select('character_id, profile_name, avatar_url'),
-    supabase
-      .from('characters')
-      .select('id, streamer_id, name, avatar_url'),
-    supabase
-      .from('streamers')
-      .select('id, display_name, profile_image_url'),
-  ])
+  const [{ profiles, characters, streamers }, posts] = await Promise.all([getBongstagramDirectory(), getBongstagramPosts()])
+  const profilesByCharacterId = new Map(profiles.map((profile) => [profile.character_id, profile]))
+  const charactersById = new Map(characters.map((character) => [character.id, character]))
+  const streamersById = new Map(streamers.map((streamer) => [streamer.id, streamer]))
 
-  if (postsError && postsError.code !== 'PGRST205') {
-    console.error('Bongstagram feed lookup failed:', postsError.code, postsError.message)
-  }
-
-  type PostRow = { id: string; character_id: string; post_type: 'post' | 'story'; content: string; posted_at: string; story_expires_at: string | null; bongstagram_post_media: FeedMedia[] }
-  type ProfileRow = { character_id: string; profile_name: string; avatar_url: string | null }
-  type CharacterRow = { id: string; streamer_id: string | null; name: string; avatar_url: string | null }
-  type StreamerRow = { id: string; display_name: string; profile_image_url: string | null }
-  const profilesByCharacterId = new Map(((profiles ?? []) as ProfileRow[]).map((profile) => [profile.character_id, profile]))
-  const charactersById = new Map(((characters ?? []) as CharacterRow[]).map((character) => [character.id, character]))
-  const streamersById = new Map(((streamers ?? []) as StreamerRow[]).map((streamer) => [streamer.id, streamer]))
-
-  const feedPosts = ((posts ?? []) as PostRow[]).flatMap((post) => {
+  const feedPosts = posts.flatMap((post) => {
     const profile = profilesByCharacterId.get(post.character_id)
     const character = charactersById.get(post.character_id)
     if (!profile || !character) return []
@@ -93,7 +69,7 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
       content: post.content,
       posted_at: post.posted_at,
       story_expires_at: post.story_expires_at,
-      media: post.bongstagram_post_media.sort((a, b) => a.sort_order - b.sort_order),
+      media: post.media,
       profile_name: profile.profile_name,
       profile_avatar_url: profile.avatar_url,
       character_name: character.name,
@@ -104,36 +80,19 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
   })
 
   const postIds = feedPosts.filter((post) => post.post_type === 'post').map((post) => post.id)
-  let likesByPostId = new Map<string, number>()
-  let commentsByPostId = new Map<string, number>()
+  const { likeCounts, commentCounts } = await getBongstagramPostEngagement(postIds)
+  const likesByPostId = new Map(Object.entries(likeCounts))
+  const commentsByPostId = new Map(Object.entries(commentCounts))
   let likedPostIds = new Set<string>()
 
   if (postIds.length > 0) {
     const adminSupabase = createAdminClient()
     const ipHash = await getBongstagramIpHash()
-    const [likesResult, commentsResult, viewerLikesResult] = await Promise.all([
-      adminSupabase.from('bongstagram_post_likes').select('post_id').in('post_id', postIds),
-      adminSupabase.from('bongstagram_post_comments').select('post_id').in('post_id', postIds),
+    const viewerLikesResult = await (
       ipHash
         ? adminSupabase.from('bongstagram_post_likes').select('post_id').in('post_id', postIds).eq('ip_hash', ipHash)
-        : Promise.resolve({ data: [], error: null }),
-    ])
-
-    if (likesResult.error && likesResult.error.code !== 'PGRST205') {
-      console.error('Bongstagram like count lookup failed:', likesResult.error.code, likesResult.error.message)
-    }
-    if (commentsResult.error && commentsResult.error.code !== 'PGRST205') {
-      console.error('Bongstagram comment count lookup failed:', commentsResult.error.code, commentsResult.error.message)
-    }
-
-    likesByPostId = new Map<string, number>()
-    for (const row of (likesResult.data ?? []) as { post_id: string }[]) {
-      likesByPostId.set(row.post_id, (likesByPostId.get(row.post_id) ?? 0) + 1)
-    }
-    commentsByPostId = new Map<string, number>()
-    for (const row of (commentsResult.data ?? []) as { post_id: string }[]) {
-      commentsByPostId.set(row.post_id, (commentsByPostId.get(row.post_id) ?? 0) + 1)
-    }
+        : Promise.resolve({ data: [], error: null })
+    )
     likedPostIds = new Set(((viewerLikesResult.data ?? []) as { post_id: string }[]).map((row) => row.post_id))
   }
 
@@ -285,7 +244,7 @@ export default async function BongstagramPage() {
         <BongstagramStoryRail stories={stories} />
 
         <main>
-          {posts.length > 0 ? <BongstagramFeedOrder items={posts.map((post) => ({ characterId: post.character_id, element: <FeedPostCard key={post.id} post={post} /> }))} /> : (
+          {posts.length > 0 ? <BongstagramLikeCountProvider postIds={posts.map((post) => post.id)} initialLikeCounts={Object.fromEntries(posts.map((post) => [post.id, post.like_count ?? 0]))}><BongstagramFeedOrder items={posts.map((post) => ({ characterId: post.character_id, element: <FeedPostCard key={post.id} post={post} /> }))} /></BongstagramLikeCountProvider> : (
           <article className="border-b border-zinc-800">
             <header className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">

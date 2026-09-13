@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react'
 import { ArrowLeft, Heart, MessageCircle, Send } from 'lucide-react'
-import { getBongstagramComments, toggleBongstagramLike, type BongstagramComment } from './actions'
+import { getBongstagramComments, getBongstagramLikeCounts, toggleBongstagramLike, type BongstagramComment } from './actions'
 import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 
@@ -54,6 +54,56 @@ function CommentThread({ comment, repliesByParent, depth = 0 }: { comment: Bongs
   )
 }
 
+const LIKE_COUNT_REFRESH_MS = 60_000
+type LikeCountContextValue = {
+  counts: Map<string, number>
+  adjust: (postId: string, delta: number) => void
+}
+
+const LikeCountContext = createContext<LikeCountContextValue | null>(null)
+
+export function BongstagramLikeCountProvider({ postIds, initialLikeCounts, children }: { postIds: string[]; initialLikeCounts: Record<string, number>; children: ReactNode }) {
+  const normalizedPostIds = useMemo(() => Array.from(new Set(postIds)), [postIds])
+  const [likeCounts, setLikeCounts] = useState(() => new Map(Object.entries(initialLikeCounts)))
+  const adjustLikeCount = useCallback((postId: string, delta: number) => {
+    setLikeCounts((current) => {
+      const next = new Map(current)
+      next.set(postId, Math.max(0, (next.get(postId) ?? 0) + delta))
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function refreshLikeCounts() {
+      if (document.visibilityState !== 'visible') return
+      const result = await getBongstagramLikeCounts(normalizedPostIds)
+      if (cancelled || !result.counts) return
+      setLikeCounts((current) => {
+        const next = new Map(current)
+        Object.entries(result.counts ?? {}).forEach(([postId, count]) => next.set(postId, count))
+        return next
+      })
+    }
+
+    const intervalId = window.setInterval(refreshLikeCounts, LIKE_COUNT_REFRESH_MS)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshLikeCounts()
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [normalizedPostIds])
+
+  const contextValue = useMemo(() => ({ counts: likeCounts, adjust: adjustLikeCount }), [adjustLikeCount, likeCounts])
+  return <LikeCountContext.Provider value={contextValue}>{children}</LikeCountContext.Provider>
+}
+
 export default function BongstagramPostInteractions({
   postId,
   initialLikeCount = 0,
@@ -68,7 +118,9 @@ export default function BongstagramPostInteractions({
   caption?: ReactNode
 }) {
   const [liked, setLiked] = useState(initialLiked)
-  const [likeCount, setLikeCount] = useState(initialLikeCount)
+  const [localLikeCount, setLocalLikeCount] = useState(initialLikeCount)
+  const likeCountContext = useContext(LikeCountContext)
+  const likeCount = likeCountContext?.counts.get(postId) ?? localLikeCount
   const [comments, setComments] = useState<BongstagramComment[]>([])
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [commentsLoaded, setCommentsLoaded] = useState(false)
@@ -84,8 +136,13 @@ export default function BongstagramPostInteractions({
         setError(result.error)
         return
       }
-      setLiked(result.liked ?? !liked)
-      setLikeCount(result.likeCount ?? likeCount)
+      const nextLiked = result.liked ?? !liked
+      setLiked(nextLiked)
+      if (likeCountContext) {
+        likeCountContext.adjust(postId, nextLiked ? 1 : -1)
+      } else {
+        setLocalLikeCount((current) => Math.max(0, current + (nextLiked ? 1 : -1)))
+      }
     })
   }
 

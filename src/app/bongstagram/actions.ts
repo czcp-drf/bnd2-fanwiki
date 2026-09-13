@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
+import { getBongstagramComments as getCachedBongstagramComments } from '@/lib/bongstagram/public-data'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -22,13 +23,17 @@ export type BongstagramComment = {
 type LikeActionResult = {
   success?: true
   liked?: boolean
-  likeCount?: number
   error?: string
 }
 
 type StoryLikeActionResult = {
   success?: true
   liked?: boolean
+  error?: string
+}
+
+type LikeCountsResult = {
+  counts?: Record<string, number>
   error?: string
 }
 
@@ -85,18 +90,30 @@ export async function toggleBongstagramLike(postId: string): Promise<LikeActionR
     liked = true
   }
 
-  const { count, error: countError } = await supabase
-    .from('bongstagram_post_likes')
-    .select('id', { count: 'exact', head: true })
-    .eq('post_id', id)
+  revalidatePath('/bongstagram')
+  return { success: true, liked }
+}
 
-  if (countError) {
-    console.error('Bongstagram like count failed:', countError.code, countError.message)
-    return { success: true, liked, likeCount: 0 }
+export async function getBongstagramLikeCounts(postIds: string[]): Promise<LikeCountsResult> {
+  const ids = Array.from(new Set(postIds.map((postId) => postId.trim()).filter(isValidPostId))).slice(0, 100)
+  if (ids.length === 0) return { counts: {} }
+
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('bongstagram_post_likes')
+    .select('post_id')
+    .in('post_id', ids)
+
+  if (error) {
+    console.error('Bongstagram like counts refresh failed:', error.code, error.message)
+    return { error: error.code === 'PGRST205' ? '좋아요 테이블이 아직 연결되지 않았습니다. migration 023을 적용해 주세요.' : '좋아요 수를 갱신하지 못했습니다.' }
   }
 
-  revalidatePath('/bongstagram')
-  return { success: true, liked, likeCount: count ?? 0 }
+  const counts = Object.fromEntries(ids.map((id) => [id, 0]))
+  for (const row of (data ?? []) as { post_id: string }[]) {
+    counts[row.post_id] = (counts[row.post_id] ?? 0) + 1
+  }
+  return { counts }
 }
 
 export async function toggleBongstagramStoryLike(storyId: string): Promise<StoryLikeActionResult> {
@@ -158,44 +175,11 @@ export async function getBongstagramComments(postId: string): Promise<{ comments
   const id = postId.trim()
   if (!isValidPostId(id)) return { error: '댓글을 불러올 게시물을 찾을 수 없습니다.' }
 
-  const supabase = createAdminClient()
-  const [{ data, error }, { data: profiles }, { data: characters }, { data: streamers }] = await Promise.all([
-    supabase
-      .from('bongstagram_post_comments')
-      .select('id, post_id, parent_comment_id, author_character_id, author_name, content, created_at')
-      .eq('post_id', id)
-      .order('created_at', { ascending: true }),
-    supabase.from('bongstagram_profiles').select('profile_name, character_id, avatar_url'),
-    supabase.from('characters').select('id, streamer_id, avatar_url'),
-    supabase.from('streamers').select('id, display_name, profile_image_url'),
-  ])
-
-  if (error) {
-    console.error('Bongstagram comments lookup failed:', error.code, error.message)
-    return { error: error.code === 'PGRST205' ? '댓글 테이블이 아직 연결되지 않았습니다. migration 023을 적용해 주세요.' : '댓글을 불러오지 못했습니다.' }
+  const result = await getCachedBongstagramComments(id)
+  if (result.errorCode) {
+    console.error('Bongstagram comments lookup failed:', result.errorCode, result.errorMessage)
+    return { error: result.errorCode === 'PGRST205' ? '댓글 테이블이 아직 연결되지 않았습니다. migration 023을 적용해 주세요.' : '댓글을 불러오지 못했습니다.' }
   }
 
-  type CommentRow = Omit<BongstagramComment, 'streamer_name' | 'profile_avatar_url' | 'streamer_avatar_url'>
-  type ProfileRow = { profile_name: string; character_id: string; avatar_url: string | null }
-  type CharacterRow = { id: string; streamer_id: string | null; avatar_url: string | null }
-  type StreamerRow = { id: string; display_name: string; profile_image_url: string | null }
-  const profileByName = new Map(((profiles ?? []) as ProfileRow[]).map((profile) => [profile.profile_name, profile]))
-  const characterById = new Map(((characters ?? []) as CharacterRow[]).map((character) => [character.id, character]))
-  const streamerById = new Map(((streamers ?? []) as StreamerRow[]).map((streamer) => [streamer.id, streamer]))
-
-  const comments = ((data ?? []) as CommentRow[]).map((comment) => {
-    const profile = comment.author_character_id
-      ? ((profiles ?? []) as ProfileRow[]).find((item) => item.character_id === comment.author_character_id) ?? null
-      : profileByName.get(comment.author_name)
-    const character = profile ? characterById.get(profile.character_id) : null
-    const streamer = character?.streamer_id ? streamerById.get(character.streamer_id) : null
-    return {
-      ...comment,
-      streamer_name: streamer?.display_name ?? null,
-      profile_avatar_url: profile?.avatar_url ?? null,
-      streamer_avatar_url: streamer?.profile_image_url ?? null,
-    }
-  })
-
-  return { comments }
+  return { comments: result.comments }
 }

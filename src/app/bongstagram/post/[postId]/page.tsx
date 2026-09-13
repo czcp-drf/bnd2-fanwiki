@@ -4,58 +4,38 @@ import { notFound } from 'next/navigation'
 import { Image as ImageIcon } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
+import { getBongstagramPost, getBongstagramPostEngagement } from '@/lib/bongstagram/public-data'
 import BongstagramBottomNav from '../../BongstagramBottomNav'
 import BongstagramBackButton from '../../BongstagramBackButton'
 import BongstagramDisplayName from '../../BongstagramDisplayName'
 import BongstagramFollowButton from '../../BongstagramFollowButton'
-import BongstagramPostInteractions from '../../BongstagramPostInteractions'
+import BongstagramPostInteractions, { BongstagramLikeCountProvider } from '../../BongstagramPostInteractions'
 import BongstagramProfileAvatar from '../../BongstagramProfileAvatar'
 import BongstagramVideoPlayer from '../../BongstagramVideoPlayer'
 import MediaCarousel from '../../MediaCarousel'
 
 type Media = { id: string; media_type: 'image' | 'video'; media_url: string; sort_order: number }
 type Post = { id: string; character_id: string; post_type: 'post' | 'story'; content: string; posted_at: string; media: Media[] }
-type Profile = { character_id: string; profile_name: string; avatar_url: string | null }
-type Character = { id: string; streamer_id: string | null; name: string; avatar_url: string | null }
-type Streamer = { display_name: string; profile_image_url: string | null } | null
 
 async function getPostData(postId: string) {
-  const supabase = await createClient()
-  const { data: post } = await supabase.from('bongstagram_posts').select('id, character_id, post_type, content, posted_at, bongstagram_post_media ( id, media_type, media_url, sort_order )').eq('id', postId).eq('post_type', 'post').maybeSingle()
+  const data = await getBongstagramPost(postId)
+  if (!data) notFound()
 
-  if (!post) notFound()
-
-  const postRow = post as { id: string; character_id: string; post_type: 'post' | 'story'; content: string; posted_at: string; bongstagram_post_media: Media[] }
-  const [{ data: profile }, { data: character }] = await Promise.all([
-    supabase.from('bongstagram_profiles').select('character_id, profile_name, avatar_url').eq('character_id', postRow.character_id).maybeSingle(),
-    supabase.from('characters').select('id, streamer_id, name, avatar_url').eq('id', postRow.character_id).maybeSingle(),
-  ])
-
-  if (!profile || !character) notFound()
-
-  const profileRow = profile as Profile
-  const characterRow = character as Character
-  const [{ data: streamer }, counts] = await Promise.all([
-    characterRow.streamer_id
-      ? supabase.from('streamers').select('display_name, profile_image_url').eq('id', characterRow.streamer_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-    getPostCounts(postRow.id),
-  ])
+  const counts = await getPostCounts(data.post.id)
 
   return {
     post: {
-      id: postRow.id,
-      character_id: postRow.character_id,
-      post_type: postRow.post_type,
-      content: postRow.content,
-      posted_at: postRow.posted_at,
-      media: [...(postRow.bongstagram_post_media ?? [])].sort((a, b) => a.sort_order - b.sort_order),
+      id: data.post.id,
+      character_id: data.post.character_id,
+      post_type: data.post.post_type,
+      content: data.post.content,
+      posted_at: data.post.posted_at,
+      media: data.post.media,
     } satisfies Post,
-    profile: profileRow,
-    character: characterRow,
-    streamer: streamer as Streamer,
+    profile: data.profile,
+    character: data.character,
+    streamer: data.streamer,
     ...counts,
   }
 }
@@ -63,17 +43,16 @@ async function getPostData(postId: string) {
 async function getPostCounts(postId: string) {
   const adminSupabase = createAdminClient()
   const ipHash = await getBongstagramIpHash()
-  const [likesResult, commentsResult, viewerLikesResult] = await Promise.all([
-    adminSupabase.from('bongstagram_post_likes').select('post_id').eq('post_id', postId),
-    adminSupabase.from('bongstagram_post_comments').select('post_id').eq('post_id', postId),
+  const [{ likeCounts, commentCounts }, viewerLikesResult] = await Promise.all([
+    getBongstagramPostEngagement([postId]),
     ipHash
       ? adminSupabase.from('bongstagram_post_likes').select('post_id').eq('post_id', postId).eq('ip_hash', ipHash)
       : Promise.resolve({ data: [], error: null }),
   ])
 
   return {
-    likeCount: likesResult.error ? 0 : (likesResult.data ?? []).length,
-    commentCount: commentsResult.error ? 0 : (commentsResult.data ?? []).length,
+    likeCount: likeCounts[postId] ?? 0,
+    commentCount: commentCounts[postId] ?? 0,
     likedByViewer: !viewerLikesResult.error && (viewerLikesResult.data ?? []).length > 0,
   }
 }
@@ -136,7 +115,7 @@ export default async function BongstagramPostPage({ params }: { params: Promise<
             {data.post.media.length > 0 ? <MediaCarousel>{data.post.media.map((media) => <div key={media.id} className="w-full min-w-0 max-w-full flex-none snap-center"><PostMedia media={media} label={data.profile.profile_name} /></div>)}</MediaCarousel> : <div className="flex min-h-56 items-center justify-center bg-black text-zinc-600"><ImageIcon size={28} /></div>}
 
             <div className="space-y-3 px-4 py-3">
-              <BongstagramPostInteractions postId={data.post.id} initialLikeCount={data.likeCount} initialCommentCount={data.commentCount} initialLiked={data.likedByViewer} caption={data.post.content ? <PostCaption post={data.post} profileName={data.profile.profile_name} streamerName={data.streamer?.display_name ?? null} /> : null} />
+              <BongstagramLikeCountProvider postIds={[data.post.id]} initialLikeCounts={{ [data.post.id]: data.likeCount }}><BongstagramPostInteractions postId={data.post.id} initialLikeCount={data.likeCount} initialCommentCount={data.commentCount} initialLiked={data.likedByViewer} caption={data.post.content ? <PostCaption post={data.post} profileName={data.profile.profile_name} streamerName={data.streamer?.display_name ?? null} /> : null} /></BongstagramLikeCountProvider>
               <p className="text-[11px] text-zinc-500">{formatPostTime(data.post.posted_at)}</p>
             </div>
           </article>

@@ -3,15 +3,8 @@ import { notFound } from 'next/navigation'
 import BongstagramBackButton from '../../BongstagramBackButton'
 import BongstagramBottomNav from '../../BongstagramBottomNav'
 import BongstagramPostGrid, { type BongstagramGridPost } from '../../BongstagramPostGrid'
-import { createClient } from '@/lib/supabase/server'
 import { extractBongstagramHashtags } from '@/lib/bongstagram/hashtags'
-
-type PostRow = {
-  id: string
-  character_id: string
-  content: string
-  bongstagram_post_media: { media_type: 'image' | 'video'; media_url: string; sort_order: number }[]
-}
+import { getBongstagramPosts } from '@/lib/bongstagram/public-data'
 
 function decodeTag(value: string) {
   try {
@@ -25,19 +18,14 @@ async function getHashtagPosts(rawTag: string) {
   const tag = decodeTag(rawTag)
   if (!tag || /[\s#]/.test(tag)) notFound()
 
-  const supabase = await createClient()
-  const { data: posts } = await supabase
-    .from('bongstagram_posts')
-    .select('id, character_id, content, bongstagram_post_media ( media_type, media_url, sort_order )')
-    .eq('post_type', 'post')
-    .order('posted_at', { ascending: false })
+  const posts = await getBongstagramPosts('post')
 
   const normalizedTag = tag.toLocaleLowerCase()
-  const gridPosts: BongstagramGridPost[] = ((posts ?? []) as PostRow[]).flatMap((post) => {
+  const gridPosts: BongstagramGridPost[] = posts.flatMap((post) => {
     const matches = extractBongstagramHashtags(post.content).some((item) => item.toLocaleLowerCase() === normalizedTag)
     if (!matches) return []
 
-    const media = [...(post.bongstagram_post_media ?? [])].sort((a, b) => a.sort_order - b.sort_order)[0]
+    const media = post.media[0]
     return media ? [{ id: post.id, character_id: post.character_id, media_type: media.media_type, media_url: media.media_url }] : []
   })
 

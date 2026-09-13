@@ -1,7 +1,13 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/auth'
+import {
+  BONGSTAGRAM_DIRECTORY_TAG,
+  BONGSTAGRAM_ENGAGEMENT_TAG,
+  BONGSTAGRAM_POSTS_TAG,
+  BONGSTAGRAM_PROFILES_TAG,
+} from '@/lib/bongstagram/public-data'
 import { getStoryExpiration } from '@/lib/bongstagram/story-schedule'
 
 type ProfileInput = {
@@ -62,6 +68,10 @@ function revalidateBongstagram() {
   revalidatePath('/admin/bongstagram')
   revalidatePath('/admin/bongstagram/posts')
   revalidatePath('/bongstagram')
+  revalidateTag(BONGSTAGRAM_DIRECTORY_TAG, 'max')
+  revalidateTag(BONGSTAGRAM_POSTS_TAG, 'max')
+  revalidateTag(BONGSTAGRAM_PROFILES_TAG, 'max')
+  revalidateTag(BONGSTAGRAM_ENGAGEMENT_TAG, 'max')
 }
 
 export async function upsertBongstagramProfile(data: ProfileInput): Promise<ActionResult> {

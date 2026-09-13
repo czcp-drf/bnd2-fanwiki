@@ -412,6 +412,8 @@ src/
 
 - Bongstagram 검색 화면 개선 (`feat/bonstagram`): 검색 네비게이션 진입 시 검색창과 게시물 3열 그리드를 표시하고, 검색창 포커스 시 최근 검색 목록·개별 삭제·전체 삭제·프로필 검색 화면으로 전환하도록 구성했습니다. 최근 검색은 브라우저 localStorage에 저장하며, 빨간약 OFF에서는 프로필명·캐릭터명만 검색하고 ON에서만 스트리머명을 검색합니다. `AppImage`의 `fill`·크기 속성 충돌을 수정하고 검색창 높이를 56px로 조정했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
 
+- Bongstagram 공개 데이터 캐시 적용 (`feat/bonstagram`): 프로필·캐릭터·스트리머 디렉터리, 피드·프로필·게시물 상세·해시태그 게시물, 댓글 조회를 `unstable_cache` 기반 60초 캐시로 통합했습니다. 관리자 프로필·게시물·댓글 변경 시 관련 캐시 태그를 무효화하며, 방문자별 IP 좋아요 상태와 좋아요 토글은 실시간으로 유지합니다. 스토리 노출 여부는 캐시된 게시물에 대해 요청 시점 기준으로 계산합니다. 변경 파일 ESLint와 프로덕션 빌드·`git diff --check`를 통과했으며, 전체 ESLint의 기존 오류는 다른 관리자·제보 화면에 남아 있습니다. 대상 브랜치 `feat/bonstagram`에 커밋하고 원격 `deploy/feat/bonstagram`으로 푸시합니다.
+
 - Bongstagram 게시물 상세·프로필 UI 개선 (`feat/bonstagram`): `/bongstagram/post/[postId]` 게시물 상세 페이지를 추가해 피드와 동일한 작성자·팔로우·미디어 캐러셀·좋아요·댓글·본문·업로드 시간 UI를 제공합니다. 검색·프로필 게시물 그리드에서 상세 페이지로 연결하고, 상세·다른 유저 프로필의 뒤로가기는 직전 페이지로 이동하도록 했습니다. 프로필 헤더 제목을 중앙 정렬하고 우측 Bongstagram 문구를 제거했으며, 다른 유저 프로필의 팔로우 버튼을 설명 아래 전체 너비로 확장했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
 
 - 레거시 Bonstagram 경로 폐기 (`feat/bonstagram`): 글로벌 헤더를 `/bongstagram`으로 통일하고 호환용 `/bonstagram` 라우트와 오타 테마 localStorage 키를 제거했습니다. 이미 운영 DB에 적용된 018·019 마이그레이션은 초기화 재현과 이름 변경 이력에 필요해 보존합니다. 변경 후 애플리케이션 코드의 레거시 경로 참조가 사라졌는지 확인하고, 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.

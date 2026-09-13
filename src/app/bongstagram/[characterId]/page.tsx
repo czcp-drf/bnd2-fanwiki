@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
+import { getBongstagramProfile } from '@/lib/bongstagram/public-data'
 import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
 import BongstagramBottomNav from '../BongstagramBottomNav'
 import BongstagramProfileScreen from '../BongstagramProfileScreen'
@@ -26,43 +26,16 @@ type ProfilePost = {
 }
 
 async function getProfileData(characterId: string) {
-  const supabase = await createClient()
-  const [{ data: profile }, { data: character }, { data: posts }] = await Promise.all([
-    supabase
-      .from('bongstagram_profiles')
-      .select('character_id, profile_name, avatar_url, bio')
-      .eq('character_id', characterId)
-      .maybeSingle(),
-    supabase
-      .from('characters')
-      .select('id, streamer_id, name, avatar_url')
-      .eq('id', characterId)
-      .maybeSingle(),
-    supabase
-      .from('bongstagram_posts')
-      .select('id, post_type, content, posted_at, story_expires_at, bongstagram_post_media ( id, media_type, media_url, sort_order )')
-      .eq('character_id', characterId)
-      .order('posted_at', { ascending: false }),
-  ])
+  const data = await getBongstagramProfile(characterId)
+  if (!data) notFound()
 
-  if (!profile || !character) notFound()
-
-  type ProfileRow = { character_id: string; profile_name: string; avatar_url: string | null; bio: string | null }
-  type CharacterRow = { id: string; streamer_id: string | null; name: string; avatar_url: string | null }
-  type PostRow = Omit<ProfilePost, 'media'> & { bongstagram_post_media: Media[] }
-  const profileRow = profile as ProfileRow
-  const characterRow = character as CharacterRow
-  const { data: streamer } = characterRow.streamer_id
-    ? await supabase.from('streamers').select('display_name, profile_image_url').eq('id', characterRow.streamer_id).maybeSingle()
-    : { data: null }
-
-  const profilePosts: ProfilePost[] = ((posts ?? []) as PostRow[]).map((post) => ({
+  const profilePosts: ProfilePost[] = data.posts.map((post) => ({
     id: post.id,
     post_type: post.post_type,
     content: post.content,
     posted_at: post.posted_at,
     story_expires_at: post.story_expires_at,
-    media: post.bongstagram_post_media.sort((a, b) => a.sort_order - b.sort_order),
+    media: post.media,
     is_active_story: post.post_type === 'story' && isStoryVisible(post.posted_at),
   }))
   const storyIds = profilePosts.filter((post) => post.post_type === 'story').map((post) => post.id)
@@ -83,9 +56,9 @@ async function getProfileData(characterId: string) {
   }
 
   return {
-    profile: profileRow,
-    character: characterRow,
-    streamer: streamer as { display_name: string; profile_image_url: string | null } | null,
+    profile: data.profile,
+    character: data.character,
+    streamer: data.streamer,
     posts: profilePosts.map((post) => ({
       ...post,
       liked_by_viewer: likedStoryIds.has(post.id),
