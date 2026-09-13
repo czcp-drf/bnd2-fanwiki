@@ -1,17 +1,57 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import { Heart, MessageCircle, Send, X } from 'lucide-react'
 import { getBongstagramComments, toggleBongstagramLike, type BongstagramComment } from './actions'
+import BongstagramDisplayName from './BongstagramDisplayName'
+import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 
 function formatCommentDate(value: string) {
-  return new Intl.DateTimeFormat('ko-KR', {
+  const elapsed = Date.now() - new Date(value).getTime()
+  const minute = 60 * 1000
+  const hour = 60 * minute
+  const day = 24 * hour
+
+  if (elapsed < minute) return '방금 전'
+  if (elapsed < hour) return `${Math.floor(elapsed / minute)}분 전`
+  if (elapsed < day) return `${Math.floor(elapsed / hour)}시간 전`
+
+  const dateParts = new Intl.DateTimeFormat('ko-KR', {
     timeZone: 'Asia/Seoul',
     month: 'numeric',
     day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value))
+  }).formatToParts(new Date(value))
+  const month = dateParts.find((part) => part.type === 'month')?.value
+  const dayOfMonth = dateParts.find((part) => part.type === 'day')?.value
+  return `${month}월 ${dayOfMonth}일`
+}
+
+function CommentThread({ comment, repliesByParent, depth = 0 }: { comment: BongstagramComment; repliesByParent: Map<string, BongstagramComment[]>; depth?: number }) {
+  const replies = repliesByParent.get(comment.id) ?? []
+  return (
+    <div>
+      <article className={`flex items-start gap-3 ${depth > 0 ? 'ml-10' : ''}`}>
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-semibold text-zinc-300">
+          <BongstagramProfileAvatar
+            profileAvatarUrl={comment.profile_avatar_url}
+            streamerAvatarUrl={comment.streamer_avatar_url}
+            profileName={comment.author_name}
+            streamerName={comment.streamer_name}
+            fallbackText={comment.author_name.trim().slice(0, 1) || '?'}
+            className="h-full w-full object-cover"
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <p className="shrink-0 text-sm font-semibold text-zinc-200"><BongstagramDisplayName profileName={comment.author_name} streamerName={comment.streamer_name} /></p>
+            <p className="min-w-0 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-400">{comment.content}</p>
+          </div>
+          <time className="mt-0.5 block text-[11px] text-zinc-600" dateTime={comment.created_at}>{formatCommentDate(comment.created_at)}</time>
+        </div>
+      </article>
+      {replies.length > 0 && <div className="mt-4 space-y-4">{replies.map((reply) => <CommentThread key={reply.id} comment={reply} repliesByParent={repliesByParent} depth={depth + 1} />)}</div>}
+    </div>
+  )
 }
 
 export default function BongstagramPostInteractions({
@@ -19,11 +59,13 @@ export default function BongstagramPostInteractions({
   initialLikeCount = 0,
   initialCommentCount = 0,
   initialLiked = false,
+  caption,
 }: {
   postId: string
   initialLikeCount?: number
   initialCommentCount?: number
   initialLiked?: boolean
+  caption?: ReactNode
 }) {
   const [liked, setLiked] = useState(initialLiked)
   const [likeCount, setLikeCount] = useState(initialLikeCount)
@@ -87,8 +129,9 @@ export default function BongstagramPostInteractions({
         <Send size={22} />
       </div>
       {!!likeCount && <p className="text-sm font-semibold text-zinc-200">좋아요 {likeCount}개</p>}
+      {caption}
       {!!initialCommentCount && (
-        <button type="button" onClick={handleCommentsOpen} className="block text-sm text-left text-zinc-400 transition-colors hover:text-zinc-200">
+        <button type="button" onClick={handleCommentsOpen} className="block cursor-pointer text-left text-sm text-zinc-400 transition-colors hover:text-zinc-200">
           댓글 {initialCommentCount}개 모두 보기
         </button>
       )}
@@ -113,16 +156,19 @@ export default function BongstagramPostInteractions({
               {isPending && !commentsLoaded ? (
                 <p className="py-8 text-center text-sm text-zinc-500">댓글을 불러오는 중입니다.</p>
               ) : comments.length > 0 ? (
-                <div className="space-y-5">
-                  {comments.map((comment) => (
-                    <article key={comment.id} className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold text-zinc-200">{comment.author_name}</p>
-                        <time className="shrink-0 text-[11px] text-zinc-600" dateTime={comment.created_at}>{formatCommentDate(comment.created_at)}</time>
-                      </div>
-                      <p className="whitespace-pre-wrap break-words text-sm leading-6 text-zinc-400">{comment.content}</p>
-                    </article>
-                  ))}
+                <div className="space-y-4">
+                  {(() => {
+                    const commentsByParent = new Map<string, BongstagramComment[]>()
+                    comments.forEach((comment) => {
+                      if (!comment.parent_comment_id) return
+                      const replies = commentsByParent.get(comment.parent_comment_id) ?? []
+                      replies.push(comment)
+                      commentsByParent.set(comment.parent_comment_id, replies)
+                    })
+                    return comments.filter((comment) => !comment.parent_comment_id || !comments.some((parent) => parent.id === comment.parent_comment_id)).map((comment) => (
+                      <CommentThread key={comment.id} comment={comment} repliesByParent={commentsByParent} />
+                    ))
+                  })()}
                 </div>
               ) : (
                 <p className="py-8 text-center text-sm text-zinc-500">아직 댓글이 없습니다.</p>

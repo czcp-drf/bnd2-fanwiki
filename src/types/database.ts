@@ -218,6 +218,7 @@ export type Database = {
         Row: {
           id: string
           post_id: string
+          parent_comment_id: string | null
           author_name: string
           content: string
           created_at: string

@@ -60,6 +60,7 @@ function validateProfileInput(data: ProfileInput): { error: string } | { data: V
 
 function revalidateBongstagram() {
   revalidatePath('/admin/bongstagram')
+  revalidatePath('/admin/bongstagram/posts')
   revalidatePath('/bongstagram')
 }
 
@@ -387,6 +388,118 @@ export async function deleteBongstagramPost(id: string): Promise<ActionResult> {
   if (paths.length) {
     const { error: cleanupError } = await supabase.storage.from(BONGSTAGRAM_MEDIA_BUCKET).remove(paths)
     if (cleanupError) console.error('Bongstagram deleted media cleanup failed:', cleanupError.message)
+  }
+
+  revalidateBongstagram()
+  return { success: true }
+}
+
+type CommentInput = {
+  postId: string
+  parentCommentId?: string | null
+  authorName: string
+  content: string
+  createdAt?: string
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function validateCommentInput(data: CommentInput): { error: string } | { data: { postId: string; parentCommentId: string | null; authorName: string; content: string; createdAt: string } } {
+  const postId = data.postId.trim()
+  const parentCommentId = data.parentCommentId?.trim() || null
+  const authorName = data.authorName.trim()
+  const content = data.content.trim()
+  const createdAt = data.createdAt?.trim() || new Date().toISOString()
+
+  if (!UUID_PATTERN.test(postId)) return { error: '댓글을 등록할 게시물을 선택해 주세요.' }
+  if (parentCommentId && !UUID_PATTERN.test(parentCommentId)) return { error: '답글을 등록할 댓글을 찾을 수 없습니다.' }
+  if (!authorName) return { error: '댓글 작성자 프로필을 선택해 주세요.' }
+  if (authorName.length > 40) return { error: '댓글 작성자명은 40자 이내로 입력해 주세요.' }
+  if (!content) return { error: '댓글 내용을 입력해 주세요.' }
+  if (content.length > 1000) return { error: '댓글은 1000자 이내로 입력해 주세요.' }
+  if (Number.isNaN(new Date(createdAt).getTime())) return { error: '댓글 작성 시간을 확인해 주세요.' }
+
+  return { data: { postId, parentCommentId, authorName, content, createdAt: new Date(createdAt).toISOString() } }
+}
+
+export async function createBongstagramComment(data: CommentInput): Promise<ActionResult> {
+  const input = validateCommentInput(data)
+  if ('error' in input) return input
+
+  const supabase = await requireAdmin()
+  const { data: post, error: postError } = await supabase
+    .from('bongstagram_posts')
+    .select('id')
+    .eq('id', input.data.postId)
+    .maybeSingle()
+
+  if (postError) {
+    console.error('Bongstagram comment post lookup failed:', postError.code, postError.message)
+    return postError.code === 'PGRST205'
+      ? { error: '댓글 테이블이 아직 연결되지 않았습니다. migration 023을 적용해 주세요.' }
+      : { error: '댓글을 등록할 게시물을 확인하지 못했습니다.' }
+  }
+  if (!post) return { error: '댓글을 등록할 게시물이 존재하지 않습니다.' }
+
+  if (input.data.parentCommentId) {
+    const { data: parent, error: parentError } = await supabase
+      .from('bongstagram_post_comments')
+      .select('id, post_id, parent_comment_id')
+      .eq('id', input.data.parentCommentId)
+      .maybeSingle()
+    if (parentError || !parent) return { error: '답글을 등록할 댓글을 찾을 수 없습니다.' }
+    if (parent.post_id !== input.data.postId) return { error: '같은 게시물의 댓글에만 답글을 등록할 수 있습니다.' }
+    if (parent.parent_comment_id) return { error: '답글에는 다시 답글을 등록할 수 없습니다.' }
+  }
+
+  const { error } = await supabase.from('bongstagram_post_comments').insert({
+    post_id: input.data.postId,
+    parent_comment_id: input.data.parentCommentId,
+    author_name: input.data.authorName,
+    content: input.data.content,
+    created_at: input.data.createdAt,
+  })
+
+  if (error) {
+    console.error('Bongstagram comment create failed:', error.code, error.message)
+    return { error: '댓글을 등록하지 못했습니다.' }
+  }
+
+  revalidateBongstagram()
+  return { success: true }
+}
+
+export async function updateBongstagramComment(id: string, data: Omit<CommentInput, 'postId' | 'parentCommentId'>): Promise<ActionResult> {
+  const commentId = id.trim()
+  if (!UUID_PATTERN.test(commentId)) return { error: '수정할 댓글을 찾을 수 없습니다.' }
+
+  const input = validateCommentInput({ postId: '00000000-0000-4000-8000-000000000000', ...data })
+  if ('error' in input) return input
+
+  const supabase = await requireAdmin()
+  const { error } = await supabase
+    .from('bongstagram_post_comments')
+    .update({ author_name: input.data.authorName, content: input.data.content, created_at: input.data.createdAt })
+    .eq('id', commentId)
+
+  if (error) {
+    console.error('Bongstagram comment update failed:', error.code, error.message)
+    return { error: '댓글을 수정하지 못했습니다.' }
+  }
+
+  revalidateBongstagram()
+  return { success: true }
+}
+
+export async function deleteBongstagramComment(id: string): Promise<ActionResult> {
+  const commentId = id.trim()
+  if (!UUID_PATTERN.test(commentId)) return { error: '삭제할 댓글을 찾을 수 없습니다.' }
+
+  const supabase = await requireAdmin()
+  const { error } = await supabase.from('bongstagram_post_comments').delete().eq('id', commentId)
+  if (error) {
+    console.error('Bongstagram comment delete failed:', error.code, error.message)
+    return { error: '댓글을 삭제하지 못했습니다.' }
   }
 
   revalidateBongstagram()

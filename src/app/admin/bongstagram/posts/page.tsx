@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import BongstagramPostManager from '../BongstagramPostManager'
+import BongstagramCommentManager from '../BongstagramCommentManager'
 
 export const metadata: Metadata = { title: 'Bongstagram 게시물 관리' }
 
@@ -46,9 +47,18 @@ type PostRow = {
   bongstagram_post_media: MediaRow[]
 }
 
+type CommentRow = {
+  id: string
+  post_id: string
+  parent_comment_id: string | null
+  author_name: string
+  content: string
+  created_at: string
+}
+
 async function getPostData() {
   const supabase = createAdminClient()
-  const [{ data: characters }, { data: profiles }, { data: posts }, { data: organizations }, { data: memberships }] = await Promise.all([
+  const [{ data: characters }, { data: profiles }, { data: posts }, { data: organizations }, { data: memberships }, { data: comments }] = await Promise.all([
     supabase
       .from('characters')
       .select('id, name, avatar_url, streamers ( display_name )')
@@ -68,6 +78,10 @@ async function getPostData() {
       .from('organization_members')
       .select('character_id, organization_id, left_at')
       .is('left_at', null),
+    supabase
+      .from('bongstagram_post_comments')
+      .select('id, post_id, parent_comment_id, author_name, content, created_at')
+      .order('created_at', { ascending: false }),
   ])
 
   return {
@@ -84,11 +98,12 @@ async function getPostData() {
       story_expires_at: post.story_expires_at,
       media: post.bongstagram_post_media.sort((a, b) => a.sort_order - b.sort_order),
     })),
+    comments: (comments ?? []) as unknown as CommentRow[],
   }
 }
 
 export default async function AdminBongstagramPostsPage() {
-  const { characters, profiles, organizations, memberships, posts } = await getPostData()
+  const { characters, profiles, organizations, memberships, posts, comments } = await getPostData()
 
   return (
     <div className="space-y-6 p-8">
@@ -96,7 +111,8 @@ export default async function AdminBongstagramPostsPage() {
         <h1 className="text-xl font-black text-white">Bongstagram 게시물 관리</h1>
         <p className="mt-1 text-sm text-zinc-500">프로필별 게시글과 스토리를 등록하고 관리합니다.</p>
       </div>
-      <BongstagramPostManager characters={characters} profiles={profiles} organizations={organizations} memberships={memberships} posts={posts} />
+      <BongstagramCommentManager posts={posts.map(({ id, character_id, post_type, posted_at }) => ({ id, character_id, post_type, posted_at }))} profiles={profiles.map(({ character_id, profile_name }) => ({ character_id, profile_name }))} characters={characters.map(({ id, name }) => ({ id, name }))} comments={comments} />
+      <BongstagramPostManager characters={characters} profiles={profiles} organizations={organizations} memberships={memberships} posts={posts} comments={comments} />
     </div>
   )
 }

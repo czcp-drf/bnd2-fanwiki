@@ -38,9 +38,9 @@ export type BongstagramStory = {
 }
 
 const previewStories = [
-  { label: '명충쇠', mark: '명', tone: 'from-amber-300 via-pink-500 to-fuchsia-600' },
+  { label: '명총회', mark: '명', tone: 'from-amber-300 via-pink-500 to-fuchsia-600' },
   { label: 'zzya', mark: 'Z', tone: 'from-orange-300 via-fuchsia-500 to-violet-600' },
-  { label: '김형순', mark: '김', tone: 'from-fuchsia-400 via-violet-500 to-sky-500' },
+  { label: '김청순', mark: '김', tone: 'from-fuchsia-400 via-violet-500 to-sky-500' },
   { label: '차수진', mark: '차', tone: 'from-pink-400 via-red-400 to-orange-300' },
 ]
 
@@ -236,7 +236,7 @@ export default function BongstagramStoryRail({ stories }: { stories: Bongstagram
       <section className="flex gap-3 overflow-x-auto border-b border-zinc-800 px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="스토리">
         <div className="flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5">
           <div className="relative flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full bg-zinc-800 text-xl font-bold text-zinc-200">
-            <span>D</span>
+            <span>봉</span>
             <span className="bongstagram-story-add absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full"><Plus size={12} strokeWidth={3} /></span>
           </div>
           <span className="max-w-[4.5rem] truncate text-[11px] text-zinc-400">내 스토리</span>

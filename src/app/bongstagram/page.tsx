@@ -241,9 +241,8 @@ function FeedPostCard({ post }: { post: FeedPost }) {
           initialLikeCount={post.like_count}
           initialCommentCount={post.comment_count}
           initialLiked={post.liked_by_viewer}
+          caption={post.content ? <PostCaption post={post} /> : null}
         />
-        {post.content && <PostCaption post={post} />}
-        {!!post.comment_count && <p className="text-sm text-zinc-400">댓글 {post.comment_count}개 모두 보기</p>}
         <p className="text-[11px] text-zinc-500">{formatPostTime(post.posted_at)}</p>
       </div>
     </article>

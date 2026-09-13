@@ -9,9 +9,13 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 export type BongstagramComment = {
   id: string
   post_id: string
+  parent_comment_id: string | null
   author_name: string
   content: string
   created_at: string
+  streamer_name?: string | null
+  profile_avatar_url?: string | null
+  streamer_avatar_url?: string | null
 }
 
 type LikeActionResult = {
@@ -93,16 +97,41 @@ export async function getBongstagramComments(postId: string): Promise<{ comments
   if (!isValidPostId(id)) return { error: '댓글을 불러올 게시물을 찾을 수 없습니다.' }
 
   const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('bongstagram_post_comments')
-    .select('id, post_id, author_name, content, created_at')
-    .eq('post_id', id)
-    .order('created_at', { ascending: true })
+  const [{ data, error }, { data: profiles }, { data: characters }, { data: streamers }] = await Promise.all([
+    supabase
+      .from('bongstagram_post_comments')
+      .select('id, post_id, parent_comment_id, author_name, content, created_at')
+      .eq('post_id', id)
+      .order('created_at', { ascending: true }),
+    supabase.from('bongstagram_profiles').select('profile_name, character_id, avatar_url'),
+    supabase.from('characters').select('id, streamer_id, avatar_url'),
+    supabase.from('streamers').select('id, display_name, profile_image_url'),
+  ])
 
   if (error) {
     console.error('Bongstagram comments lookup failed:', error.code, error.message)
     return { error: error.code === 'PGRST205' ? '댓글 테이블이 아직 연결되지 않았습니다. migration 023을 적용해 주세요.' : '댓글을 불러오지 못했습니다.' }
   }
 
-  return { comments: (data ?? []) as BongstagramComment[] }
+  type CommentRow = Omit<BongstagramComment, 'streamer_name' | 'profile_avatar_url' | 'streamer_avatar_url'>
+  type ProfileRow = { profile_name: string; character_id: string; avatar_url: string | null }
+  type CharacterRow = { id: string; streamer_id: string | null; avatar_url: string | null }
+  type StreamerRow = { id: string; display_name: string; profile_image_url: string | null }
+  const profileByName = new Map(((profiles ?? []) as ProfileRow[]).map((profile) => [profile.profile_name, profile]))
+  const characterById = new Map(((characters ?? []) as CharacterRow[]).map((character) => [character.id, character]))
+  const streamerById = new Map(((streamers ?? []) as StreamerRow[]).map((streamer) => [streamer.id, streamer]))
+
+  const comments = ((data ?? []) as CommentRow[]).map((comment) => {
+    const profile = profileByName.get(comment.author_name)
+    const character = profile ? characterById.get(profile.character_id) : null
+    const streamer = character?.streamer_id ? streamerById.get(character.streamer_id) : null
+    return {
+      ...comment,
+      streamer_name: streamer?.display_name ?? null,
+      profile_avatar_url: profile?.avatar_url ?? null,
+      streamer_avatar_url: streamer?.profile_image_url ?? null,
+    }
+  })
+
+  return { comments }
 }

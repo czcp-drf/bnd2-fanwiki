@@ -261,15 +261,18 @@ create index bongstagram_post_likes_post_idx on bongstagram_post_likes(post_id);
 -- bongstagram_post_comments
 -- 공개 사용자는 조회만 가능하며 등록은 서비스 롤 관리자 작업으로 제한한다.
 create table bongstagram_post_comments (
-  id          uuid primary key default gen_random_uuid(),
-  post_id     uuid not null references bongstagram_posts(id) on delete cascade,
-  author_name text not null check (char_length(btrim(author_name)) between 1 and 40),
-  content     text not null check (char_length(btrim(content)) between 1 and 1000),
-  created_at  timestamptz not null default now()
+  id                uuid primary key default gen_random_uuid(),
+  post_id           uuid not null references bongstagram_posts(id) on delete cascade,
+  parent_comment_id uuid references bongstagram_post_comments(id) on delete cascade,
+  author_name       text not null check (char_length(btrim(author_name)) between 1 and 40),
+  content           text not null check (char_length(btrim(content)) between 1 and 1000),
+  created_at        timestamptz not null default now()
 );
 
 create index bongstagram_post_comments_post_created_idx
   on bongstagram_post_comments(post_id, created_at asc);
+create index bongstagram_post_comments_parent_idx
+  on bongstagram_post_comments(parent_comment_id, created_at asc);
 
 alter table bongstagram_post_likes enable row level security;
 alter table bongstagram_post_comments enable row level security;
