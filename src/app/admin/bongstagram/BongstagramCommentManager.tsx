@@ -1,10 +1,10 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { Check, CornerDownRight, MessageCircle, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Check, ChevronDown, ChevronLeft, ChevronRight, CornerDownRight, Link2, MessageCircle, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import { useRouter } from 'next/navigation'
-import { createBongstagramComment, deleteBongstagramComment, updateBongstagramComment } from './actions'
+import { createBongstagramComment, deleteBongstagramComment, repairBongstagramCommentAuthors, updateBongstagramComment } from './actions'
 
 type Post = {
   id: string
@@ -32,6 +32,8 @@ type Comment = {
   content: string
   created_at: string
 }
+
+const COMMENT_PAGE_SIZE = 20
 
 function displayDate(value: string) {
   return new Intl.DateTimeFormat('ko-KR', {
@@ -91,6 +93,8 @@ export default function BongstagramCommentManager({
   const [replyAuthorCharacterId, setReplyAuthorCharacterId] = useState('')
   const [replyContent, setReplyContent] = useState('')
   const [replyCreatedAt, setReplyCreatedAt] = useState('')
+  const [commentListOpen, setCommentListOpen] = useState(true)
+  const [commentPage, setCommentPage] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -116,6 +120,7 @@ export default function BongstagramCommentManager({
     label: `${profile.profile_name} · ${characterById.get(profile.character_id)?.name ?? '캐릭터 없음'}`,
   }))
   const normalizedSearch = search.trim().toLocaleLowerCase()
+  const unresolvedComments = comments.filter((comment) => !comment.author_character_id || !profileByCharacterId.has(comment.author_character_id))
   const filteredComments = comments.filter((comment) => {
     const post = postById.get(comment.post_id)
     const profile = post ? profileByCharacterId.get(post.character_id) : null
@@ -123,6 +128,9 @@ export default function BongstagramCommentManager({
     return (!normalizedSearch || target.includes(normalizedSearch))
       && (postFilter === 'all' || comment.post_id === postFilter)
   })
+  const commentPageCount = Math.max(1, Math.ceil(filteredComments.length / COMMENT_PAGE_SIZE))
+  const currentCommentPage = Math.min(commentPage, commentPageCount)
+  const visibleComments = filteredComments.slice((currentCommentPage - 1) * COMMENT_PAGE_SIZE, currentCommentPage * COMMENT_PAGE_SIZE)
 
   function save() {
     setError(null)
@@ -227,6 +235,37 @@ export default function BongstagramCommentManager({
         </div>
       </div>
 
+      {comments.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2 text-xs text-amber-200/80">
+            <Link2 size={14} className="mt-0.5 shrink-0 text-amber-300" />
+            <p>프로필 미연결 댓글 {unresolvedComments.length}개 · 프로필명이 일치하는 댓글만 자동 연결됩니다. 나머지는 댓글 수정에서 직접 프로필을 선택해 주세요.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!window.confirm('프로필명이 일치하는 기존 댓글을 Bongstagram 프로필에 연결할까요?')) return
+              setError(null)
+              setMessage(null)
+              startTransition(async () => {
+                const result = await repairBongstagramCommentAuthors()
+                if (result.error) {
+                  setError(result.error)
+                  return
+                }
+                setMessage(`자동 연결 ${result.updatedCount ?? 0}개 완료 · 남은 미연결 ${result.unresolvedCount ?? 0}개`)
+                router.refresh()
+              })
+            }}
+            disabled={pending || unresolvedComments.length === 0}
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-amber-300/30 px-2.5 py-1.5 text-xs font-semibold text-amber-200 transition-colors hover:bg-amber-300/10 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <RefreshCw size={12} className={pending ? 'animate-spin' : ''} />
+            {pending ? '연결 중...' : '자동 연결'}
+          </button>
+        </div>
+      )}
+
       {posts.length === 0 || profiles.length === 0 ? (
         <p className="rounded-lg border border-dashed border-zinc-800 px-3 py-4 text-sm text-zinc-500">댓글을 등록하려면 게시물과 Bongstagram 프로필이 필요합니다.</p>
       ) : (
@@ -243,12 +282,19 @@ export default function BongstagramCommentManager({
       )}
 
       <div className="space-y-3 border-t border-zinc-800 pt-4">
-        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="작성자·댓글·프로필 검색" className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-fuchsia-400/60 focus:outline-none" />
-          <Select value={postFilter} onChange={setPostFilter} options={postOptions} searchable searchPlaceholder="게시물 검색" fullWidth />
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-zinc-500">댓글 {filteredComments.length}개 / 전체 {comments.length}개</p>
+          <button type="button" onClick={() => setCommentListOpen((value) => !value)} aria-expanded={commentListOpen} className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200">
+            {commentListOpen ? '목록 접기' : '목록 펼치기'}
+            <ChevronDown size={14} className={`transition-transform ${commentListOpen ? 'rotate-180' : ''}`} />
+          </button>
         </div>
-        <p className="text-xs text-zinc-500">댓글 {filteredComments.length}개 / 전체 {comments.length}개</p>
-        {filteredComments.length === 0 ? <p className="rounded-lg border border-dashed border-zinc-800 px-3 py-8 text-center text-sm text-zinc-600">등록된 댓글이 없습니다.</p> : <div className="space-y-2">{filteredComments.map((comment) => {
+        {commentListOpen && <>
+          <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <input value={search} onChange={(event) => { setSearch(event.target.value); setCommentPage(1) }} placeholder="작성자·댓글·프로필 검색" className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-fuchsia-400/60 focus:outline-none" />
+            <Select value={postFilter} onChange={(value) => { setPostFilter(value); setCommentPage(1) }} options={postOptions} searchable searchPlaceholder="게시물 검색" fullWidth />
+          </div>
+        {filteredComments.length === 0 ? <p className="rounded-lg border border-dashed border-zinc-800 px-3 py-8 text-center text-sm text-zinc-600">등록된 댓글이 없습니다.</p> : <div className="space-y-2">{visibleComments.map((comment) => {
           const post = postById.get(comment.post_id)
           const profile = post ? profileByCharacterId.get(post.character_id) : null
           const character = post ? characterById.get(post.character_id) : null
@@ -258,6 +304,12 @@ export default function BongstagramCommentManager({
             </article>
           )
         })}</div>}
+        {filteredComments.length > 0 && <div className="flex items-center justify-center gap-3 pt-2">
+          <button type="button" onClick={() => setCommentPage((page) => Math.max(1, Math.min(page, commentPageCount) - 1))} disabled={currentCommentPage <= 1} aria-label="이전 댓글 페이지" className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-30"><ChevronLeft size={15} /></button>
+          <span className="min-w-20 text-center text-xs tabular-nums text-zinc-500">{currentCommentPage} / {commentPageCount}</span>
+          <button type="button" onClick={() => setCommentPage((page) => Math.min(commentPageCount, page + 1))} disabled={currentCommentPage >= commentPageCount} aria-label="다음 댓글 페이지" className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-30"><ChevronRight size={15} /></button>
+        </div>}
+        </>}
       </div>
     </section>
   )

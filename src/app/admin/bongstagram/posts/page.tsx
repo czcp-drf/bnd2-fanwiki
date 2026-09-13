@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import BongstagramPostManager from '../BongstagramPostManager'
 import BongstagramCommentManager from '../BongstagramCommentManager'
+import BongstagramAdminTabs from '../BongstagramAdminTabs'
 
 export const metadata: Metadata = { title: 'Bongstagram 게시물 관리' }
 
@@ -127,8 +128,10 @@ export default async function AdminBongstagramPostsPage() {
         <h1 className="text-xl font-black text-white">Bongstagram 게시물 관리</h1>
         <p className="mt-1 text-sm text-zinc-500">프로필별 게시글과 스토리를 등록하고 관리합니다.</p>
       </div>
-      <BongstagramCommentManager posts={posts.map(({ id, character_id, post_type, posted_at }) => ({ id, character_id, post_type, posted_at }))} profiles={profiles.map(({ character_id, profile_name }) => ({ character_id, profile_name }))} characters={characters.map(({ id, name }) => ({ id, name }))} comments={comments} />
-      <BongstagramPostManager characters={characters} profiles={profiles} organizations={organizations} memberships={memberships} posts={posts} comments={comments} />
+      <BongstagramAdminTabs
+        comments={<BongstagramCommentManager posts={posts.map(({ id, character_id, post_type, posted_at }) => ({ id, character_id, post_type, posted_at }))} profiles={profiles.map(({ character_id, profile_name }) => ({ character_id, profile_name }))} characters={characters.map(({ id, name }) => ({ id, name }))} comments={comments} />}
+        posts={<BongstagramPostManager characters={characters} profiles={profiles} organizations={organizations} memberships={memberships} posts={posts} comments={comments} />}
+      />
     </div>
   )
 }

@@ -528,3 +528,64 @@ export async function deleteBongstagramComment(id: string): Promise<ActionResult
   revalidateBongstagram()
   return { success: true }
 }
+
+type CommentAuthorRepairResult = ActionResult & {
+  updatedCount?: number
+  unresolvedCount?: number
+}
+
+export async function repairBongstagramCommentAuthors(): Promise<CommentAuthorRepairResult> {
+  const supabase = await requireAdmin()
+  const [{ data: comments, error: commentsError }, { data: profiles, error: profilesError }] = await Promise.all([
+    supabase
+      .from('bongstagram_post_comments')
+      .select('id, author_character_id, author_name'),
+    supabase
+      .from('bongstagram_profiles')
+      .select('character_id, profile_name'),
+  ])
+
+  if (commentsError) {
+    console.error('Bongstagram comment author repair lookup failed:', commentsError.code, commentsError.message)
+    return { error: commentsError.code === 'PGRST205' ? '댓글 테이블이 아직 연결되지 않았습니다. migration 025를 적용해 주세요.' : '기존 댓글을 확인하지 못했습니다.' }
+  }
+  if (profilesError) {
+    console.error('Bongstagram comment author profile lookup failed:', profilesError.code, profilesError.message)
+    return { error: 'Bongstagram 프로필을 확인하지 못했습니다.' }
+  }
+
+  const profileRows = (profiles ?? []) as { character_id: string; profile_name: string }[]
+  const commentRows = (comments ?? []) as { id: string; author_character_id: string | null; author_name: string }[]
+  const profileByCharacterId = new Map(profileRows.map((profile) => [profile.character_id, profile]))
+  const profileByName = new Map<string, { character_id: string; profile_name: string } | null>()
+  profileRows.forEach((profile) => {
+    const name = profile.profile_name.trim()
+    if (!name) return
+    profileByName.set(name, profileByName.has(name) ? null : profile)
+  })
+
+  let updatedCount = 0
+  let unresolvedCount = 0
+  for (const comment of commentRows) {
+    const profile = (comment.author_character_id ? profileByCharacterId.get(comment.author_character_id) : null)
+      ?? profileByName.get(comment.author_name.trim())
+    if (!profile) {
+      unresolvedCount += 1
+      continue
+    }
+
+    if (comment.author_character_id === profile.character_id && comment.author_name === profile.profile_name) continue
+    const { error } = await supabase
+      .from('bongstagram_post_comments')
+      .update({ author_character_id: profile.character_id, author_name: profile.profile_name })
+      .eq('id', comment.id)
+    if (error) {
+      console.error('Bongstagram comment author repair failed:', error.code, error.message)
+      return { error: '댓글 작성자 프로필 연결 중 오류가 발생했습니다.' }
+    }
+    updatedCount += 1
+  }
+
+  if (updatedCount > 0) revalidateBongstagram()
+  return { success: true, updatedCount, unresolvedCount }
+}
