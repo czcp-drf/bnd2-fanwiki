@@ -157,6 +157,34 @@
   font-family: Arial, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
+html {
+  --site-page: #09090b;
+  --site-header: #09090b;
+  --site-card: #18181b;
+  --site-card-raised: #27272a;
+  --site-border: #27272a;
+  --site-text: #f4f4f5;
+  --site-muted: #a1a1aa;
+  --site-placeholder: #71717a;
+  --site-hero-start: #18181b;
+  --site-hero-end: #27272a;
+  color-scheme: dark;
+}
+
+html[data-bongstagram-theme="light"] {
+  --site-page: #fafafa;
+  --site-header: #ffffff;
+  --site-card: #ffffff;
+  --site-card-raised: #f4f4f5;
+  --site-border: #e4e4e7;
+  --site-text: #18181b;
+  --site-muted: #71717a;
+  --site-placeholder: #a1a1aa;
+  --site-hero-start: #ffffff;
+  --site-hero-end: #f4f4f5;
+  color-scheme: light;
+}
+
 .bongstagram-story-add {
   border: 2px solid #09090b;
   background-color: #0ea5e9;

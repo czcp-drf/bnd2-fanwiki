@@ -62,10 +62,10 @@ async function getViewerPostLikeIds(postIds: string[]) {
   return new Set(((result.data ?? []) as { post_id: string }[]).map((row) => row.post_id))
 }
 
-export async function getBongstagramFeedPage(cursor?: BongstagramPostCursor | null) {
+export async function getBongstagramFeedPage(cursor?: BongstagramPostCursor | null, limit = FEED_PAGE_SIZE) {
   const [{ profiles, characters, streamers }, page] = await Promise.all([
     getBongstagramDirectory(),
-    getBongstagramPostsPage('post', cursor, FEED_PAGE_SIZE),
+    getBongstagramPostsPage('post', cursor, limit),
   ])
   const maps = createDirectoryMaps({ profiles, characters, streamers })
   const posts = page.posts.flatMap((post) => {

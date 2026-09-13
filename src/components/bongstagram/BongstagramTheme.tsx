@@ -43,11 +43,11 @@ export function BongstagramThemeToggle({ disabled = false }: { disabled?: boolea
       type="button"
       onClick={toggleTheme}
       disabled={disabled}
-      aria-label={disabled ? 'Bongstagram에서만 사용할 수 있는 테마 전환' : isLight ? '다크 모드로 전환' : '라이트 모드로 전환'}
-      title={disabled ? 'Bongstagram에서만 사용할 수 있습니다' : isLight ? '다크 모드' : '라이트 모드'}
+      aria-label={disabled ? '테마 전환 비활성화' : isLight ? '다크 모드로 전환' : '라이트 모드로 전환'}
+      title={disabled ? '테마 전환 비활성화' : isLight ? '다크 모드' : '라이트 모드'}
       className={disabled
         ? 'cursor-not-allowed text-zinc-700'
-        : 'text-zinc-400 transition-colors hover:text-zinc-100'}
+        : 'cursor-pointer text-zinc-400 transition-colors hover:text-zinc-100'}
     >
       {isLight ? <Moon size={22} /> : <Sun size={22} />}
     </button>

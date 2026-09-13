@@ -81,7 +81,6 @@ function RedPillToggle({ compact = false }: { compact?: boolean }) {
 
 export default function Header() {
   const pathname = usePathname()
-  const isThemeRoute = pathname === '/bongstagram' || pathname.startsWith('/bongstagram/') || pathname === '/bbs' || pathname.startsWith('/bbs/')
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -137,12 +136,12 @@ export default function Header() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="캐릭터, 조직, 사건 검색"
-                className="w-40 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs text-zinc-200 placeholder-zinc-600 focus:border-amber-400/50 focus:outline-none sm:w-56"
+                className="w-40 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none sm:w-56"
               />
               <button
                 type="button"
                 onClick={() => { setSearchOpen(false); setSearchQuery('') }}
-                className="cursor-pointer p-1 text-zinc-500 hover:text-zinc-200 transition-colors"
+                className="cursor-pointer p-1 text-zinc-500 transition-colors hover:text-zinc-200"
               >
                 <X size={15} />
               </button>
@@ -150,7 +149,7 @@ export default function Header() {
           ) : (
             <button
               onClick={() => setSearchOpen(true)}
-              className="cursor-pointer p-1.5 text-zinc-400 hover:text-zinc-100 transition-colors"
+              className="cursor-pointer p-1.5 text-zinc-400 transition-colors hover:text-zinc-100"
               aria-label="검색"
             >
               <Search size={17} />
@@ -158,7 +157,7 @@ export default function Header() {
           )}
 
           <RedPillToggle />
-          <BongstagramThemeToggle disabled={!isThemeRoute} />
+          <BongstagramThemeToggle />
 
           {/* 모바일 메뉴 */}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -177,10 +176,6 @@ export default function Header() {
                   봉누도<span className="text-amber-400">2</span>{' '}
                   <span className="text-zinc-500 font-medium text-sm">위키</span>
                 </span>
-                <div className="flex items-center gap-3">
-                  <RedPillToggle compact />
-                  <BongstagramThemeToggle disabled={!isThemeRoute} />
-                </div>
               </div>
               <nav className="flex flex-col gap-1 p-4">
                 {navItems.map((item) => (
