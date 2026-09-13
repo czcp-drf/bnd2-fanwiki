@@ -1,6 +1,8 @@
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
 import { getBbsReactionMode, type BbsReactionMode } from './reaction-mode'
+import { BBS_ARTICLES_TAG } from './data'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -30,20 +32,30 @@ function isValidArticleId(articleId: string) {
   return UUID_PATTERN.test(articleId.trim())
 }
 
+const getCachedBbsCommentCount = unstable_cache(
+  async (articleId: string) => {
+    const supabase = createAdminClient()
+    const result = await supabase.from('bbs_article_comments').select('id', { count: 'exact', head: true }).eq('article_id', articleId)
+    if (result.error) console.error('BBS article comment count load failed:', result.error.message)
+    return result.count ?? 0
+  },
+  ['bbs-article-comment-count'],
+  { revalidate: 60 * 60 * 24, tags: [BBS_ARTICLES_TAG] },
+)
+
 export async function getBbsArticleEngagement(articleId: string): Promise<BbsArticleEngagement> {
   const id = articleId.trim()
   const reactionMode = getBbsReactionMode()
   if (!isValidArticleId(id)) return { likeCount: 0, dislikeCount: 0, commentCount: 0, viewerReaction: null, reactionMode }
 
   const supabase = createAdminClient()
-  const commentResult = await supabase.from('bbs_article_comments').select('id', { count: 'exact', head: true }).eq('article_id', id)
+  const commentCountPromise = getCachedBbsCommentCount(id)
   if (reactionMode === 'local') {
-    if (commentResult.error) console.error('BBS article comment count load failed:', commentResult.error.message)
-    return { likeCount: 0, dislikeCount: 0, commentCount: commentResult.count ?? 0, viewerReaction: null, reactionMode }
+    return { likeCount: 0, dislikeCount: 0, commentCount: await commentCountPromise, viewerReaction: null, reactionMode }
   }
 
   const ipHash = await getBongstagramIpHash()
-  const [likeResult, dislikeResult, viewerResult] = await Promise.all([
+  const [commentCount, likeResult, dislikeResult, viewerResult] = await Promise.all([commentCountPromise,
     supabase.from('bbs_article_reactions').select('id', { count: 'exact', head: true }).eq('article_id', id).eq('reaction', 'like'),
     supabase.from('bbs_article_reactions').select('id', { count: 'exact', head: true }).eq('article_id', id).eq('reaction', 'dislike'),
     ipHash
@@ -51,14 +63,14 @@ export async function getBbsArticleEngagement(articleId: string): Promise<BbsArt
       : Promise.resolve({ data: null, error: null }),
   ])
 
-  if (likeResult.error || dislikeResult.error || commentResult.error || viewerResult.error) {
-    console.error('BBS article engagement load failed:', likeResult.error?.message, dislikeResult.error?.message, commentResult.error?.message, viewerResult.error?.message)
+  if (likeResult.error || dislikeResult.error || viewerResult.error) {
+    console.error('BBS article engagement load failed:', likeResult.error?.message, dislikeResult.error?.message, viewerResult.error?.message)
   }
 
   return {
     likeCount: likeResult.count ?? 0,
     dislikeCount: dislikeResult.count ?? 0,
-    commentCount: commentResult.count ?? 0,
+    commentCount,
     viewerReaction: viewerResult.data?.reaction === 'like' || viewerResult.data?.reaction === 'dislike' ? viewerResult.data.reaction : null,
     reactionMode,
   }

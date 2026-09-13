@@ -8,6 +8,9 @@ export const BONGSTAGRAM_POSTS_TAG = 'bongstagram-posts'
 export const BONGSTAGRAM_PROFILES_TAG = 'bongstagram-profiles'
 export const BONGSTAGRAM_ENGAGEMENT_TAG = 'bongstagram-engagement'
 
+const BONGSTAGRAM_CONTENT_REVALIDATE_SECONDS = 60 * 60 * 24
+const BONGSTAGRAM_ENGAGEMENT_REVALIDATE_SECONDS = 60
+
 export type BongstagramDirectory = {
   profiles: { character_id: string; profile_name: string; avatar_url: string | null }[]
   characters: { id: string; name: string; avatar_url: string | null; streamer_id: string | null }[]
@@ -88,7 +91,7 @@ const getCachedDirectory = unstable_cache(
     }
   },
   ['bongstagram-directory'],
-  { revalidate: 60, tags: [BONGSTAGRAM_DIRECTORY_TAG] },
+  { revalidate: BONGSTAGRAM_CONTENT_REVALIDATE_SECONDS, tags: [BONGSTAGRAM_DIRECTORY_TAG] },
 )
 
 export function getBongstagramDirectory() {
@@ -123,7 +126,7 @@ const getCachedPosts = unstable_cache(
     }))
   },
   ['bongstagram-posts'],
-  { revalidate: 60, tags: [BONGSTAGRAM_POSTS_TAG] },
+  { revalidate: BONGSTAGRAM_CONTENT_REVALIDATE_SECONDS, tags: [BONGSTAGRAM_POSTS_TAG] },
 )
 
 export function getBongstagramPosts(postType: PostTypeFilter = 'all') {
@@ -160,7 +163,7 @@ const getCachedActiveStories = unstable_cache(
     }))
   },
   ['bongstagram-active-stories'],
-  { revalidate: 60, tags: [BONGSTAGRAM_POSTS_TAG] },
+  { revalidate: BONGSTAGRAM_CONTENT_REVALIDATE_SECONDS, tags: [BONGSTAGRAM_POSTS_TAG] },
 )
 
 export function getBongstagramActiveStories() {
@@ -212,7 +215,7 @@ const getCachedPostsPage = unstable_cache(
     }
   },
   ['bongstagram-posts-page'],
-  { revalidate: 60, tags: [BONGSTAGRAM_POSTS_TAG] },
+  { revalidate: BONGSTAGRAM_CONTENT_REVALIDATE_SECONDS, tags: [BONGSTAGRAM_POSTS_TAG] },
 )
 
 export function getBongstagramPostsPage(
@@ -273,7 +276,7 @@ const getCachedProfile = unstable_cache(
     }
   },
   ['bongstagram-profile'],
-  { revalidate: 60, tags: [BONGSTAGRAM_PROFILES_TAG, BONGSTAGRAM_POSTS_TAG] },
+  { revalidate: BONGSTAGRAM_CONTENT_REVALIDATE_SECONDS, tags: [BONGSTAGRAM_PROFILES_TAG, BONGSTAGRAM_POSTS_TAG] },
 )
 
 export function getBongstagramProfile(characterId: string) {
@@ -335,7 +338,7 @@ const getCachedPost = unstable_cache(
     }
   },
   ['bongstagram-post'],
-  { revalidate: 60, tags: [BONGSTAGRAM_POSTS_TAG, BONGSTAGRAM_PROFILES_TAG] },
+  { revalidate: BONGSTAGRAM_CONTENT_REVALIDATE_SECONDS, tags: [BONGSTAGRAM_POSTS_TAG, BONGSTAGRAM_PROFILES_TAG] },
 )
 
 export function getBongstagramPost(postId: string) {
@@ -385,7 +388,7 @@ const getCachedComments = unstable_cache(
     }
   },
   ['bongstagram-comments'],
-  { revalidate: 60, tags: [BONGSTAGRAM_ENGAGEMENT_TAG] },
+  { revalidate: BONGSTAGRAM_CONTENT_REVALIDATE_SECONDS, tags: [BONGSTAGRAM_ENGAGEMENT_TAG] },
 )
 
 export function getBongstagramComments(postId: string) {
@@ -402,8 +405,19 @@ export type BongstagramEngagementResult = {
 export async function getBongstagramPostEngagement(postIds: string[]): Promise<BongstagramEngagementResult> {
   const ids = Array.from(new Set(postIds)).sort()
   if (ids.length === 0) return { likeCounts: {}, commentCounts: {} }
-  if (getBongstagramLikeMode() === 'local') return getCachedCommentEngagement(ids.join(','))
-  return getCachedEngagement(ids.join(','))
+  const commentResultPromise = getCachedCommentEngagement(ids.join(','))
+  if (getBongstagramLikeMode() === 'local') return commentResultPromise
+
+  const [commentResult, likeResult] = await Promise.all([
+    commentResultPromise,
+    getCachedLikeEngagement(ids.join(',')),
+  ])
+  return {
+    likeCounts: likeResult.likeCounts,
+    commentCounts: commentResult.commentCounts,
+    errorCode: likeResult.errorCode ?? commentResult.errorCode,
+    errorMessage: likeResult.errorMessage ?? commentResult.errorMessage,
+  }
 }
 
 const getCachedCommentEngagement = unstable_cache(
@@ -422,31 +436,24 @@ const getCachedCommentEngagement = unstable_cache(
     }
   },
   ['bongstagram-comment-engagement'],
-  { revalidate: 60, tags: [BONGSTAGRAM_ENGAGEMENT_TAG] },
+  { revalidate: BONGSTAGRAM_CONTENT_REVALIDATE_SECONDS, tags: [BONGSTAGRAM_ENGAGEMENT_TAG] },
 )
 
-const getCachedEngagement = unstable_cache(
+const getCachedLikeEngagement = unstable_cache(
   async (postIdsKey: string) => {
     const postIds = postIdsKey.split(',').filter(Boolean)
     const supabase = createAdminClient()
-    const [likesResult, commentsResult] = await Promise.all([
-      supabase.from('bongstagram_post_likes').select('post_id').in('post_id', postIds),
-      supabase.from('bongstagram_post_comments').select('post_id').in('post_id', postIds),
-    ])
-    const firstError = likesResult.error ?? commentsResult.error
+    const likesResult = await supabase.from('bongstagram_post_likes').select('post_id').in('post_id', postIds)
 
     const likeCounts: Record<string, number> = Object.fromEntries(postIds.map((postId) => [postId, 0]))
-    const commentCounts: Record<string, number> = Object.fromEntries(postIds.map((postId) => [postId, 0]))
     for (const row of (likesResult.data ?? []) as { post_id: string }[]) likeCounts[row.post_id] = (likeCounts[row.post_id] ?? 0) + 1
-    for (const row of (commentsResult.data ?? []) as { post_id: string }[]) commentCounts[row.post_id] = (commentCounts[row.post_id] ?? 0) + 1
 
     return {
       likeCounts,
-      commentCounts,
-      errorCode: firstError?.code,
-      errorMessage: firstError?.message,
+      errorCode: likesResult.error?.code,
+      errorMessage: likesResult.error?.message,
     }
   },
-  ['bongstagram-engagement'],
-  { revalidate: 60, tags: [BONGSTAGRAM_ENGAGEMENT_TAG] },
+  ['bongstagram-like-engagement'],
+  { revalidate: BONGSTAGRAM_ENGAGEMENT_REVALIDATE_SECONDS, tags: [BONGSTAGRAM_ENGAGEMENT_TAG] },
 )

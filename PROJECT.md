@@ -385,6 +385,8 @@ src/
 
 ## 최근 작업 기록
 
+- BBS·Bongstagram 콘텐츠 캐시 정책 확대 (`1d13b30`, `feat/bss`): 장기 보관되는 기사·게시물·스토리·프로필·댓글 개수 데이터를 24시간 캐시로 조정하고, 좋아요·싫어요 집계는 60초 캐시로 유지했습니다. BBS 최신 기사 API도 24시간 캐시와 관리자 경로 무효화 대상으로 포함했으며, BBS·Bongstagram 관리자 변경 액션은 `updateTag`로 관련 캐시를 즉시 만료합니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
+
 - BBS 기사 캐시 및 관리자 수동 갱신 (`a3bd83f`, `feat/bss`): 공개 기사 목록·상세·담당기자 목록·최신 기사 데이터를 1시간 캐시로 전환하고, 관리자 기사 변경 시 `updateTag`로 즉시 캐시를 만료하도록 수정했습니다. `/admin/bbs`에 관리자 인증을 거치는 기사 캐시 갱신 버튼을 추가했으며 댓글·좋아요·싫어요 조회는 실시간으로 유지했습니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
 
 - Bongstagram 모바일 영상 음소거 버튼 표시 보완 (`3d665fb`, `feat/bss`): 모바일 환경에서는 hover가 없어도 음소거 버튼이 항상 보이도록 조정하고, PC에서는 기존처럼 hover·focus 시 표시되도록 유지했습니다. 영상 위 레이어 순서를 보완했으며 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다. 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.

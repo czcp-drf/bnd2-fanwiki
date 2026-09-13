@@ -3,7 +3,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { getBbsCategoryKey, getBbsCategoryLabel, type BbsArticle, type BbsArticleMedia, type BbsCategoryKey } from './articles'
 
 export const BBS_ARTICLES_TAG = 'bbs-articles'
-const BBS_CACHE_REVALIDATE_SECONDS = 60 * 60
+const BBS_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24
 
 export type BbsReporterOption = {
   id: string
@@ -265,7 +265,7 @@ const getCachedLatestBbsArticle = unstable_cache(
     }
   },
   ['bbs-latest-article'],
-  { revalidate: 60, tags: [BBS_ARTICLES_TAG] },
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
 )
 
 export function getLatestBbsArticle() {

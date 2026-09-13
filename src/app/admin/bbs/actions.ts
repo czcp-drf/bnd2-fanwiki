@@ -148,6 +148,7 @@ async function removeStoragePaths(supabase: Awaited<ReturnType<typeof requireAdm
 function revalidateBbs(articleId?: string) {
   revalidatePath('/admin/bbs')
   revalidatePath('/bbs')
+  revalidatePath('/api/bbs/latest')
   updateTag(BBS_ARTICLES_TAG)
   if (articleId) revalidatePath(`/bbs/article/${articleId}`)
 }
@@ -155,6 +156,7 @@ function revalidateBbs(articleId?: string) {
 export async function refreshBbsCache(): Promise<ActionResult> {
   await requireAdmin()
   revalidatePath('/bbs')
+  revalidatePath('/api/bbs/latest')
   updateTag(BBS_ARTICLES_TAG)
   return { success: true }
 }
