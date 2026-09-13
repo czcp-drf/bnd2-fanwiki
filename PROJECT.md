@@ -388,6 +388,8 @@ src/
 
 ## 최근 작업 기록
 
+- 사건 상세 지도·클립 전환 보완 (`main`): Leaflet 지도를 독립 stacking context로 격리해 사건 상세 지도가 전역 헤더 위로 표시되지 않도록 수정했습니다. 클립 플레이어는 모든 임베드 iframe을 미리 로드하고 활성 클립만 표시하며, 클립 전환 시 이전 iframe을 일시정지·재설정해 전환 지연과 동시 재생을 함께 방지합니다. YouTube 임베드에는 `enablejsapi`를 적용했습니다. `npm run build`, `npx tsc --noEmit`, 변경 파일 ESLint, `git diff --check`를 통과했으며 대상 브랜치는 `main`입니다.
+
 - 사이트명 및 전역 설명 변경 (`8e1c324`, `main`): 사용자·관리자 헤더와 메타데이터의 사이트명을 `봉누도 따라가기`로 통일하고, 기본·Open Graph·Twitter 설명도 `봉누도 따라가기`로 맞췄습니다. 제보 페이지와 홈 화면 표기도 새 사이트명에 맞춰 수정했습니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했으며 `deploy/main` 푸시 완료를 확인했습니다.
 
 - 사건 아카이브 클립 전환 및 시점명 빨간약 표시 (`b3f34ad`, `main`): 클립 플레이어에서 활성 iframe만 렌더링해 다른 클립을 선택하면 이전 클립 재생이 자동 중지되도록 수정했습니다. 플레이어·클립 목록·툴팁의 시점명을 빨간약 OFF에서는 캐릭터명, ON에서는 스트리머명으로 표시합니다. `npm run build`, `npx tsc --noEmit`, 변경 파일 ESLint, `git diff --check`를 통과했으며 `deploy/main` 푸시 완료를 확인했습니다.

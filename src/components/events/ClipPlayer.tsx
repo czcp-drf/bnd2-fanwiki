@@ -13,7 +13,7 @@ type Clip = {
   streamers: { id: string; display_name: string } | null
 }
 
-function parseClipUrl(url: string, autoplay = false): string | null {
+function parseClipUrl(url: string): string | null {
   // Chzzk: https://chzzk.naver.com/clips/5UJ2F0U94w
   const chzzkMatch = url.match(/chzzk\.naver\.com\/clips\/([a-zA-Z0-9_-]+)/)
   if (chzzkMatch) return `https://chzzk.naver.com/embed/clip/${chzzkMatch[1]}`
@@ -22,7 +22,7 @@ function parseClipUrl(url: string, autoplay = false): string | null {
   const ytMatch = url.match(
     /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
   )
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}${autoplay ? '?autoplay=1' : ''}`
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1`
 
   return null
 }
@@ -37,6 +37,8 @@ export default function ClipPlayer({
   streamerNameToChar: Record<string, string>
 }) {
   const [activeId, setActiveId] = useState<string>(clips[0]?.id ?? '')
+  const [reloadTokens, setReloadTokens] = useState<Record<string, number>>({})
+  const iframeRefs = useRef<Record<string, HTMLIFrameElement | null>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canLeft, setCanLeft] = useState(false)
   const [canRight, setCanRight] = useState(false)
@@ -61,6 +63,23 @@ export default function ClipPlayer({
     el.scrollBy({ left: dir === 'left' ? -el.clientWidth : el.clientWidth, behavior: 'smooth' })
   }
 
+  function selectClip(id: string) {
+    if (id === activeId) return
+
+    // YouTube는 명령을 지원하고, 다른 임베드 플레이어는 iframe을 재생성해
+    // 이전 클립의 재생을 확실하게 중지한다.
+    const previousIframe = iframeRefs.current[activeId]
+    previousIframe?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }),
+      '*',
+    )
+    setReloadTokens((current) => ({
+      ...current,
+      [activeId]: (current[activeId] ?? 0) + 1,
+    }))
+    setActiveId(id)
+  }
+
   if (!clips.length) return null
 
   const active = clips.find((c) => c.id === activeId) ?? clips[0]
@@ -73,14 +92,16 @@ export default function ClipPlayer({
     <div className="flex flex-col gap-4">
       {/* 플레이어 */}
       <div className="w-full space-y-0 rounded-xl border border-zinc-800 overflow-hidden">
-        {/* 영상 영역 — 활성 클립만 렌더링해 다른 클립으로 바꾸면 이전 재생을 중지 */}
+        {/* 영상 영역 — 모든 iframe을 미리 로드하고 활성 클립만 표시 */}
         <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-          {(() => {
-            const url = parseClipUrl(active.clip_url)
+          {clips.map((clip) => {
+            const url = parseClipUrl(clip.clip_url)
+            const isActive = clip.id === activeId
             if (!url) {
-              return (
+              return isActive ? (
                 <a
-                  href={active.clip_url}
+                  key={clip.id}
+                  href={clip.clip_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900 text-zinc-500 hover:text-amber-400 transition-colors"
@@ -88,19 +109,22 @@ export default function ClipPlayer({
                   <ExternalLink size={28} />
                   <span className="text-sm">외부 링크로 보기</span>
                 </a>
-              )
+              ) : null
             }
             return (
               <iframe
-                key={active.id}
+                key={`${clip.id}-${reloadTokens[clip.id] ?? 0}`}
+                ref={(element) => { iframeRefs.current[clip.id] = element }}
                 src={url}
                 className="absolute inset-0 w-full h-full"
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
-                style={{ border: 'none' }}
+                loading="eager"
+                title={clip.label ?? `클립 ${clips.indexOf(clip) + 1}`}
+                style={{ border: 'none', visibility: isActive ? 'visible' : 'hidden' }}
               />
             )
-          })()}
+          })}
         </div>
 
         {/* 클립 정보 바 */}
@@ -158,7 +182,7 @@ export default function ClipPlayer({
               return (
                 <button
                   key={clip.id}
-                  onClick={() => setActiveId(clip.id)}
+                  onClick={() => selectClip(clip.id)}
                   onMouseEnter={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect()
                     setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top })
