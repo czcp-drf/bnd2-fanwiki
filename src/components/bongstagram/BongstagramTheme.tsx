@@ -23,17 +23,31 @@ function getServerTheme(): BongstagramTheme {
   return 'dark'
 }
 
+function applyTheme(theme: BongstagramTheme) {
+  const root = document.documentElement
+  if (root.dataset.bongstagramTheme === theme && !root.classList.contains('theme-changing')) return
+
+  root.classList.add('theme-changing')
+  root.dataset.bongstagramTheme = theme
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      root.classList.remove('theme-changing')
+    })
+  })
+}
+
 export function BongstagramThemeToggle({ disabled = false }: { disabled?: boolean }) {
   const theme = useSyncExternalStore(subscribeToTheme, getStoredTheme, getServerTheme)
   const isLight = theme === 'light'
 
   useEffect(() => {
-    document.documentElement.dataset.bongstagramTheme = theme
+    applyTheme(theme)
   }, [theme])
 
   function toggleTheme() {
     if (disabled) return
     const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    applyTheme(nextTheme)
     window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme)
     window.dispatchEvent(new Event(THEME_CHANGE_EVENT))
   }

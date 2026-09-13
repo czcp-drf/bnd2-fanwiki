@@ -307,7 +307,7 @@ src/
 
 ### Bongstagram (임시 브랜치 작업 중)
 - [x] `/bongstagram` Instagram 스타일 모바일 피드 레이아웃과 Bongstagram 프로필 안내 UI
-- [x] 글로벌 네비게이션의 Bongstagram 다크/라이트 테마 토글 (Bongstagram 외 페이지에서는 비활성화)과 브라우저 저장
+- [x] 글로벌 네비게이션의 다크/라이트 테마 토글과 브라우저 저장
 - [x] `bongstagram_profiles` 1:1 계정 테이블·프로필 이름 제약 마이그레이션 작성 (`018_bonstagram_profiles.sql`, `019_rename_bongstagram.sql`)
 - [x] 기존 캐릭터 선택 기반의 Bongstagram 프로필 등록/수정/삭제 화면 (`/admin/bongstagram`)
 - [x] 관리자 캐릭터 선택 드롭다운 텍스트 검색, 조직 필터, Bongstagram 연결 상태 3단계 필터와 미연결 캐릭터 행의 프로필 수정
@@ -384,6 +384,8 @@ src/
 ---
 
 ## 최근 작업 기록
+
+- 테마 전환 트랜지션 제거 (`main`, 커밋·푸시 전): 테마 변경 시 전환·애니메이션·가상 요소의 스타일 보간을 차단하고, 토글 클릭 시 테마 속성을 동기 적용하도록 보강했습니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 `deploy/main` 푸시를 진행합니다.
 
 - 사건 상세 좌표 표시 (`c0ffc10`, `main`): 좌표 정보가 있는 사건 상세 페이지에 읽기 전용 GTA 지도와 X·Y 좌표를 표시하도록 했습니다. 기존 관리자용 좌표 선택 지도는 읽기 전용 모드를 지원하도록 확장했으며 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. `deploy/main` 푸시 완료를 확인했습니다.
 
