@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { getBongstagramDirectory, getBongstagramPosts } from '@/lib/bongstagram/public-data'
+import { getBongstagramDirectory } from '@/lib/bongstagram/public-data'
+import { getBongstagramPostGridPage } from '@/lib/bongstagram/feed-data'
 import BongstagramBottomNav from '../BongstagramBottomNav'
 import BongstagramProfileSearch from './BongstagramProfileSearch'
 
@@ -9,11 +10,7 @@ export const metadata: Metadata = {
 }
 
 export default async function BongstagramSearchPage() {
-  const [{ profiles, characters, streamers }, posts] = await Promise.all([getBongstagramDirectory(), getBongstagramPosts('post')])
-  const gridPosts = posts.flatMap((post) => {
-    const media = post.media[0]
-    return media ? [{ id: post.id, character_id: post.character_id, media_type: media.media_type, media_url: media.media_url }] : []
-  })
+  const [{ profiles, characters, streamers }, gridPage] = await Promise.all([getBongstagramDirectory(), getBongstagramPostGridPage()])
 
   return (
     <div className="bongstagram-theme">
@@ -23,7 +20,9 @@ export default async function BongstagramSearchPage() {
             profiles={profiles}
             characters={characters}
             streamers={streamers}
-            posts={gridPosts}
+            posts={gridPage.posts}
+            gridCursor={gridPage.nextCursor}
+            gridHasMore={gridPage.hasMore}
           />
         </div>
       </div>

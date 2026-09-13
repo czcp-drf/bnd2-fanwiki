@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import BongstagramDisplayName from '../BongstagramDisplayName'
-import BongstagramPostGrid from '../BongstagramPostGrid'
+import BongstagramInfinitePostGrid from '../BongstagramInfinitePostGrid'
 import BongstagramProfileAvatar from '../BongstagramProfileAvatar'
 import { useRedPill } from '@/lib/context/RedPillContext'
+import type { BongstagramPostCursor } from '@/lib/bongstagram/types'
 
 const RECENT_SEARCHES_KEY = 'bongstagram-recent-searches'
 
@@ -68,11 +69,15 @@ export default function BongstagramProfileSearch({
   characters,
   streamers,
   posts,
+  gridCursor = null,
+  gridHasMore = false,
 }: {
   profiles: Profile[]
   characters: Character[]
   streamers: Streamer[]
   posts: ProfilePost[]
+  gridCursor?: BongstagramPostCursor | null
+  gridHasMore?: boolean
 }) {
   const [search, setSearch] = useState('')
   const [searchMode, setSearchMode] = useState(false)
@@ -154,7 +159,7 @@ export default function BongstagramProfileSearch({
           </div>
           {(normalizedSearch ? filteredProfiles : recentProfiles).length === 0 && <p className="py-16 text-center text-sm text-zinc-500">{normalizedSearch ? '검색 결과가 없습니다.' : '최근 검색 항목이 없습니다.'}</p>}
         </section>
-      ) : <BongstagramPostGrid posts={posts} />}
+      ) : <BongstagramInfinitePostGrid initialPosts={posts} initialCursor={gridCursor} initialHasMore={gridHasMore} />}
     </main>
   )
 }

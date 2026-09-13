@@ -63,6 +63,12 @@ export type BongstagramPublicComment = {
   streamer_avatar_url: string | null
 }
 
+export type BongstagramPostsPage = {
+  posts: BongstagramPublicPost[]
+  nextCursor: { postedAt: string; id: string } | null
+  hasMore: boolean
+}
+
 type PostTypeFilter = 'all' | 'post' | 'story'
 
 const getCachedDirectory = unstable_cache(
@@ -121,6 +127,62 @@ const getCachedPosts = unstable_cache(
 
 export function getBongstagramPosts(postType: PostTypeFilter = 'all') {
   return getCachedPosts(postType)
+}
+
+const getCachedPostsPage = unstable_cache(
+  async (postType: 'post' | 'story', cursorPostedAt: string, cursorId: string, requestedLimit: number): Promise<BongstagramPostsPage> => {
+    const supabase = createPublicClient()
+    const pageSize = Math.min(Math.max(requestedLimit, 1), 30)
+    let query = supabase
+      .from('bongstagram_posts')
+      .select('id, character_id, post_type, content, posted_at, story_expires_at, bongstagram_post_media ( id, media_type, media_url, sort_order )')
+      .eq('post_type', postType)
+      .order('posted_at', { ascending: false })
+      .order('id', { ascending: false })
+
+    if (cursorPostedAt && cursorId) {
+      query = query.or(`posted_at.lt.${cursorPostedAt},and(posted_at.eq.${cursorPostedAt},id.lt.${cursorId})`)
+    }
+
+    const result = await query.limit(pageSize + 1)
+    const rows = ((result.data ?? []) as unknown as {
+      id: string
+      character_id: string
+      post_type: 'post' | 'story'
+      content: string
+      posted_at: string
+      story_expires_at: string | null
+      bongstagram_post_media: BongstagramPublicMedia[]
+    }[])
+    const hasMore = rows.length > pageSize
+    const pageRows = rows.slice(0, pageSize)
+    const posts = pageRows.map((post) => ({
+      id: post.id,
+      character_id: post.character_id,
+      post_type: post.post_type,
+      content: post.content,
+      posted_at: post.posted_at,
+      story_expires_at: post.story_expires_at,
+      media: [...(post.bongstagram_post_media ?? [])].sort((a, b) => a.sort_order - b.sort_order),
+    }))
+    const lastPost = pageRows.at(-1)
+
+    return {
+      posts,
+      nextCursor: hasMore && lastPost ? { postedAt: lastPost.posted_at, id: lastPost.id } : null,
+      hasMore,
+    }
+  },
+  ['bongstagram-posts-page'],
+  { revalidate: 60, tags: [BONGSTAGRAM_POSTS_TAG] },
+)
+
+export function getBongstagramPostsPage(
+  postType: 'post' | 'story' = 'post',
+  cursor?: { postedAt: string; id: string } | null,
+  limit = 12,
+) {
+  return getCachedPostsPage(postType, cursor?.postedAt ?? '', cursor?.id ?? '', limit)
 }
 
 const getCachedProfile = unstable_cache(

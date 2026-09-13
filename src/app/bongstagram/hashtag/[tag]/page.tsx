@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import BongstagramBackButton from '../../BongstagramBackButton'
 import BongstagramBottomNav from '../../BongstagramBottomNav'
-import BongstagramPostGrid, { type BongstagramGridPost } from '../../BongstagramPostGrid'
-import { extractBongstagramHashtags } from '@/lib/bongstagram/hashtags'
-import { getBongstagramPosts } from '@/lib/bongstagram/public-data'
+import BongstagramInfinitePostGrid from '../../BongstagramInfinitePostGrid'
+import { getBongstagramHashtagGridPage } from '@/lib/bongstagram/feed-data'
 
 function decodeTag(value: string) {
   try {
@@ -18,18 +17,8 @@ async function getHashtagPosts(rawTag: string) {
   const tag = decodeTag(rawTag)
   if (!tag || /[\s#]/.test(tag)) notFound()
 
-  const posts = await getBongstagramPosts('post')
-
-  const normalizedTag = tag.toLocaleLowerCase()
-  const gridPosts: BongstagramGridPost[] = posts.flatMap((post) => {
-    const matches = extractBongstagramHashtags(post.content).some((item) => item.toLocaleLowerCase() === normalizedTag)
-    if (!matches) return []
-
-    const media = post.media[0]
-    return media ? [{ id: post.id, character_id: post.character_id, media_type: media.media_type, media_url: media.media_url }] : []
-  })
-
-  return { tag, posts: gridPosts }
+  const page = await getBongstagramHashtagGridPage(tag)
+  return { tag, page }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ tag: string }> }): Promise<Metadata> {
@@ -50,7 +39,7 @@ export default async function BongstagramHashtagPage({ params }: { params: Promi
             <BongstagramBackButton />
             <h1 className="absolute left-1/2 max-w-[70%] -translate-x-1/2 truncate text-lg font-semibold text-white">#{data.tag}</h1>
           </header>
-          <BongstagramPostGrid posts={data.posts} />
+          <BongstagramInfinitePostGrid initialPosts={data.page.posts} initialCursor={data.page.nextCursor} initialHasMore={data.page.hasMore} hashtag={data.tag} />
         </div>
       </div>
       <BongstagramBottomNav />

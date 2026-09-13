@@ -1,19 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import AppImage from '@/components/ui/AppImage'
-import BongstagramVideoPlayer from './BongstagramVideoPlayer'
-import BongstagramDisplayName from './BongstagramDisplayName'
-import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 import BongstagramStoryRail from './BongstagramStoryRail'
-import MediaCarousel from './MediaCarousel'
-import BongstagramPostInteractions, { BongstagramLikeCountProvider } from './BongstagramPostInteractions'
+import BongstagramInfiniteFeed from './BongstagramInfiniteFeed'
 import BongstagramBottomNav from './BongstagramBottomNav'
-import BongstagramFeedOrder from './BongstagramFeedOrder'
-import BongstagramFollowButton from './BongstagramFollowButton'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
-import { getBongstagramDirectory, getBongstagramPostEngagement, getBongstagramPosts } from '@/lib/bongstagram/public-data'
-import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
+import { getBongstagramFeedPage, getBongstagramStoryFeed } from '@/lib/bongstagram/feed-data'
 import {
   Heart,
   Image as ImageIcon,
@@ -26,202 +16,12 @@ export const metadata: Metadata = {
   description: '봉누도2 인게임 SNS Bongstagram',
 }
 
-type FeedMedia = {
-  id: string
-  media_type: 'image' | 'video'
-  media_url: string
-  sort_order: number
-}
-
-type FeedPost = {
-  id: string
-  character_id: string
-  post_type: 'post' | 'story'
-  content: string
-  posted_at: string
-  story_expires_at: string | null
-  media: FeedMedia[]
-  comment_count?: number
-  like_count?: number
-  profile_name: string
-  profile_avatar_url: string | null
-  character_name: string
-  character_avatar_url: string | null
-  streamer_name: string | null
-  streamer_avatar_url: string | null
-  liked_by_viewer?: boolean
-}
-
-async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[] }> {
-  const [{ profiles, characters, streamers }, posts] = await Promise.all([getBongstagramDirectory(), getBongstagramPosts()])
-  const profilesByCharacterId = new Map(profiles.map((profile) => [profile.character_id, profile]))
-  const charactersById = new Map(characters.map((character) => [character.id, character]))
-  const streamersById = new Map(streamers.map((streamer) => [streamer.id, streamer]))
-
-  const feedPosts = posts.flatMap((post) => {
-    const profile = profilesByCharacterId.get(post.character_id)
-    const character = charactersById.get(post.character_id)
-    if (!profile || !character) return []
-    return [{
-      id: post.id,
-      character_id: post.character_id,
-      post_type: post.post_type,
-      content: post.content,
-      posted_at: post.posted_at,
-      story_expires_at: post.story_expires_at,
-      media: post.media,
-      profile_name: profile.profile_name,
-      profile_avatar_url: profile.avatar_url,
-      character_name: character.name,
-      character_avatar_url: character.avatar_url,
-      streamer_name: character.streamer_id ? streamersById.get(character.streamer_id)?.display_name ?? null : null,
-      streamer_avatar_url: character.streamer_id ? streamersById.get(character.streamer_id)?.profile_image_url ?? null : null,
-    }]
-  })
-
-  const postIds = feedPosts.filter((post) => post.post_type === 'post').map((post) => post.id)
-  const { likeCounts, commentCounts } = await getBongstagramPostEngagement(postIds)
-  const likesByPostId = new Map(Object.entries(likeCounts))
-  const commentsByPostId = new Map(Object.entries(commentCounts))
-  let likedPostIds = new Set<string>()
-
-  if (postIds.length > 0) {
-    const adminSupabase = createAdminClient()
-    const ipHash = await getBongstagramIpHash()
-    const viewerLikesResult = await (
-      ipHash
-        ? adminSupabase.from('bongstagram_post_likes').select('post_id').in('post_id', postIds).eq('ip_hash', ipHash)
-        : Promise.resolve({ data: [], error: null })
-    )
-    likedPostIds = new Set(((viewerLikesResult.data ?? []) as { post_id: string }[]).map((row) => row.post_id))
-  }
-
-  const visiblePosts = feedPosts
-    .filter((post) => post.post_type === 'post')
-    .map((post) => ({
-      ...post,
-      like_count: likesByPostId.get(post.id) ?? 0,
-      comment_count: commentsByPostId.get(post.id) ?? 0,
-      liked_by_viewer: likedPostIds.has(post.id),
-    }))
-  const storyIds = feedPosts.filter((post) => post.post_type === 'story').map((post) => post.id)
-  let likedStoryIds = new Set<string>()
-
-  if (storyIds.length > 0) {
-    const adminSupabase = createAdminClient()
-    const ipHash = await getBongstagramIpHash()
-    const viewerLikesResult = ipHash
-      ? await adminSupabase.from('bongstagram_story_likes').select('story_id').in('story_id', storyIds).eq('ip_hash', ipHash)
-      : { data: [], error: null }
-
-    if (viewerLikesResult.error && viewerLikesResult.error.code !== 'PGRST205') {
-      console.error('Bongstagram story viewer like lookup failed:', viewerLikesResult.error.code, viewerLikesResult.error.message)
-    }
-
-    likedStoryIds = new Set(((viewerLikesResult.data ?? []) as { story_id: string }[]).map((row) => row.story_id))
-  }
-
-  const stories = feedPosts
-    .filter((post) => post.post_type === 'story' && isStoryVisible(post.posted_at))
-    .map((story) => ({
-      ...story,
-      liked_by_viewer: likedStoryIds.has(story.id),
-    }))
-  return { posts: visiblePosts, stories }
-}
-
-function FeedMedia({ media, label }: { media: FeedMedia; label: string }) {
-  return media.media_type === 'video'
-    ? <BongstagramVideoPlayer src={media.media_url} label={label} />
-    : <div className="relative w-full overflow-hidden bg-black" style={{ height: 'min(125vw, 675px)' }}>
-      <AppImage src={media.media_url} alt={`${label} 게시물`} width={540} height={675} className="h-full w-full object-contain" style={{ objectFit: 'contain', objectPosition: 'center' }} />
-    </div>
-}
-
-function formatPostTime(value: string) {
-  const date = new Date(value)
-  const elapsed = Date.now() - date.getTime()
-  const dayMs = 24 * 60 * 60 * 1000
-
-  if (elapsed < dayMs) {
-    const hours = Math.floor(Math.max(0, elapsed) / (60 * 60 * 1000))
-    return hours === 0 ? '방금 전' : `${hours}시간 전`
-  }
-
-  const dateParts = new Intl.DateTimeFormat('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    month: 'numeric',
-    day: 'numeric',
-  }).formatToParts(date)
-  const month = dateParts.find((part) => part.type === 'month')?.value
-  const dayOfMonth = dateParts.find((part) => part.type === 'day')?.value
-  return `${month}월 ${dayOfMonth}일`
-}
-
-function PostCaption({ post }: { post: FeedPost }) {
-  const parts = post.content.split(/(#[^\s#]+)/g)
-  return (
-    <p className="whitespace-pre-wrap break-words text-sm text-zinc-300">
-      <Link href={`/bongstagram/${post.character_id}`} className="font-bold text-zinc-200 transition-colors hover:text-fuchsia-300"><BongstagramDisplayName profileName={post.profile_name} streamerName={post.streamer_name} /></Link>{' '}
-      {parts.map((part, index) => part.startsWith('#')
-        ? <Link key={`${part}-${index}`} href={`/bongstagram/hashtag/${encodeURIComponent(part.slice(1))}`} className="text-sky-400 hover:underline">{part}</Link>
-        : <span key={`${part}-${index}`}>{part}</span>)}
-    </p>
-  )
-}
-
-function FeedPostCard({ post }: { post: FeedPost }) {
-  return (
-    <article className="border-b border-zinc-800">
-      <header className="flex items-center justify-between px-4 py-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link href={`/bongstagram/${post.character_id}`} aria-label={`${post.profile_name} 프로필 보기`} className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-bold text-zinc-200">
-            <BongstagramProfileAvatar
-              profileAvatarUrl={post.profile_avatar_url}
-              streamerAvatarUrl={post.streamer_avatar_url}
-              fallbackAvatarUrl={post.character_avatar_url}
-              profileName={post.profile_name}
-              streamerName={post.streamer_name}
-              className="h-full w-full object-cover"
-            />
-          </Link>
-          <div className="min-w-0">
-            <Link href={`/bongstagram/${post.character_id}`} className="truncate text-sm font-semibold text-zinc-200 transition-colors hover:text-fuchsia-300"><BongstagramDisplayName profileName={post.profile_name} streamerName={post.streamer_name} /></Link>
-          </div>
-        </div>
-        <BongstagramFollowButton characterId={post.character_id} />
-      </header>
-
-      {post.media.length > 0 ? (
-        <MediaCarousel>
-          {post.media.map((media) => (
-            <div key={media.id} className="w-full min-w-0 max-w-full flex-none snap-center">
-              <FeedMedia media={media} label={post.profile_name} />
-            </div>
-          ))}
-        </MediaCarousel>
-      ) : (
-        <div className="flex min-h-56 items-center justify-center bg-gradient-to-br from-zinc-900 via-zinc-950 to-fuchsia-950/20 px-6 py-12 text-center text-sm text-zinc-500">
-          이미지가 없는 게시물입니다.
-        </div>
-      )}
-
-      <div className="space-y-3 px-4 py-3">
-        <BongstagramPostInteractions
-          postId={post.id}
-          initialLikeCount={post.like_count}
-          initialCommentCount={post.comment_count}
-          initialLiked={post.liked_by_viewer}
-          caption={post.content ? <PostCaption post={post} /> : null}
-        />
-        <p className="text-[11px] text-zinc-500">{formatPostTime(post.posted_at)}</p>
-      </div>
-    </article>
-  )
-}
-
 export default async function BongstagramPage() {
-  const { posts, stories } = await getFeedContent()
+  const [initialPage, stories] = await Promise.all([
+    getBongstagramFeedPage(),
+    getBongstagramStoryFeed(),
+  ])
+  const { posts } = initialPage
 
   return (
     <div className="bongstagram-theme">
@@ -244,7 +44,7 @@ export default async function BongstagramPage() {
         <BongstagramStoryRail stories={stories} />
 
         <main>
-          {posts.length > 0 ? <BongstagramLikeCountProvider postIds={posts.map((post) => post.id)} initialLikeCounts={Object.fromEntries(posts.map((post) => [post.id, post.like_count ?? 0]))}><BongstagramFeedOrder items={posts.map((post) => ({ characterId: post.character_id, element: <FeedPostCard key={post.id} post={post} /> }))} /></BongstagramLikeCountProvider> : (
+          {posts.length > 0 ? <BongstagramInfiniteFeed initialPosts={posts} initialCursor={initialPage.nextCursor} initialHasMore={initialPage.hasMore} /> : (
           <article className="border-b border-zinc-800">
             <header className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">

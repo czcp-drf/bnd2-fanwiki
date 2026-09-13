@@ -315,6 +315,9 @@ export default function BongstagramStoryRail({ stories }: { stories: Bongstagram
   const [open, setOpen] = useState(false)
   const [activeGroupIndex, setActiveGroupIndex] = useState(0)
   const [activeSlideIndex, setActiveSlideIndex] = useState(0)
+  const railRef = useRef<HTMLElement>(null)
+  const pointerStart = useRef<{ x: number; scrollLeft: number } | null>(null)
+  const suppressStoryClick = useRef(false)
   const followingSnapshot = useSyncExternalStore(subscribeBongstagramFollowing, readBongstagramFollowingSnapshot, getServerFollowingSnapshot)
   const followingIds = useMemo(() => {
     try {
@@ -346,9 +349,37 @@ export default function BongstagramStoryRail({ stories }: { stories: Bongstagram
   }), [storyGroups])
   const groupIndexByCharacterId = useMemo(() => new Map(storyGroups.map((group, index) => [group[0].character_id, index])), [storyGroups])
 
+  function handleRailPointerDown(event: React.PointerEvent<HTMLElement>) {
+    pointerStart.current = { x: event.clientX, scrollLeft: event.currentTarget.scrollLeft }
+    suppressStoryClick.current = false
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  function handleRailPointerMove(event: React.PointerEvent<HTMLElement>) {
+    const start = pointerStart.current
+    if (!start) return
+    const distance = event.clientX - start.x
+    if (Math.abs(distance) > 4) suppressStoryClick.current = true
+    event.currentTarget.scrollLeft = start.scrollLeft - distance
+  }
+
+  function handleRailPointerEnd(event: React.PointerEvent<HTMLElement>) {
+    pointerStart.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+
   return (
     <>
-      <section className="flex gap-3 overflow-x-auto border-b border-zinc-800 px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="스토리">
+      <div className="relative">
+        <section
+          ref={railRef}
+          className="flex cursor-grab select-none gap-3 overflow-x-auto border-b border-zinc-800 px-4 py-4 active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-y"
+          aria-label="스토리"
+          onPointerDown={handleRailPointerDown}
+          onPointerMove={handleRailPointerMove}
+          onPointerUp={handleRailPointerEnd}
+          onPointerCancel={handleRailPointerEnd}
+        >
         <div className="flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5">
           <div className="relative flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full bg-zinc-800 text-xl font-bold text-zinc-200">
             <span>봉</span>
@@ -360,14 +391,15 @@ export default function BongstagramStoryRail({ stories }: { stories: Bongstagram
           const story = group[0]
           const groupIndex = groupIndexByCharacterId.get(story.character_id) ?? 0
           return (
-            <button key={story.id} type="button" onClick={() => { setActiveGroupIndex(groupIndex); setActiveSlideIndex(0); setOpen(true) }} className="flex w-[4.5rem] shrink-0 cursor-pointer flex-col items-center gap-1.5 text-left">
+            <button key={story.id} type="button" onClick={(event) => { if (suppressStoryClick.current) { event.preventDefault(); suppressStoryClick.current = false; return }; setActiveGroupIndex(groupIndex); setActiveSlideIndex(0); setOpen(true) }} className="flex w-[4.5rem] shrink-0 cursor-pointer flex-col items-center gap-1.5 text-left">
               <StoryAvatar story={story} mark={story.profile_name.slice(0, 1)} />
               <span className="max-w-[4.5rem] truncate text-[11px] text-zinc-400"><BongstagramDisplayName profileName={story.profile_name} streamerName={story.streamer_name} /></span>
               <span className="sr-only">스토리 {group.reduce((count, item) => count + Math.max(item.media.length, 1), 0)}개</span>
             </button>
           )
         })}
-      </section>
+        </section>
+      </div>
       {open && slideGroups.length > 0 && <StoryViewer key={`${activeGroupIndex}-${activeSlideIndex}`} slideGroups={slideGroups} activeGroupIndex={activeGroupIndex} activeSlideIndex={activeSlideIndex} onClose={() => setOpen(false)} onChange={(groupIndex, slideIndex) => { setActiveGroupIndex(groupIndex); setActiveSlideIndex(slideIndex) }} />}
     </>
   )

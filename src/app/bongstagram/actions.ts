@@ -4,6 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
 import { getBongstagramComments as getCachedBongstagramComments } from '@/lib/bongstagram/public-data'
+import {
+  getBongstagramFeedPage as loadBongstagramFeedPage,
+  getBongstagramHashtagGridPage as loadBongstagramHashtagGridPage,
+  getBongstagramPostGridPage as loadBongstagramPostGridPage,
+} from '@/lib/bongstagram/feed-data'
+import type { BongstagramPostCursor } from '@/lib/bongstagram/types'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -39,6 +45,23 @@ type LikeCountsResult = {
 
 function isValidPostId(postId: string) {
   return UUID_PATTERN.test(postId.trim())
+}
+
+export type BongstagramFeedPageResult = Awaited<ReturnType<typeof loadBongstagramFeedPage>>
+
+export async function getBongstagramFeedPage(cursor: BongstagramPostCursor | null): Promise<BongstagramFeedPageResult> {
+  return loadBongstagramFeedPage(cursor)
+}
+
+export type BongstagramPostGridPageResult = Awaited<ReturnType<typeof loadBongstagramPostGridPage>>
+export type BongstagramHashtagGridPageResult = Awaited<ReturnType<typeof loadBongstagramHashtagGridPage>>
+
+export async function getBongstagramPostGridPage(cursor: BongstagramPostCursor | null): Promise<BongstagramPostGridPageResult> {
+  return loadBongstagramPostGridPage(cursor)
+}
+
+export async function getBongstagramHashtagGridPage(tag: string, cursor: BongstagramPostCursor | null): Promise<BongstagramHashtagGridPageResult> {
+  return loadBongstagramHashtagGridPage(tag, cursor)
 }
 
 export async function toggleBongstagramLike(postId: string): Promise<LikeActionResult> {
