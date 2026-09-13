@@ -338,7 +338,8 @@ src/
 - [x] BSS 기사 승인일시 migration 운영 DB 적용 (`032_bss_article_approval.sql`, 사용자 확인)
 - [x] BSS 기사 좋아요·싫어요·댓글 스키마 migration 작성 (`033_bss_article_interactions.sql`) — 기사당 IP별 반응 1개, 관리자 댓글 조회 구조
 - [x] BSS 기사 상호작용 migration 운영 DB 적용 (`033_bss_article_interactions.sql`, 사용자 확인)
-- [ ] BSS 기사 어드민 등록/수정/삭제
+- [x] BSS 기사 어드민 등록/수정/삭제 (`/admin/bss`) — 기사 검색·말머리/공개 상태 필터, 담당기자 선택, KST 승인일시, 대표/첨부 이미지 최대 5장 관리
+- [x] BSS 기사 이미지 Storage migration 운영 DB 적용 (`034_bss_storage.sql`, 사용자 확인)
 - [x] 이미지 전송 최적화 기반 — Supabase Storage 이미지는 Vercel `next/image` 최적화·캐시 사용, 동영상·외부 이미지는 기존 전달 방식 유지
 
 ---
