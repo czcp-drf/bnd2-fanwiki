@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import type { BbsArticle } from '@/lib/bbs/articles'
+import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
 import BbsArticleVisual from './BbsArticleVisual'
 
 function formatArticleTime(value: string) {
@@ -23,7 +24,7 @@ export default function BbsArticleCard({ article }: { article: BbsArticle }) {
         <div className="min-w-0 flex-1">
           <h2 className="line-clamp-2 text-[13px] font-bold leading-snug text-[var(--bbs-text)] group-hover:text-[#d7432d] sm:text-[15px]">{article.title}</h2>
           <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--bbs-subtle-text)]">
-            <span>{article.author}</span>
+            <span><BongstagramDisplayName profileName={article.author} streamerName={article.authorStreamerName} /></span>
             <span aria-hidden="true">·</span>
             <time dateTime={article.approvedAt} className="text-[#d7432d]">{formatArticleTime(article.approvedAt)}</time>
           </div>

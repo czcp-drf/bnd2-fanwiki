@@ -10,6 +10,10 @@ export type BbsArticleComment = {
   id: string
   authorCharacterId: string | null
   authorName: string
+  characterName: string | null
+  characterAvatarUrl: string | null
+  streamerName: string | null
+  streamerAvatarUrl: string | null
   content: string
   createdAt: string
 }
@@ -76,13 +80,38 @@ export async function getBbsArticleComments(articleId: string): Promise<{ commen
     return { comments: [], error: '댓글을 불러오지 못했습니다.' }
   }
 
+  const commentRows = (data ?? []) as Array<{ id: string; author_character_id: string | null; author_name: string; content: string; created_at: string }>
+  const characterIds = [...new Set(commentRows.map((comment) => comment.author_character_id).filter((id): id is string => Boolean(id)))]
+  const { data: characters, error: characterError } = characterIds.length
+    ? await supabase.from('characters').select('id, name, avatar_url, streamer_id').in('id', characterIds)
+    : { data: [], error: null }
+  const characterRows = (characters ?? []) as Array<{ id: string; name: string; avatar_url: string | null; streamer_id: string | null }>
+  const streamerIds = [...new Set(characterRows.map((character) => character.streamer_id).filter((id): id is string => Boolean(id)))]
+  const { data: streamers, error: streamerError } = streamerIds.length
+    ? await supabase.from('streamers').select('id, display_name, profile_image_url').in('id', streamerIds)
+    : { data: [], error: null }
+  const characterById = new Map(characterRows.map((character) => [character.id, character]))
+  const streamerById = new Map((streamers ?? []).map((streamer) => [streamer.id, streamer]))
+
+  if (characterError || streamerError) {
+    console.error('BBS article comment author data load failed:', characterError?.message, streamerError?.message)
+  }
+
   return {
-    comments: (data ?? []).map((comment) => ({
+    comments: commentRows.map((comment) => {
+      const character = comment.author_character_id ? characterById.get(comment.author_character_id) : undefined
+      const streamer = character?.streamer_id ? streamerById.get(character.streamer_id) : undefined
+      return {
       id: comment.id,
       authorCharacterId: comment.author_character_id,
       authorName: comment.author_name,
+      characterName: character?.name ?? null,
+      characterAvatarUrl: character?.avatar_url ?? null,
+      streamerName: streamer?.display_name ?? null,
+      streamerAvatarUrl: streamer?.profile_image_url ?? null,
       content: comment.content,
       createdAt: comment.created_at,
-    })),
+      }
+    }),
   }
 }

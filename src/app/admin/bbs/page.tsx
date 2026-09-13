@@ -19,7 +19,8 @@ type ArticleRow = {
 type MediaRow = { id: string; article_id: string; image_url: string; sort_order: number }
 type ReporterOrganizationRow = { id: string }
 type ReporterMembershipRow = { character_id: string; organization_id: string }
-type ReporterRow = { id: string; name: string; avatar_url: string | null }
+type ReporterRow = { id: string; name: string; avatar_url: string | null; streamers: { display_name: string; profile_image_url: string | null } | null }
+type CharacterQueryRow = { id: string; name: string; avatar_url: string | null; streamers: { display_name: string; profile_image_url: string | null }[] | null }
 type CommentRow = { id: string; article_id: string; author_character_id: string | null; author_name: string; content: string; created_at: string }
 
 async function getBbsAdminData() {
@@ -27,7 +28,7 @@ async function getBbsAdminData() {
   const [{ data: articles, error: articleError }, { data: media, error: mediaError }, { data: characters, error: characterError }, { data: journalistOrganizations, error: organizationError }, { data: comments, error: commentError }] = await Promise.all([
     supabase.from('bbs_articles').select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id').order('approved_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }),
     supabase.from('bbs_article_media').select('id, article_id, image_url, sort_order').order('sort_order'),
-    supabase.from('characters').select('id, name, avatar_url').order('name'),
+    supabase.from('characters').select('id, name, avatar_url, streamers ( display_name, profile_image_url )').order('name'),
     supabase.from('organizations').select('id').eq('type', 'journalist').eq('is_active', true),
     supabase.from('bbs_article_comments').select('id, article_id, author_character_id, author_name, content, created_at').order('created_at', { ascending: true }),
   ])
@@ -36,7 +37,13 @@ async function getBbsAdminData() {
     ? await supabase.from('organization_members').select('character_id, organization_id').in('organization_id', journalistOrganizationIds).is('left_at', null)
     : { data: [], error: null }
   const reporterIds = new Set(((journalistMembers ?? []) as ReporterMembershipRow[]).map((member) => member.character_id))
-  const reporters = ((characters ?? []) as ReporterRow[]).filter((character) => reporterIds.has(character.id))
+  const allCharacters: ReporterRow[] = ((characters ?? []) as unknown as CharacterQueryRow[]).map((character) => ({
+    id: character.id,
+    name: character.name,
+    avatar_url: character.avatar_url,
+    streamers: character.streamers?.[0] ?? null,
+  }))
+  const reporters = allCharacters.filter((character) => reporterIds.has(character.id))
 
   if (articleError || mediaError || characterError || organizationError || membershipError || commentError) {
     console.error('BBS admin data load failed:', articleError?.message, mediaError?.message, characterError?.message, organizationError?.message, membershipError?.message, commentError?.message)
@@ -52,7 +59,7 @@ async function getBbsAdminData() {
   return {
     articles: ((articles ?? []) as ArticleRow[]).map((article) => ({ ...article, media: mediaByArticleId.get(article.id) ?? [] })),
     reporters: reporters ?? [],
-    characters: ((characters ?? []) as ReporterRow[]),
+    characters: allCharacters,
     comments: ((comments ?? []) as CommentRow[]),
   }
 }

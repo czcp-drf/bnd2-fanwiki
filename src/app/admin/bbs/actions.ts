@@ -36,6 +36,13 @@ export type BbsCommentInput = {
   articleId: string
   authorCharacterId: string
   content: string
+  createdAt?: string
+}
+
+export type BbsCommentUpdateInput = {
+  authorCharacterId: string
+  content: string
+  createdAt?: string
 }
 
 type ValidatedArticleInput = {
@@ -318,6 +325,12 @@ export async function createBbsComment(input: BbsCommentInput): Promise<ActionRe
   if (!UUID_PATTERN.test(authorCharacterId)) return { error: '댓글 작성 캐릭터를 선택해 주세요.' }
   if (!content) return { error: '댓글 내용을 입력해 주세요.' }
   if (content.length > 1000) return { error: '댓글은 1,000자 이내로 입력해 주세요.' }
+  let createdAt = new Date().toISOString()
+  if (input.createdAt?.trim()) {
+    const parsedDate = new Date(input.createdAt)
+    if (Number.isNaN(parsedDate.getTime())) return { error: '댓글 작성 시간을 올바르게 입력해 주세요.' }
+    createdAt = parsedDate.toISOString()
+  }
 
   const supabase = await requireAdmin()
   const [{ data: article, error: articleError }, { data: character, error: characterError }] = await Promise.all([
@@ -333,6 +346,7 @@ export async function createBbsComment(input: BbsCommentInput): Promise<ActionRe
     author_character_id: character.id,
     author_name: character.name,
     content,
+    created_at: createdAt,
   })
   if (error) {
     console.error('BBS comment create failed:', error.code, error.message)
@@ -340,5 +354,61 @@ export async function createBbsComment(input: BbsCommentInput): Promise<ActionRe
   }
 
   revalidateBbs(articleId)
+  return { success: true }
+}
+
+export async function updateBbsComment(id: string, input: BbsCommentUpdateInput): Promise<ActionResult> {
+  const commentId = id.trim()
+  const authorCharacterId = input.authorCharacterId.trim()
+  const content = input.content.trim()
+  if (!UUID_PATTERN.test(commentId)) return { error: '수정할 댓글을 찾을 수 없습니다.' }
+  if (!UUID_PATTERN.test(authorCharacterId)) return { error: '댓글 작성 캐릭터를 선택해 주세요.' }
+  if (!content) return { error: '댓글 내용을 입력해 주세요.' }
+  if (content.length > 1000) return { error: '댓글은 1,000자 이내로 입력해 주세요.' }
+  let createdAt: string | undefined
+  if (input.createdAt?.trim()) {
+    const parsedDate = new Date(input.createdAt)
+    if (Number.isNaN(parsedDate.getTime())) return { error: '댓글 작성 시간을 올바르게 입력해 주세요.' }
+    createdAt = parsedDate.toISOString()
+  }
+
+  const supabase = await requireAdmin()
+  const [{ data: comment, error: commentError }, { data: character, error: characterError }] = await Promise.all([
+    supabase.from('bbs_article_comments').select('id, article_id').eq('id', commentId).maybeSingle(),
+    supabase.from('characters').select('id, name').eq('id', authorCharacterId).maybeSingle(),
+  ])
+  if (commentError || !comment) return { error: '수정할 댓글을 찾을 수 없습니다.' }
+  if (characterError || !character) return { error: '댓글 작성 캐릭터를 확인하지 못했습니다.' }
+
+  const updateData: { author_character_id: string; author_name: string; content: string; created_at?: string } = {
+    author_character_id: character.id,
+    author_name: character.name,
+    content,
+  }
+  if (createdAt) updateData.created_at = createdAt
+  const { error } = await supabase.from('bbs_article_comments').update(updateData).eq('id', commentId)
+  if (error) {
+    console.error('BBS comment update failed:', error.code, error.message)
+    return { error: '댓글을 수정하지 못했습니다.' }
+  }
+
+  revalidateBbs(comment.article_id)
+  return { success: true }
+}
+
+export async function deleteBbsComment(id: string): Promise<ActionResult> {
+  const commentId = id.trim()
+  if (!UUID_PATTERN.test(commentId)) return { error: '삭제할 댓글을 찾을 수 없습니다.' }
+
+  const supabase = await requireAdmin()
+  const { data: comment, error: commentLookupError } = await supabase.from('bbs_article_comments').select('article_id').eq('id', commentId).maybeSingle()
+  if (commentLookupError || !comment) return { error: '삭제할 댓글을 찾을 수 없습니다.' }
+  const { error } = await supabase.from('bbs_article_comments').delete().eq('id', commentId)
+  if (error) {
+    console.error('BBS comment delete failed:', error.code, error.message)
+    return { error: '댓글을 삭제하지 못했습니다.' }
+  }
+
+  revalidateBbs(comment.article_id)
   return { success: true }
 }

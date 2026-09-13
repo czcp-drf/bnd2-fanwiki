@@ -10,7 +10,7 @@ import { createBbsArticle, createBbsUploadUrl, deleteBbsArticle, deleteBbsUpload
 import BbsArticleContent from '@/app/bbs/components/BbsArticleContent'
 import BbsArticleCommentPanel from './BbsArticleCommentPanel'
 
-type Reporter = { id: string; name: string; avatar_url: string | null }
+type Reporter = { id: string; name: string; avatar_url: string | null; streamers: { display_name: string; profile_image_url: string | null } | null }
 type Character = Reporter
 type Comment = { id: string; article_id: string; author_character_id: string | null; author_name: string; content: string; created_at: string }
 type Media = { id: string; image_url: string; sort_order: number }

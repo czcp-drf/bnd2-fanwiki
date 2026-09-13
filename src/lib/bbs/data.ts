@@ -8,6 +8,7 @@ export const BBS_ARTICLES_TAG = 'bbs-articles'
 export type BbsReporterOption = {
   id: string
   name: string
+  streamerName: string | null
 }
 
 export type BbsLatestArticle = {
@@ -47,9 +48,12 @@ type MediaRow = {
 type ReporterRow = {
   id: string
   name: string
+  streamer_id: string | null
 }
 
-function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: ReporterRow[]): BbsArticle[] {
+type StreamerRow = { id: string; display_name: string }
+
+function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: ReporterRow[], streamers: StreamerRow[]): BbsArticle[] {
   const mediaByArticleId = new Map<string, BbsArticleMedia[]>()
   for (const item of media) {
     const current = mediaByArticleId.get(item.article_id) ?? []
@@ -57,7 +61,8 @@ function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: Repor
     mediaByArticleId.set(item.article_id, current)
   }
 
-  const reporterById = new Map(reporters.map((reporter) => [reporter.id, reporter.name]))
+  const reporterById = new Map(reporters.map((reporter) => [reporter.id, reporter]))
+  const streamerById = new Map(streamers.map((streamer) => [streamer.id, streamer.display_name]))
 
   return articles
     .filter((article) => article.approved_at && getBbsCategoryKey(article.category))
@@ -70,7 +75,8 @@ function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: Repor
         title: article.title,
         summary: article.summary ?? '',
         content: article.content,
-        author: reporterById.get(article.reporter_character_id) ?? '알 수 없는 기자',
+        author: reporterById.get(article.reporter_character_id)?.name ?? '알 수 없는 기자',
+        authorStreamerName: (() => { const streamerId = reporterById.get(article.reporter_character_id)?.streamer_id; return streamerId ? streamerById.get(streamerId) ?? null : null })(),
         approvedAt: article.approved_at as string,
         thumbnailUrl: article.thumbnail_url,
         media: mediaByArticleId.get(article.id) ?? [],
@@ -111,13 +117,20 @@ async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, re
   const articleReporterIds = [...new Set(articles.map((article) => article.reporter_character_id))]
   const [{ data: mediaData, error: mediaError }, { data: reporterData, error: reporterError }] = await Promise.all([
     supabase.from('bbs_article_media').select('id, article_id, image_url, sort_order').in('article_id', articleIds).order('sort_order'),
-    supabase.from('characters').select('id, name').in('id', articleReporterIds),
+    supabase.from('characters').select('id, name, streamer_id').in('id', articleReporterIds),
   ])
 
   if (mediaError) console.error('BBS public article media load failed:', mediaError.message)
   if (reporterError) console.error('BBS public reporter load failed:', reporterError.message)
 
-  return { articles: mapArticles(articles, (mediaData ?? []) as MediaRow[], (reporterData ?? []) as ReporterRow[]), total: articleCount ?? articles.length }
+  const reporterRows = (reporterData ?? []) as ReporterRow[]
+  const streamerIds = [...new Set(reporterRows.map((reporter) => reporter.streamer_id).filter((id): id is string => Boolean(id)))]
+  const { data: streamerData, error: streamerError } = streamerIds.length
+    ? await supabase.from('streamers').select('id, display_name').in('id', streamerIds)
+    : { data: [], error: null }
+  if (streamerError) console.error('BBS public streamer load failed:', streamerError.message)
+
+  return { articles: mapArticles(articles, (mediaData ?? []) as MediaRow[], reporterRows, (streamerData ?? []) as StreamerRow[]), total: articleCount ?? articles.length }
 }
 
 export async function getPublishedBbsArticles(category?: string, reporterIds?: string[]) {
@@ -162,13 +175,27 @@ const getCachedBbsReporterOptions = unstable_cache(
 
     const { data: reporterData } = await supabase
       .from('characters')
-      .select('id, name')
+      .select('id, name, streamer_id')
       .in('id', reporterIds)
       .order('name')
 
-    return (reporterData ?? []) as BbsReporterOption[]
+    const reporterRows = (reporterData ?? []) as ReporterRow[]
+    const streamerIds = [...new Set(reporterRows.map((reporter) => reporter.streamer_id).filter((id): id is string => Boolean(id)))]
+    const streamerResult = streamerIds.length
+      ? await supabase.from('streamers').select('id, display_name').in('id', streamerIds)
+      : null
+    const streamerData = (streamerResult?.data ?? []) as StreamerRow[]
+    const streamerError = streamerResult?.error ?? null
+    if (streamerError) console.error('BBS public reporter streamer load failed:', streamerError.message)
+    const streamerById = new Map((streamerData ?? []).map((streamer) => [streamer.id, streamer.display_name]))
+
+    return reporterRows.map((reporter) => ({
+      id: reporter.id,
+      name: reporter.name,
+      streamerName: reporter.streamer_id ? streamerById.get(reporter.streamer_id) ?? null : null,
+    }))
   },
-  ['bbs-reporter-options'],
+  ['bbs-reporter-options-v2'],
   { revalidate: 60, tags: [BBS_ARTICLES_TAG] },
 )
 

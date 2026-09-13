@@ -25,6 +25,7 @@ export type BbsArticle = {
   summary: string
   content: string
   author: string
+  authorStreamerName: string | null
   approvedAt: string
   thumbnailUrl: string | null
   media: BbsArticleMedia[]

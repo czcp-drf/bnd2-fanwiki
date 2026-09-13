@@ -5,6 +5,8 @@ import { ArrowLeft, MessageCircle, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { getBbsArticleCommentsAction, toggleBbsArticleReaction } from '../actions'
 import type { BbsArticleComment, BbsArticleEngagement, BbsArticleReaction } from '@/lib/bbs/engagement'
 import BbsShareButton from './BbsShareButton'
+import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
+import BongstagramProfileAvatar from '@/app/bongstagram/BongstagramProfileAvatar'
 
 const LOCAL_REACTIONS_STORAGE_KEY = 'bbs-local-article-reactions'
 
@@ -128,7 +130,7 @@ export default function BbsArticleInteractions({ articleId, initial }: { article
               <h2 id="bbs-comments-title" className="text-sm font-semibold">댓글</h2>
             </header>
             <div className="overflow-y-auto px-5 py-4">
-              {isPending && !commentsLoaded ? <p className="py-10 text-center text-sm text-[var(--bbs-subtle-text)]">댓글을 불러오는 중입니다.</p> : comments.length === 0 ? <p className="py-10 text-center text-sm text-[var(--bbs-subtle-text)]">등록된 댓글이 없습니다.</p> : <div className="space-y-5">{comments.map((comment) => <article key={comment.id} className="flex gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bbs-muted)] text-xs font-bold text-[var(--bbs-subtle-text)]">{comment.authorName.slice(0, 1)}</div><div className="min-w-0"><div className="flex items-center gap-2"><strong className="text-sm">{comment.authorName}</strong><time className="text-xs text-[var(--bbs-subtle-text)]" dateTime={comment.createdAt}>{formatCommentTime(comment.createdAt)}</time></div><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--bbs-subtle-text)]">{comment.content}</p></div></article>)}</div>}
+              {isPending && !commentsLoaded ? <p className="py-10 text-center text-sm text-[var(--bbs-subtle-text)]">댓글을 불러오는 중입니다.</p> : comments.length === 0 ? <p className="py-10 text-center text-sm text-[var(--bbs-subtle-text)]">등록된 댓글이 없습니다.</p> : <div className="space-y-5">{comments.map((comment) => { const profileName = comment.characterName ?? comment.authorName; return <article key={comment.id} className="flex gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--bbs-muted)] text-xs font-bold text-[var(--bbs-subtle-text)]"><BongstagramProfileAvatar profileAvatarUrl={comment.characterAvatarUrl} streamerAvatarUrl={comment.streamerAvatarUrl} profileName={profileName} streamerName={comment.streamerName} fallbackText={profileName.slice(0, 1)} className="h-full w-full object-cover" /></div><div className="min-w-0"><div className="flex items-center gap-2"><strong className="text-sm"><BongstagramDisplayName profileName={profileName} streamerName={comment.streamerName} /></strong><time className="text-xs text-[var(--bbs-subtle-text)]" dateTime={comment.createdAt}>{formatCommentTime(comment.createdAt)}</time></div><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--bbs-subtle-text)]">{comment.content}</p></div></article> })}</div>}
             </div>
           </section>
         </div>
