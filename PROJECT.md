@@ -339,6 +339,7 @@ src/
 - [x] BSS 기사 좋아요·싫어요·댓글 스키마 migration 작성 (`033_bss_article_interactions.sql`) — 기사당 IP별 반응 1개, 관리자 댓글 조회 구조
 - [x] BSS 기사 상호작용 migration 운영 DB 적용 (`033_bss_article_interactions.sql`, 사용자 확인)
 - [ ] BSS 기사 어드민 등록/수정/삭제
+- [x] 이미지 전송 최적화 기반 — Supabase Storage 이미지는 Vercel `next/image` 최적화·캐시 사용, 동영상·외부 이미지는 기존 전달 방식 유지
 
 ---
 
@@ -364,7 +365,7 @@ src/
 - Supabase 쿼리는 서버 컴포넌트/서버 액션에서만 직접 실행
 - 클라이언트에서 DB가 필요하면 API Route 경유
 - 타입은 inline으로, 재사용 필요 시 `src/types/database.ts` 참조
-- 이미지는 `AppImage` 컴포넌트 사용 (`unoptimized` 속성 → remotePatterns 설정 불필요)
+- 이미지는 `AppImage` 컴포넌트 사용 (Supabase Storage 이미지는 Vercel 최적화·캐시, 외부 이미지는 `unoptimized` 유지)
 - Leaflet 컴포넌트는 반드시 `dynamic(() => import(...), { ssr: false })`로 로드
 - 어드민 Server Action 후 `revalidatePath('/admin/...')` + 관련 공개 경로도 함께 무효화
 
@@ -383,10 +384,12 @@ src/
 
 - Bongstagram 빈 화면 세로 스크롤 수정 (`feat/bss`, 커밋 대기): 전역 헤더 아래 페이지가 `min-h-screen`으로 다시 전체 뷰포트 높이를 차지하던 구조를 헤더 제외 높이 기준으로 조정했습니다. 검색·프로필·내 프로필·게시물 상세·해시태그·로딩 화면에 동일한 레이아웃 기준을 적용해 콘텐츠가 없을 때 불필요한 세로 스크롤이 생기지 않도록 했습니다. 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다.
 
+- 이미지 전송 최적화 기반 (`feat/bss`, 커밋 대기): Supabase Storage 이미지에만 Vercel `next/image` 최적화와 24시간 이상 캐시를 적용하도록 `AppImage`와 `next.config.ts`를 정리했습니다. 외부 이미지와 동영상은 기존 직접 전달을 유지하며, 이미지 URL의 `fill`·크기 속성 충돌 없이 반응형 `sizes`를 사용합니다. 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다.
+
 - BSS 반응형 초기 화면 및 테마 정리 (`feat/bss`): `public/bss`의 모바일 참고 화면을 기준으로 BSS 메인·기사 상세 라우트를 추가했습니다. 모바일에서는 기사 카드·하단 고정 카테고리 메뉴를 사용하고, 데스크톱에서는 중앙 콘텐츠와 가로 카테고리 메뉴로 확장합니다. BSS는 기존 글로벌 Bongstagram 라이트·다크 테마 토글과 상태를 공유하며, 라이브 방송 기능은 인게임 시스템 범위에서 제외했습니다. 두 서비스의 다크모드 페이지 배경은 BSS 기준 색상 `#101216`으로 통일했습니다. Bongstagram 스토리 뷰어의 다크모드 외부 배경 오버레이 불투명도는 `72%`로 조정했습니다. 기사는 이후 Supabase·어드민 기능을 연결할 수 있도록 별도 데이터 타입과 샘플 데이터로 분리했습니다. 글로벌 헤더에 BSS 링크와 not-found 복귀 경로를 추가했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며 `feat/bss` 커밋·원격 푸시를 완료했습니다.
 
 - BSS 기사 스키마 적용 (`feat/bss`, migration 030 운영 DB 적용 완료): `bss_articles` 테이블을 추가해 제목, 안정적인 카테고리 키(`info`, `incident`, `economy`, `column`, `other`), 요약·본문, 대표 이미지 URL, KST 기준 승인일시, 공개 여부를 저장하도록 했습니다. 담당기자는 `characters.id` 외래키로 연결해 기사 조회 시 DB의 현재 캐릭터명을 사용하도록 설계했으며, 공개 읽기는 `is_published = true`인 기사만 허용합니다. 공개 처리 시 승인일시가 필수이고, 미승인 기사는 승인일시를 비워둘 수 있습니다. 사용자가 `030_bss_articles.sql`의 운영 DB 적용을 완료했습니다.
-- BSS 기사 첨부 이미지 스키마 (`feat/bss`, migration 031 적용 대기): `bss_article_media` 테이블을 추가해 기사당 첨부 이미지를 최대 5장까지 저장하고 `sort_order` 0~4로 순서를 관리하도록 했습니다. 대표이미지는 기존 `bss_articles.thumbnail_url`로 유지하며, 공개 기사에 연결된 이미지 파일만 공개 조회할 수 있습니다. `031_bss_article_media.sql`은 Supabase SQL Editor 적용이 필요합니다.
+- BSS 기사 첨부 이미지 스키마 (`feat/bss`, migration 031 운영 DB 적용 완료): `bss_article_media` 테이블을 추가해 기사당 첨부 이미지를 최대 5장까지 저장하고 `sort_order` 0~4로 순서를 관리하도록 했습니다. 대표이미지는 기존 `bss_articles.thumbnail_url`로 유지하며, 공개 기사에 연결된 이미지 파일만 공개 조회할 수 있습니다. 사용자가 `031_bss_article_media.sql`의 운영 DB 적용을 완료했습니다.
 
 - BSS 기사 승인일시 및 상호작용 스키마 (`feat/bss`, migration 032·033 운영 DB 적용 완료): 이미 적용된 030을 직접 수정하지 않고 `032_bss_article_approval.sql`에서 `published_at`을 `approved_at`으로 변경하도록 분리했습니다. 미승인 기사는 승인일시를 비워둘 수 있고 공개 처리 시 승인일시가 필요합니다. `033_bss_article_interactions.sql`에는 기사별 좋아요·싫어요와 IP 해시 중복 제한, 관리자 관리형 댓글 및 공개 조회 정책을 추가했습니다. 사용자가 `032`, `033` migration의 운영 DB 적용을 완료했습니다.
 
