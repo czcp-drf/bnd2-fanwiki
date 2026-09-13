@@ -1,5 +1,29 @@
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
 import { createClient } from '@/lib/supabase/server'
 import { getBbsCategoryKey, getBbsCategoryLabel, type BbsArticle, type BbsArticleMedia, type BbsCategoryKey } from './articles'
+
+export const BBS_ARTICLES_TAG = 'bbs-articles'
+
+export type BbsReporterOption = {
+  id: string
+  name: string
+}
+
+export type BbsLatestArticle = {
+  id: string
+  title: string
+  approvedAt: string
+  reporter: string
+}
+
+export type BbsArticlePage = {
+  articles: BbsArticle[]
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
 
 type ArticleRow = {
   id: string
@@ -54,46 +78,138 @@ function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: Repor
     })
 }
 
-async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string) {
+async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }) {
   const supabase = await createClient()
   let query = supabase
     .from('bbs_articles')
-    .select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id')
+    .select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id', { count: 'exact' })
     .eq('is_published', true)
     .not('approved_at', 'is', null)
 
   if (categoryKey) query = query.eq('category', categoryKey)
   if (articleId) query = query.eq('id', articleId)
+  if (reporterIds?.length) query = query.in('reporter_character_id', reporterIds)
 
-  const { data: articleData, error: articleError } = await query
+  if (pagination) {
+    const start = (pagination.page - 1) * pagination.pageSize
+    query = query.range(start, start + pagination.pageSize - 1)
+  }
+
+  const { data: articleData, count: articleCount, error: articleError } = await query
     .order('approved_at', { ascending: false })
     .order('id', { ascending: false })
 
   if (articleError) {
     console.error('BBS public article load failed:', articleError.message)
-    return []
+    return { articles: [], total: 0 }
   }
 
   const articles = (articleData ?? []) as ArticleRow[]
-  if (!articles.length) return []
+  if (!articles.length) return { articles: [], total: articleCount ?? 0 }
 
   const articleIds = articles.map((article) => article.id)
-  const reporterIds = [...new Set(articles.map((article) => article.reporter_character_id))]
+  const articleReporterIds = [...new Set(articles.map((article) => article.reporter_character_id))]
   const [{ data: mediaData, error: mediaError }, { data: reporterData, error: reporterError }] = await Promise.all([
     supabase.from('bbs_article_media').select('id, article_id, image_url, sort_order').in('article_id', articleIds).order('sort_order'),
-    supabase.from('characters').select('id, name').in('id', reporterIds),
+    supabase.from('characters').select('id, name').in('id', articleReporterIds),
   ])
 
   if (mediaError) console.error('BBS public article media load failed:', mediaError.message)
   if (reporterError) console.error('BBS public reporter load failed:', reporterError.message)
 
-  return mapArticles(articles, (mediaData ?? []) as MediaRow[], (reporterData ?? []) as ReporterRow[])
+  return { articles: mapArticles(articles, (mediaData ?? []) as MediaRow[], (reporterData ?? []) as ReporterRow[]), total: articleCount ?? articles.length }
 }
 
-export async function getPublishedBbsArticles(category?: string) {
-  return loadArticles(getBbsCategoryKey(category) ?? undefined)
+export async function getPublishedBbsArticles(category?: string, reporterIds?: string[]) {
+  return (await loadArticles(getBbsCategoryKey(category) ?? undefined, undefined, reporterIds)).articles
 }
 
 export async function getPublishedBbsArticle(id: string) {
-  return (await loadArticles(undefined, id))[0] ?? null
+  return (await loadArticles(undefined, id)).articles[0] ?? null
+}
+
+export async function getPublishedBbsArticlesPage(category: string | undefined, reporterIds: string[] | undefined, page: number, pageSize = 12): Promise<BbsArticlePage> {
+  const safePageSize = Math.min(Math.max(pageSize, 1), 30)
+  const safePage = Math.max(page, 1)
+  const categoryKey = getBbsCategoryKey(category) ?? undefined
+  let result = await loadArticles(categoryKey, undefined, reporterIds, { page: safePage, pageSize: safePageSize })
+  const totalPages = Math.max(1, Math.ceil(result.total / safePageSize))
+  const actualPage = Math.min(safePage, totalPages)
+  if (actualPage !== safePage) result = await loadArticles(categoryKey, undefined, reporterIds, { page: actualPage, pageSize: safePageSize })
+  return { articles: result.articles, page: actualPage, pageSize: safePageSize, total: result.total, totalPages }
+}
+
+const getCachedBbsReporterOptions = unstable_cache(
+  async (): Promise<BbsReporterOption[]> => {
+    const supabase = createPublicClient()
+    const { data: organizationData } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('type', 'journalist')
+      .eq('is_active', true)
+
+    const organizationIds = ((organizationData ?? []) as { id: string }[]).map((organization) => organization.id)
+    if (!organizationIds.length) return []
+
+    const { data: membershipData } = await supabase
+      .from('organization_members')
+      .select('character_id')
+      .in('organization_id', organizationIds)
+      .is('left_at', null)
+
+    const reporterIds = [...new Set(((membershipData ?? []) as { character_id: string }[]).map((member) => member.character_id))]
+    if (!reporterIds.length) return []
+
+    const { data: reporterData } = await supabase
+      .from('characters')
+      .select('id, name')
+      .in('id', reporterIds)
+      .order('name')
+
+    return (reporterData ?? []) as BbsReporterOption[]
+  },
+  ['bbs-reporter-options'],
+  { revalidate: 60, tags: [BBS_ARTICLES_TAG] },
+)
+
+export function getBbsReporterOptions() {
+  return getCachedBbsReporterOptions()
+}
+
+const getCachedLatestBbsArticle = unstable_cache(
+  async (): Promise<BbsLatestArticle | null> => {
+    const supabase = createPublicClient()
+    const { data: articleData } = await supabase
+      .from('bbs_articles')
+      .select('id, title, approved_at, reporter_character_id')
+      .eq('is_published', true)
+      .not('approved_at', 'is', null)
+      .order('approved_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const article = articleData as { id: string; title: string; approved_at: string | null; reporter_character_id: string } | null
+    if (!article?.approved_at) return null
+
+    const { data: reporterData } = await supabase
+      .from('characters')
+      .select('name')
+      .eq('id', article.reporter_character_id)
+      .maybeSingle()
+    const reporter = reporterData as { name: string } | null
+
+    return {
+      id: article.id,
+      title: article.title,
+      approvedAt: article.approved_at,
+      reporter: reporter?.name ?? '알 수 없는 기자',
+    }
+  },
+  ['bbs-latest-article'],
+  { revalidate: 60, tags: [BBS_ARTICLES_TAG] },
+)
+
+export function getLatestBbsArticle() {
+  return getCachedLatestBbsArticle()
 }

@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import Image, { type ImageProps } from 'next/image'
 
 type AppImageProps = Omit<ImageProps, 'src' | 'width' | 'height' | 'alt'> & {
@@ -22,13 +25,21 @@ function isOptimizableSource(src: string) {
   }
 }
 
-export default function AppImage({ src, alt = '', width = 1000, height = 1000, fill, sizes, quality = 75, ...props }: AppImageProps) {
-  const optimized = isOptimizableSource(src)
+export default function AppImage({ src, alt = '', width = 1000, height = 1000, fill, sizes, quality = 75, unoptimized = false, onError, ...props }: AppImageProps) {
+  const [useOriginal, setUseOriginal] = useState(false)
+  const imageSrc = src.trim()
+  const optimized = isOptimizableSource(imageSrc)
   const imageSizes = sizes ?? (fill ? '100vw' : `${Math.min(width, 1000)}px`)
-
-  if (fill) {
-    return <Image src={src} alt={alt} fill sizes={imageSizes} quality={quality} unoptimized={!optimized} {...props} />
+  const handleError: NonNullable<ImageProps['onError']> = (event) => {
+    if (optimized && !useOriginal) {
+      setUseOriginal(true)
+    }
+    onError?.(event)
   }
 
-  return <Image src={src} alt={alt} width={width} height={height} sizes={imageSizes} quality={quality} unoptimized={!optimized} {...props} />
+  if (fill) {
+    return <Image src={imageSrc} alt={alt} fill sizes={imageSizes} quality={quality} unoptimized={unoptimized || !optimized || useOriginal} onError={handleError} {...props} />
+  }
+
+  return <Image src={imageSrc} alt={alt} width={width} height={height} sizes={imageSizes} quality={quality} unoptimized={unoptimized || !optimized || useOriginal} onError={handleError} {...props} />
 }

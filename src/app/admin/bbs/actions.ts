@@ -1,7 +1,8 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/auth'
+import { BBS_ARTICLES_TAG } from '@/lib/bbs/data'
 
 const BBS_MEDIA_BUCKET = 'bbs-media'
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
@@ -134,6 +135,7 @@ async function removeStoragePaths(supabase: Awaited<ReturnType<typeof requireAdm
 function revalidateBbs(articleId?: string) {
   revalidatePath('/admin/bbs')
   revalidatePath('/bbs')
+  revalidateTag(BBS_ARTICLES_TAG, 'max')
   if (articleId) revalidatePath(`/bbs/article/${articleId}`)
 }
 
@@ -195,7 +197,10 @@ async function saveBbsMedia(
   }
 
   const newPaths = new Set(media.map((item) => item.storagePath).filter((path): path is string => Boolean(path)))
-  await removeStoragePaths(supabase, oldPaths.filter((path) => !newPaths.has(path)))
+  // Existing media loaded into the edit form may not have a storagePath field.
+  // Keep any old object whose public URL is still present in the submitted media.
+  const referencedPaths = new Set(media.map((item) => extractStoragePath(item.imageUrl)).filter((path): path is string => Boolean(path)))
+  await removeStoragePaths(supabase, oldPaths.filter((path) => !newPaths.has(path) && !referencedPaths.has(path)))
   return { error: null, oldPaths: [] as string[] }
 }
 

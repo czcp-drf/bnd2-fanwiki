@@ -110,8 +110,8 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/80">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+    <header className="sticky top-0 z-50 h-14 w-full border-b border-zinc-800 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/80">
+      <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4">
         {/* 로고 */}
         <Link href="/" className="flex items-center gap-2 group">
           <span className="text-lg font-black tracking-tight text-white group-hover:text-amber-400 transition-colors">

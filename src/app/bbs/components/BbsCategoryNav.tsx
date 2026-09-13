@@ -1,24 +1,28 @@
 import Link from 'next/link'
-import { AlertTriangle, BriefcaseBusiness, FileText, FolderOpen, LayoutGrid, PenLine } from 'lucide-react'
+import { AlertTriangle, BriefcaseBusiness, CalendarDays, LayoutGrid, Megaphone, PenLine } from 'lucide-react'
 import { BBS_CATEGORIES, type BbsCategory } from '@/lib/bbs/articles'
 
 const categoryIcons = {
   전체: LayoutGrid,
-  정보: FileText,
+  정보: Megaphone,
   사건사고: AlertTriangle,
   경제: BriefcaseBusiness,
   칼럼: PenLine,
-  기타: FolderOpen,
+  기타: CalendarDays,
 } satisfies Record<BbsCategory, typeof LayoutGrid>
 
-export default function BbsCategoryNav({ activeCategory }: { activeCategory: BbsCategory }) {
+export default function BbsCategoryNav({ activeCategory, reporterIds = [] }: { activeCategory: BbsCategory; reporterIds?: string[] }) {
   return (
-    <nav aria-label="BBS 기사 카테고리" className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--bbs-border)] bg-[var(--bbs-nav)] px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_18px_rgba(0,0,0,0.08)] backdrop-blur md:static md:mx-auto md:max-w-6xl md:border md:px-5 md:py-3 md:shadow-sm md:backdrop-blur-none">
+    <nav aria-label="BBS 기사 카테고리" className="fixed inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 rounded-full border border-[var(--bbs-border)] bg-[var(--bbs-nav)] px-3 py-2 shadow-[0_4px_18px_rgba(0,0,0,0.12)] backdrop-blur md:inset-x-4 md:bottom-4 md:mx-auto md:max-w-6xl md:rounded-2xl md:border md:px-5 md:py-3 md:shadow-xl md:backdrop-blur-none">
       <div className="mx-auto flex max-w-xl items-center justify-between gap-1 md:max-w-none md:justify-center md:gap-8">
         {BBS_CATEGORIES.map((category) => {
           const Icon = categoryIcons[category]
           const active = category === activeCategory
-          const href = category === '전체' ? '/bbs' : `/bbs?category=${encodeURIComponent(category)}`
+          const params = new URLSearchParams()
+          if (category !== '전체') params.set('category', category)
+          if (reporterIds.length) params.set('reporter', reporterIds.join(','))
+          const query = params.toString()
+          const href = `/bbs${query ? `?${query}` : ''}`
 
           return (
             <Link
