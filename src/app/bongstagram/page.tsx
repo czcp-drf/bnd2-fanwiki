@@ -7,6 +7,9 @@ import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 import BongstagramStoryRail from './BongstagramStoryRail'
 import MediaCarousel from './MediaCarousel'
 import BongstagramPostInteractions from './BongstagramPostInteractions'
+import BongstagramBottomNav from './BongstagramBottomNav'
+import BongstagramFeedOrder from './BongstagramFeedOrder'
+import BongstagramFollowButton from './BongstagramFollowButton'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
@@ -15,10 +18,7 @@ import {
   Heart,
   Image as ImageIcon,
   MessageCircle,
-  Search,
   Send,
-  SquarePlus,
-  UserRound,
 } from 'lucide-react'
 
 export const metadata: Metadata = {
@@ -149,14 +149,6 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
   return { posts: visiblePosts, stories }
 }
 
-function FilledHomeIcon({ size = 23 }: { size?: number }) {
-  return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M2.3 10.3 12 2.5l9.7 7.8v10.2h-6.2v-6.4H8.5v6.4H2.3V10.3Z" />
-    </svg>
-  )
-}
-
 function FeedMedia({ media, label }: { media: FeedMedia; label: string }) {
   return media.media_type === 'video'
     ? <BongstagramVideoPlayer src={media.media_url} label={label} />
@@ -216,9 +208,7 @@ function FeedPostCard({ post }: { post: FeedPost }) {
             <Link href={`/bongstagram/${post.character_id}`} className="truncate text-sm font-semibold text-zinc-200 transition-colors hover:text-fuchsia-300"><BongstagramDisplayName profileName={post.profile_name} streamerName={post.streamer_name} /></Link>
           </div>
         </div>
-        <button type="button" className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-bold !text-white transition-colors hover:bg-sky-400">
-          팔로우
-        </button>
+        <BongstagramFollowButton characterId={post.character_id} />
       </header>
 
       {post.media.length > 0 ? (
@@ -249,25 +239,6 @@ function FeedPostCard({ post }: { post: FeedPost }) {
   )
 }
 
-function BottomNav() {
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-[540px] items-center justify-around border-x border-t border-zinc-800 bg-zinc-950/95 px-3 py-3 backdrop-blur" aria-label="Bongstagram 메뉴">
-      <Link href="/bongstagram" aria-label="홈" className="text-white">
-        <FilledHomeIcon />
-      </Link>
-      <button type="button" aria-label="검색" className="text-zinc-500 transition-colors hover:text-zinc-200">
-        <Search size={23} />
-      </button>
-      <button type="button" aria-label="게시물 작성" className="text-zinc-500 transition-colors hover:text-zinc-200">
-        <SquarePlus size={24} strokeWidth={1.8} />
-      </button>
-      <button type="button" aria-label="프로필" className="text-zinc-500 transition-colors hover:text-zinc-200">
-        <UserRound size={22} strokeWidth={2.2} />
-      </button>
-    </nav>
-  )
-}
-
 export default async function BongstagramPage() {
   const { posts, stories } = await getFeedContent()
 
@@ -292,7 +263,7 @@ export default async function BongstagramPage() {
         <BongstagramStoryRail stories={stories} />
 
         <main>
-          {posts.length > 0 ? posts.map((post) => <FeedPostCard key={post.id} post={post} />) : (
+          {posts.length > 0 ? <BongstagramFeedOrder items={posts.map((post) => ({ characterId: post.character_id, element: <FeedPostCard key={post.id} post={post} /> }))} /> : (
           <article className="border-b border-zinc-800">
             <header className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">
@@ -337,7 +308,7 @@ export default async function BongstagramPage() {
           )}
         </main>
 
-        <BottomNav />
+        <BongstagramBottomNav />
         </div>
       </div>
     </div>

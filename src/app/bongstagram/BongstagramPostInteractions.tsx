@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, type ReactNode } from 'react'
-import { Heart, MessageCircle, Send, X } from 'lucide-react'
+import { ArrowLeft, Heart, MessageCircle, Send } from 'lucide-react'
 import { getBongstagramComments, toggleBongstagramLike, type BongstagramComment } from './actions'
 import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
@@ -146,10 +146,10 @@ export default function BongstagramPostInteractions({
           }}
         >
           <section className="flex max-h-[min(75vh,42rem)] w-full max-w-[540px] flex-col rounded-t-2xl border border-zinc-800 bg-zinc-950 sm:rounded-2xl" role="dialog" aria-modal="true" aria-labelledby={`comments-title-${postId}`}>
-            <header className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
-              <h2 id={`comments-title-${postId}`} className="text-sm font-semibold text-white">댓글</h2>
-              <button type="button" aria-label="댓글창 닫기" onClick={() => setCommentsOpen(false)} className="text-zinc-400 transition-colors hover:text-white">
-                <X size={20} />
+            <header className="relative flex items-center border-b border-zinc-800 px-5 py-4">
+              <h2 id={`comments-title-${postId}`} className="absolute left-1/2 -translate-x-1/2 text-sm font-semibold text-white">댓글</h2>
+              <button type="button" aria-label="댓글창 닫기" onClick={() => setCommentsOpen(false)} className="cursor-pointer text-zinc-400 transition-colors hover:text-white">
+                <ArrowLeft size={23} />
               </button>
             </header>
             <div className="overflow-y-auto px-5 py-4">
