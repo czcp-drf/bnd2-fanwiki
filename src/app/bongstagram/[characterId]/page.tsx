@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
+import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
 import BongstagramBottomNav from '../BongstagramBottomNav'
 import BongstagramProfileScreen from '../BongstagramProfileScreen'
 
@@ -20,8 +21,8 @@ type ProfilePost = {
   posted_at: string
   story_expires_at: string | null
   media: Media[]
-  like_count?: number
   liked_by_viewer?: boolean
+  is_active_story: boolean
 }
 
 async function getProfileData(characterId: string) {
@@ -62,32 +63,22 @@ async function getProfileData(characterId: string) {
     posted_at: post.posted_at,
     story_expires_at: post.story_expires_at,
     media: post.bongstagram_post_media.sort((a, b) => a.sort_order - b.sort_order),
+    is_active_story: post.post_type === 'story' && isStoryVisible(post.posted_at),
   }))
   const storyIds = profilePosts.filter((post) => post.post_type === 'story').map((post) => post.id)
-  let likesByStoryId = new Map<string, number>()
   let likedStoryIds = new Set<string>()
 
   if (storyIds.length > 0) {
     const adminSupabase = createAdminClient()
     const ipHash = await getBongstagramIpHash()
-    const [likesResult, viewerLikesResult] = await Promise.all([
-      adminSupabase.from('bongstagram_story_likes').select('story_id').in('story_id', storyIds),
-      ipHash
-        ? adminSupabase.from('bongstagram_story_likes').select('story_id').in('story_id', storyIds).eq('ip_hash', ipHash)
-        : Promise.resolve({ data: [], error: null }),
-    ])
+    const viewerLikesResult = ipHash
+      ? await adminSupabase.from('bongstagram_story_likes').select('story_id').in('story_id', storyIds).eq('ip_hash', ipHash)
+      : { data: [], error: null }
 
-    if (likesResult.error && likesResult.error.code !== 'PGRST205') {
-      console.error('Bongstagram profile story like count lookup failed:', likesResult.error.code, likesResult.error.message)
-    }
     if (viewerLikesResult.error && viewerLikesResult.error.code !== 'PGRST205') {
       console.error('Bongstagram profile story viewer like lookup failed:', viewerLikesResult.error.code, viewerLikesResult.error.message)
     }
 
-    likesByStoryId = new Map<string, number>()
-    for (const row of (likesResult.data ?? []) as { story_id: string }[]) {
-      likesByStoryId.set(row.story_id, (likesByStoryId.get(row.story_id) ?? 0) + 1)
-    }
     likedStoryIds = new Set(((viewerLikesResult.data ?? []) as { story_id: string }[]).map((row) => row.story_id))
   }
 
@@ -97,7 +88,6 @@ async function getProfileData(characterId: string) {
     streamer: streamer as { display_name: string; profile_image_url: string | null } | null,
     posts: profilePosts.map((post) => ({
       ...post,
-      like_count: likesByStoryId.get(post.id) ?? 0,
       liked_by_viewer: likedStoryIds.has(post.id),
     })),
   }

@@ -54,7 +54,6 @@ export type BongstagramStory = {
   character_avatar_url: string | null
   streamer_name: string | null
   streamer_avatar_url: string | null
-  like_count?: number
   liked_by_viewer?: boolean
 }
 
@@ -72,12 +71,18 @@ function getServerFollowingSnapshot() {
 }
 
 function formatStoryTime(value: string) {
-  const elapsed = Math.max(0, Date.now() - new Date(value).getTime())
+  const date = new Date(value)
+  const elapsed = Math.max(0, Date.now() - date.getTime())
   const minute = 60 * 1000
   const hour = 60 * minute
+  const day = 24 * hour
 
   if (elapsed < minute) return '방금'
   if (elapsed < hour) return `${Math.floor(elapsed / minute)}분`
+  if (elapsed >= day) {
+    const parts = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric' }).formatToParts(date)
+    return `${parts.find((part) => part.type === 'month')?.value}월 ${parts.find((part) => part.type === 'day')?.value}일`
+  }
   return `${Math.floor(elapsed / hour)}시간`
 }
 
@@ -110,7 +115,6 @@ export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, o
   const [progress, setProgress] = useState(0)
   const [isPendingVideo, setIsPendingVideo] = useState(false)
   const [storyLiked, setStoryLiked] = useState(() => active.story.liked_by_viewer ?? readStoredStoryLikes().has(active.story.id))
-  const [storyLikeCount, setStoryLikeCount] = useState(() => active.story.like_count ?? 0)
   const [storyLikeError, setStoryLikeError] = useState('')
   const [isLikePending, startLikeTransition] = useTransition()
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
@@ -148,7 +152,6 @@ export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, o
 
       const liked = result.liked ?? !storyLiked
       setStoryLiked(liked)
-      setStoryLikeCount(result.likeCount ?? storyLikeCount)
       const storedLikes = readStoredStoryLikes()
       if (liked) storedLikes.add(active.story.id)
       else storedLikes.delete(active.story.id)
@@ -296,7 +299,6 @@ export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, o
         </div>
 
         <div className="z-30 flex w-full shrink-0 flex-col gap-2">
-          {storyLikeCount > 0 && <p className="text-xs font-semibold !text-white">좋아요 {storyLikeCount}개</p>}
           {storyLikeError && <p role="status" className="text-xs !text-rose-300">{storyLikeError}</p>}
           <div className="flex w-full items-center gap-4">
             <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="flex h-12 min-w-0 flex-1 items-center rounded-full border border-white/90 px-7 text-left text-sm !text-white/90 transition-colors hover:bg-white/10">메시지 보내기</button>

@@ -91,9 +91,13 @@ async function getPostData() {
   ])
 
   const likeCountByPostId = new Map<string, number>()
-  ;((postLikes ?? []) as PostLikeRow[]).forEach((like) => likeCountByPostId.set(like.post_id, (likeCountByPostId.get(like.post_id) ?? 0) + 1))
+  for (const like of (postLikes ?? []) as PostLikeRow[]) {
+    likeCountByPostId.set(like.post_id, (likeCountByPostId.get(like.post_id) ?? 0) + 1)
+  }
   const likeCountByStoryId = new Map<string, number>()
-  ;((storyLikes ?? []) as StoryLikeRow[]).forEach((like) => likeCountByStoryId.set(like.story_id, (likeCountByStoryId.get(like.story_id) ?? 0) + 1))
+  for (const like of (storyLikes ?? []) as StoryLikeRow[]) {
+    likeCountByStoryId.set(like.story_id, (likeCountByStoryId.get(like.story_id) ?? 0) + 1)
+  }
 
   return {
     characters: (characters ?? []) as unknown as CharacterRow[],

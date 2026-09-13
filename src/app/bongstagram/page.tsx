@@ -146,30 +146,19 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
       liked_by_viewer: likedPostIds.has(post.id),
     }))
   const storyIds = feedPosts.filter((post) => post.post_type === 'story').map((post) => post.id)
-  let likesByStoryId = new Map<string, number>()
   let likedStoryIds = new Set<string>()
 
   if (storyIds.length > 0) {
     const adminSupabase = createAdminClient()
     const ipHash = await getBongstagramIpHash()
-    const [likesResult, viewerLikesResult] = await Promise.all([
-      adminSupabase.from('bongstagram_story_likes').select('story_id').in('story_id', storyIds),
-      ipHash
-        ? adminSupabase.from('bongstagram_story_likes').select('story_id').in('story_id', storyIds).eq('ip_hash', ipHash)
-        : Promise.resolve({ data: [], error: null }),
-    ])
+    const viewerLikesResult = ipHash
+      ? await adminSupabase.from('bongstagram_story_likes').select('story_id').in('story_id', storyIds).eq('ip_hash', ipHash)
+      : { data: [], error: null }
 
-    if (likesResult.error && likesResult.error.code !== 'PGRST205') {
-      console.error('Bongstagram story like count lookup failed:', likesResult.error.code, likesResult.error.message)
-    }
     if (viewerLikesResult.error && viewerLikesResult.error.code !== 'PGRST205') {
       console.error('Bongstagram story viewer like lookup failed:', viewerLikesResult.error.code, viewerLikesResult.error.message)
     }
 
-    likesByStoryId = new Map<string, number>()
-    for (const row of (likesResult.data ?? []) as { story_id: string }[]) {
-      likesByStoryId.set(row.story_id, (likesByStoryId.get(row.story_id) ?? 0) + 1)
-    }
     likedStoryIds = new Set(((viewerLikesResult.data ?? []) as { story_id: string }[]).map((row) => row.story_id))
   }
 
@@ -177,7 +166,6 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
     .filter((post) => post.post_type === 'story' && isStoryVisible(post.posted_at))
     .map((story) => ({
       ...story,
-      like_count: likesByStoryId.get(story.id) ?? 0,
       liked_by_viewer: likedStoryIds.has(story.id),
     }))
   return { posts: visiblePosts, stories }

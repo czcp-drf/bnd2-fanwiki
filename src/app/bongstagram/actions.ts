@@ -26,7 +26,11 @@ type LikeActionResult = {
   error?: string
 }
 
-type StoryLikeActionResult = LikeActionResult
+type StoryLikeActionResult = {
+  success?: true
+  liked?: boolean
+  error?: string
+}
 
 function isValidPostId(postId: string) {
   return UUID_PATTERN.test(postId.trim())
@@ -145,19 +149,9 @@ export async function toggleBongstagramStoryLike(storyId: string): Promise<Story
     liked = true
   }
 
-  const { count, error: countError } = await supabase
-    .from('bongstagram_story_likes')
-    .select('id', { count: 'exact', head: true })
-    .eq('story_id', id)
-
-  if (countError) {
-    console.error('Bongstagram story like count failed:', countError.code, countError.message)
-    return { success: true, liked, likeCount: 0 }
-  }
-
   revalidatePath('/bongstagram')
   revalidatePath(`/bongstagram/${story.character_id}`)
-  return { success: true, liked, likeCount: count ?? 0 }
+  return { success: true, liked }
 }
 
 export async function getBongstagramComments(postId: string): Promise<{ comments?: BongstagramComment[]; error?: string }> {
