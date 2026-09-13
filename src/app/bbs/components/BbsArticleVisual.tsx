@@ -1,6 +1,7 @@
 import AppImage from '@/components/ui/AppImage'
 import type { BbsArticle } from '@/lib/bbs/articles'
 import BbsLogo from './BbsLogo'
+import BbsZoomableImage from './BbsZoomableImage'
 
 const toneStyles = {
   info: 'from-[#8b2c27] via-[#d55c36] to-[#f0a048]',
@@ -17,7 +18,7 @@ export default function BbsArticleVisual({ article, detail = false, compact = fa
   return (
     <div className={`${aspectClass} isolate overflow-hidden bg-gradient-to-br ${toneStyles[article.categoryKey]}`}>
       {imageUrl ? (
-        <AppImage src={imageUrl} alt="" fill sizes={detail ? '(max-width: 768px) 100vw, 768px' : '(max-width: 768px) 100vw, 576px'} className="object-cover" />
+        detail ? <BbsZoomableImage src={imageUrl} alt="기사 대표 이미지 확대" previewClassName="h-full aspect-[16/9] rounded-xl" sizes="(max-width: 768px) 100vw, 768px" /> : <AppImage src={imageUrl} alt="" fill sizes="(max-width: 768px) 100vw, 576px" className="object-cover" />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-[#ededed]">
           <BbsLogo compact className={detail ? 'scale-[1.5]' : compact ? 'scale-[0.9]' : 'scale-[1.2]'} />

@@ -2,12 +2,12 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { notFound } from 'next/navigation'
-import AppImage from '@/components/ui/AppImage'
 import BbsArticleVisual from '../../components/BbsArticleVisual'
 import BbsArticleContent from '../../components/BbsArticleContent'
 import BbsLogo from '../../components/BbsLogo'
 import BbsArticleInteractions from '../../components/BbsArticleInteractions'
 import BbsShareButton from '../../components/BbsShareButton'
+import BbsZoomableImage from '../../components/BbsZoomableImage'
 import { getPublishedBbsArticle } from '@/lib/bbs/data'
 import { getBbsArticleEngagement } from '@/lib/bbs/engagement'
 
@@ -60,9 +60,7 @@ export default async function BbsArticlePage({ params }: Props) {
           {additionalMedia.length > 0 && (
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {additionalMedia.map((media) => (
-                <div key={media.id} className="relative aspect-[4/3] overflow-hidden rounded-xl bg-black">
-                  <AppImage src={media.imageUrl} alt="" fill sizes="(max-width: 640px) 100vw, 384px" className="object-contain" />
-                </div>
+                <BbsZoomableImage key={media.id} src={media.imageUrl} alt="기사 첨부 이미지 확대" previewClassName="aspect-[4/3] rounded-xl" sizes="(max-width: 640px) 100vw, 384px" />
               ))}
             </div>
           )}

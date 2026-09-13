@@ -32,6 +32,12 @@ export type BbsArticleInput = {
   media: { imageUrl: string; storagePath?: string | null }[]
 }
 
+export type BbsCommentInput = {
+  articleId: string
+  authorCharacterId: string
+  content: string
+}
+
 type ValidatedArticleInput = {
   title: string
   category: string
@@ -299,6 +305,40 @@ export async function deleteBbsArticle(id: string): Promise<ActionResult> {
   }
 
   await removeStoragePaths(supabase, (media ?? []).map((item) => extractStoragePath(item.image_url)).filter((path): path is string => Boolean(path)))
+  revalidateBbs(articleId)
+  return { success: true }
+}
+
+export async function createBbsComment(input: BbsCommentInput): Promise<ActionResult> {
+  const articleId = input.articleId.trim()
+  const authorCharacterId = input.authorCharacterId.trim()
+  const content = input.content.trim()
+
+  if (!UUID_PATTERN.test(articleId)) return { error: '댓글을 등록할 기사를 찾을 수 없습니다.' }
+  if (!UUID_PATTERN.test(authorCharacterId)) return { error: '댓글 작성 캐릭터를 선택해 주세요.' }
+  if (!content) return { error: '댓글 내용을 입력해 주세요.' }
+  if (content.length > 1000) return { error: '댓글은 1,000자 이내로 입력해 주세요.' }
+
+  const supabase = await requireAdmin()
+  const [{ data: article, error: articleError }, { data: character, error: characterError }] = await Promise.all([
+    supabase.from('bbs_articles').select('id').eq('id', articleId).maybeSingle(),
+    supabase.from('characters').select('id, name').eq('id', authorCharacterId).maybeSingle(),
+  ])
+
+  if (articleError || !article) return { error: '댓글을 등록할 기사를 찾을 수 없습니다.' }
+  if (characterError || !character) return { error: '댓글 작성 캐릭터를 확인하지 못했습니다.' }
+
+  const { error } = await supabase.from('bbs_article_comments').insert({
+    article_id: articleId,
+    author_character_id: character.id,
+    author_name: character.name,
+    content,
+  })
+  if (error) {
+    console.error('BBS comment create failed:', error.code, error.message)
+    return { error: '댓글을 등록하지 못했습니다.' }
+  }
+
   revalidateBbs(articleId)
   return { success: true }
 }
