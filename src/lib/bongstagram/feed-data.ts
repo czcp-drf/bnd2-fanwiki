@@ -125,14 +125,14 @@ export async function getBongstagramStoryFeed() {
 type BongstagramGridPost = {
   id: string
   character_id: string
-  media_type: 'image' | 'video'
-  media_url: string
+  media_type: 'image' | 'video' | null
+  media_url: string | null
 }
 
 function toGridPosts(posts: Awaited<ReturnType<typeof getBongstagramPostsPage>>['posts']) {
-  return posts.flatMap((post): BongstagramGridPost[] => {
+  return posts.map((post): BongstagramGridPost => {
     const media = post.media[0]
-    return media ? [{ id: post.id, character_id: post.character_id, media_type: media.media_type, media_url: media.media_url }] : []
+    return { id: post.id, character_id: post.character_id, media_type: media?.media_type ?? null, media_url: media?.media_url ?? null }
   })
 }
 

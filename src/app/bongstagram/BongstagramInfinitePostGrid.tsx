@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { Play } from 'lucide-react'
+import { ImageIcon, Play } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import {
   getBongstagramHashtagGridPage,
@@ -15,8 +15,8 @@ import type { BongstagramPostCursor } from '@/lib/bongstagram/types'
 type GridPost = {
   id: string
   character_id: string
-  media_type: 'image' | 'video'
-  media_url: string
+  media_type: 'image' | 'video' | null
+  media_url: string | null
 }
 
 export default function BongstagramInfinitePostGrid({
@@ -72,7 +72,7 @@ export default function BongstagramInfinitePostGrid({
         <div className="grid grid-cols-3 gap-px bg-zinc-900">
           {posts.map((post) => (
             <Link key={post.id} href={`/bongstagram/post/${post.id}`} aria-label="게시물 상세 보기" className="relative block aspect-square overflow-hidden bg-black">
-              {post.media_type === 'video' ? <video muted playsInline preload="metadata" src={post.media_url} className="h-full w-full object-cover" aria-label="동영상 게시물" /> : <AppImage src={post.media_url} alt="게시물" width={180} height={180} className="h-full w-full object-cover" />}
+              {post.media_type === 'video' && post.media_url ? <video muted playsInline preload="metadata" src={post.media_url} className="h-full w-full object-cover" aria-label="동영상 게시물" /> : post.media_type === 'image' && post.media_url ? <AppImage src={post.media_url} alt="게시물" width={180} height={180} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center bg-zinc-900 text-zinc-600"><ImageIcon size={24} /></div>}
               {post.media_type === 'video' && <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md bg-white text-zinc-950 shadow-sm"><Play size={14} fill="currentColor" strokeWidth={1.5} /></span>}
             </Link>
           ))}

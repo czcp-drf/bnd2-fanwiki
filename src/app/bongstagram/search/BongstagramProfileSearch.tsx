@@ -14,7 +14,7 @@ const RECENT_SEARCHES_KEY = 'bongstagram-recent-searches'
 type Profile = { character_id: string; profile_name: string; avatar_url: string | null }
 type Character = { id: string; name: string; avatar_url: string | null; streamer_id: string | null }
 type Streamer = { id: string; display_name: string; profile_image_url: string | null }
-type ProfilePost = { id: string; character_id: string; media_type: 'image' | 'video'; media_url: string }
+type ProfilePost = { id: string; character_id: string; media_type: 'image' | 'video' | null; media_url: string | null }
 type RecentSearch = { character_id: string }
 
 function readRecentSearches(): RecentSearch[] {

@@ -523,6 +523,8 @@ src/
 
 - 전역 테마 초기화·홈·로딩 화면 보정 (`main`): 새로고침 전에 저장된 라이트모드가 즉시 반영되도록 문서 head에서 테마를 초기화하고 hydration 속성 차이를 처리했습니다. 홈의 `위키 둘러보기` 영역을 제거하고 통계를 사건·BBS 공개 기사·봉스타그램 게시글 수로 변경했으며, `봉누도 따라가기` 배지의 대비를 높였습니다. 전역 및 봉스타그램 로딩 스켈레톤을 테마 변수 기반으로 변경해 라이트모드에서도 올바른 배경과 색상을 표시합니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치 `main`, 원격 `deploy/main` 푸시 완료를 확인합니다.
 
+- 봉스타그램 검색 그리드 누락 방어 (`main`): 검색·해시태그 그리드 변환 과정에서 미디어가 없는 게시글을 조용히 제외하지 않고 빈 타일로 표시하도록 보완했습니다. 현재 관리자 게시글 등록은 미디어 첨부를 필수로 하므로 일반 데이터에서는 발생하지 않지만, 조회 데이터가 일부 누락되는 상황에서도 게시글 순서와 무한 스크롤을 유지합니다. ESLint·TypeScript·`git diff --check`를 통과했으며 대상 브랜치 `main`, 원격 `deploy/main` 푸시 완료를 확인합니다.
+
 - Bongstagram 어드민 좋아요 집계 보정 (`feat/bonstagram`): 어드민 게시물 관리 페이지에 `dynamic = 'force-dynamic'`을 지정해 빌드 시 정적 HTML에 고정되던 좋아요 수를 요청 시점의 Supabase 데이터로 표시하도록 수정했습니다. 사용자가 server 모드에서 DB 좋아요 생성을 확인했고 local 모드에서는 DB 쓰기가 발생하지 않음을 확인했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드를 통과했으며 `git diff --check`도 통과했습니다. 대상 브랜치는 `feat/bonstagram`, 원격은 `deploy/feat/bonstagram`입니다.
 
 - Bongstagram 공개 입력·요청 제한 보완 (`feat/bonstagram`): 게시물·스토리 좋아요는 IP 해시 기준 1초 간격으로 서버에서 제한하고, 공개 제보는 IP 해시 기준 30초 간격으로 제한합니다. 제보 성공 후에는 브라우저 localStorage와 카운트다운으로 제출 버튼을 비활성화하며 서버가 최종 검증합니다. 공개 제보 참고 링크는 `http`·`https` URL만 저장·관리자 화면에 표시해 안전하지 않은 스킴의 링크 실행 경로를 차단했습니다. 좋아요 제한은 `028_bongstagram_like_rate_limit.sql`, 제보 제한은 `029_report_rate_limit.sql`을 Supabase SQL Editor에서 적용합니다. 변경 파일 ESLint(기존 `react-hooks/set-state-in-effect` 규칙 위반 제외)·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `feat/bonstagram`, 원격 대상은 `deploy/feat/bonstagram`입니다.
