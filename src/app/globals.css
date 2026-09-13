@@ -227,6 +227,87 @@ html[data-bongstagram-theme="dark"] .bbs-theme {
   --bbs-subtle-text: #a1a1aa;
 }
 
+.wiki-theme {
+  --wiki-page: #09090b;
+  --wiki-surface: #18181b;
+  --wiki-raised: #27272a;
+  --wiki-strong: #3f3f46;
+  --wiki-border: #27272a;
+  --wiki-border-strong: #3f3f46;
+  --wiki-text: #f4f4f5;
+  --wiki-text-secondary: #d4d4d8;
+  --wiki-muted: #a1a1aa;
+  --wiki-subtle: #71717a;
+  --wiki-faint: #52525b;
+  --wiki-hover: rgb(39 39 42 / 0.5);
+}
+
+html[data-bongstagram-theme="light"] .wiki-theme {
+  --wiki-page: #fafafa;
+  --wiki-surface: #ffffff;
+  --wiki-raised: #f4f4f5;
+  --wiki-strong: #e4e4e7;
+  --wiki-border: #e4e4e7;
+  --wiki-border-strong: #d4d4d8;
+  --wiki-text: #18181b;
+  --wiki-text-secondary: #3f3f46;
+  --wiki-muted: #71717a;
+  --wiki-subtle: #71717a;
+  --wiki-faint: #a1a1aa;
+  --wiki-hover: #f3f3f3;
+}
+
+.wiki-theme {
+  background-color: var(--wiki-page);
+  color: var(--wiki-text);
+}
+
+.wiki-theme .bg-zinc-950 { background-color: var(--wiki-page); }
+.wiki-theme .bg-zinc-900 { background-color: var(--wiki-surface); }
+.wiki-theme .bg-zinc-800 { background-color: var(--wiki-raised); }
+.wiki-theme .bg-zinc-700 { background-color: var(--wiki-strong); }
+.wiki-theme .bg-zinc-600 { background-color: var(--wiki-border-strong); }
+
+.wiki-theme .border-zinc-800,
+.wiki-theme .border-zinc-800\/60 { border-color: var(--wiki-border); }
+.wiki-theme .border-zinc-700 { border-color: var(--wiki-border-strong); }
+.wiki-theme .border-zinc-600 { border-color: var(--wiki-muted); }
+
+.wiki-theme .text-white { color: var(--wiki-text); }
+.wiki-theme .text-zinc-200 { color: var(--wiki-text-secondary); }
+.wiki-theme .text-zinc-300 { color: var(--wiki-text-secondary); }
+.wiki-theme .text-zinc-400 { color: var(--wiki-muted); }
+.wiki-theme .text-zinc-500 { color: var(--wiki-subtle); }
+.wiki-theme .text-zinc-600 { color: var(--wiki-faint); }
+
+.wiki-theme .hover\:bg-zinc-800\/50:hover,
+.wiki-theme .hover\:bg-zinc-800\/40:hover { background-color: var(--wiki-hover); }
+.wiki-theme .hover\:bg-zinc-800:hover { background-color: var(--wiki-raised); }
+.wiki-theme .hover\:bg-zinc-700:hover { background-color: var(--wiki-strong); }
+.wiki-theme .hover\:border-zinc-700:hover,
+.wiki-theme .hover\:border-zinc-500:hover { border-color: var(--wiki-muted); }
+.wiki-theme .hover\:text-zinc-200:hover,
+.wiki-theme .hover\:text-zinc-300:hover { color: var(--wiki-text-secondary); }
+
+html[data-bongstagram-theme="light"] .wiki-theme .prose-invert {
+  --tw-prose-body: var(--wiki-muted);
+  --tw-prose-headings: var(--wiki-text);
+  --tw-prose-lead: var(--wiki-muted);
+  --tw-prose-links: #b45309;
+  --tw-prose-bold: var(--wiki-text-secondary);
+  --tw-prose-counters: var(--wiki-subtle);
+  --tw-prose-bullets: var(--wiki-subtle);
+  --tw-prose-hr: var(--wiki-border);
+  --tw-prose-quotes: var(--wiki-muted);
+  --tw-prose-quote-borders: #fbbf24;
+  --tw-prose-captions: var(--wiki-subtle);
+  --tw-prose-code: #b45309;
+  --tw-prose-pre-code: var(--wiki-text-secondary);
+  --tw-prose-pre-bg: var(--wiki-raised);
+  --tw-prose-th-borders: var(--wiki-border-strong);
+  --tw-prose-td-borders: var(--wiki-border);
+}
+
 .bongstagram-story-backdrop {
   background-color: rgb(0 0 0 / 0.85);
 }

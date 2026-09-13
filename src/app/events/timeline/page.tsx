@@ -111,7 +111,8 @@ export default async function TimelinePage({ searchParams }: Props) {
     : '전체 사건'
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 space-y-8">
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-3xl space-y-8">
       {/* 헤더 */}
       <div className="space-y-1">
         <BackButton />
@@ -134,6 +135,7 @@ export default async function TimelinePage({ searchParams }: Props) {
       ) : (
         <TimelineView events={events} />
       )}
+      </div>
     </div>
   )
 }

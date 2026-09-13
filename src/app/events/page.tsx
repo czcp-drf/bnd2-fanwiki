@@ -50,7 +50,8 @@ export default async function EventsPage({ searchParams }: Props) {
   const rest = events.slice(1)
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-6xl space-y-8">
       {/* 헤더 */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
@@ -136,6 +137,7 @@ export default async function EventsPage({ searchParams }: Props) {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
