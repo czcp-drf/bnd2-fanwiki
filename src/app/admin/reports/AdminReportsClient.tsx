@@ -114,10 +114,12 @@ export default function AdminReportsClient({ reports }: { reports: Report[] }) {
                     참고 링크 →
                   </a>
                 )}
-                {r.ip && (
+                {r.ip_hash && (
                   <div className="ml-auto flex items-center gap-2">
-                    <span className="font-mono text-zinc-600">{r.ip}</span>
-                    <BlockIpButton ip={r.ip} />
+                    <span className="font-mono text-zinc-600" title="IP 해시">
+                      {r.ip_hash.slice(0, 12)}…
+                    </span>
+                    <BlockIpButton ipHash={r.ip_hash} />
                   </div>
                 )}
               </div>

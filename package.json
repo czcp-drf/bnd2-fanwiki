@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:live": "node --experimental-strip-types --test scripts/test-live-status.mjs scripts/test-live-data.mjs",
-    "test:reliability": "node --experimental-strip-types --test scripts/test-live-status.mjs scripts/test-live-data.mjs scripts/test-admin-reliability.mjs"
+    "test:reliability": "node --experimental-strip-types --test scripts/test-live-status.mjs scripts/test-live-data.mjs scripts/test-admin-reliability.mjs",
+    "migrate:report-ip-hashes": "node scripts/migrate-report-ip-hashes.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

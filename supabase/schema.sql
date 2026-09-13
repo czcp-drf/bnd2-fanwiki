@@ -115,9 +115,19 @@ create table reports (
   title         text not null,
   content       text not null,
   contact       text,
+  contact_method text,
   reference_url text,
   status        text default 'pending'
                 check (status in ('pending', 'reviewing', 'applied', 'rejected')),
+  ip_hash       text check (ip_hash is null or char_length(ip_hash) = 64),
+  created_at    timestamptz default now()
+);
+
+-- blocked IP hashes
+create table blocked_ips (
+  id            uuid primary key default gen_random_uuid(),
+  ip_hash       text not null unique check (char_length(ip_hash) = 64),
+  reason        text,
   created_at    timestamptz default now()
 );
 
@@ -130,6 +140,7 @@ create index on event_participants(character_id);
 create index on events(occurred_at desc);
 create index on events(is_published);
 create index on reports(status);
+create index on reports(ip_hash, created_at desc);
 
 -- updated_at 자동 갱신 트리거
 create or replace function update_updated_at()

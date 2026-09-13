@@ -33,7 +33,23 @@ function findIp(value: string | null): string | null {
   return null
 }
 
-export async function getBongstagramIpHash(): Promise<string | null> {
+function getIpHashSecret(): string {
+  return process.env.IP_HASH_SECRET
+    ?? process.env.BONGSTAGRAM_IP_HASH_SECRET
+    ?? process.env.SUPABASE_SERVICE_ROLE_KEY
+    ?? 'bongstagram-like-ip'
+}
+
+export function hashNormalizedIp(ip: string): string {
+  return createHash('sha256').update(`${getIpHashSecret()}:${ip}`).digest('hex')
+}
+
+export function hashStoredIp(value: string): string | null {
+  const ip = normalizeIp(value)
+  return ip ? hashNormalizedIp(ip) : null
+}
+
+export async function getClientIpHash(): Promise<string | null> {
   const headerStore = await headers()
   const ip = findIp(headerStore.get('cf-connecting-ip'))
     ?? findIp(headerStore.get('true-client-ip'))
@@ -43,9 +59,8 @@ export async function getBongstagramIpHash(): Promise<string | null> {
     ?? findIp(headerStore.get('forwarded')?.match(/(?:^|;)\s*for=([^;]+)/i)?.[1] ?? null)
 
   if (!ip) return null
-
-  const secret = process.env.BONGSTAGRAM_IP_HASH_SECRET
-    ?? process.env.SUPABASE_SERVICE_ROLE_KEY
-    ?? 'bongstagram-like-ip'
-  return createHash('sha256').update(`${secret}:${ip}`).digest('hex')
+  return hashNormalizedIp(ip)
 }
+
+// 기존 호출부 호환용 이름
+export const getBongstagramIpHash = getClientIpHash

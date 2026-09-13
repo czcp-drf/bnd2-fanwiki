@@ -89,9 +89,9 @@ src/
 │       │   ├── AdminMapView.tsx  # 사이드바 탭 UI (조직 거점·사업체 / 주요 장소)
 │       │   ├── AdminLeafletMap.tsx  # 어드민 전용 Leaflet 지도 (거점/사업체 모드 전환)
 │       │   └── actions.ts      # updateOrgHq, updateOrgBiz, addMapLocation, updateMapLocation, deleteMapLocation
-│       ├── reports/            # 제보 관리 (상태 필터, 상태 변경, IP 차단, 좌표 → 주요 장소 추가)
+│       ├── reports/            # 제보 관리 (상태 필터, 상태 변경, IP 해시 차단, 좌표 → 주요 장소 추가)
 │       │   └── ReportCoordAction.tsx  # 좌표 제보 파싱 → 주요 장소 직접 추가 클라이언트 컴포넌트
-│       └── blocked-ips/        # 차단 IP 목록 + 해제
+│       └── blocked-ips/        # 차단 IP 해시 목록 + 해제
 │
 ├── components/
 │   ├── layout/Header.tsx       # 글로벌 네비게이션 (빨간약 토글, 검색, 모바일 Sheet)
@@ -245,11 +245,11 @@ src/
 | `event_participants` | 사건↔캐릭터 N:M (role, sort_order) |
 | `event_clips` | 사건 클립 (clip_url, label, streamer_id, sort_order) |
 | `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/colleague/neutral) |
-| `reports` | 제보 (type, status: pending/reviewing/applied/rejected, ip) |
+| `reports` | 제보 (type, status: pending/reviewing/applied/rejected, ip_hash) |
 | `bongstagram_profiles` | 기존 `characters`와 1:1로 연결되는 Bongstagram 표시 닉네임 |
 | `bongstagram_posts` | Bongstagram 게시물·스토리 본체 (character_id, post_type, content, posted_at, story_expires_at) |
 | `bongstagram_post_media` | 게시물 미디어 (image/video URL, Storage 경로, sort_order) |
-| `blocked_ips` | 차단 IP 목록 (ip, reason) |
+| `blocked_ips` | 차단 IP 해시 목록 (ip_hash, reason) |
 
 ### 마이그레이션 파일 (supabase/migrations/)
 | 파일 | 내용 |
@@ -270,6 +270,8 @@ src/
 | `023_bongstagram_interactions.sql` | 게시물별 IP 제한 좋아요와 관리자 전용 댓글 테이블 추가 |
 | `024_bongstagram_comment_replies.sql` | 댓글 작성 시간 관리와 1단계 답글용 parent_comment_id 추가 |
 | `025_bongstagram_comment_author.sql` | 댓글 작성자 캐릭터 연결과 기존 프로필명 기반 데이터 보정 |
+| `036_hash_report_ips.sql` | 제보·차단 목록에 서버 비밀키 기반 IP 해시 컬럼 추가 |
+| `037_drop_legacy_blocked_ip.sql` | 기존 차단 데이터 확인 후 blocked_ips의 원본 ip 컬럼 제거 |
 
 ---
 
@@ -355,6 +357,7 @@ src/
 | `BONGSTAGRAM_SERVER_FINAL_DATE` | 서버 마지막 종료일 (`YYYY-MM-DD`, 해당일 오전 3시에 스토리 전체 종료) |
 | `BONGSTAGRAM_LIKES_MODE` | 좋아요 저장 모드 (`server` 기본값, `local`은 브라우저 localStorage만 사용) |
 | `BBS_REACTIONS_MODE` | BBS 좋아요·싫어요 저장 모드 (`local` 기본값, `server` 설정 시 IP 해시 DB 저장) |
+| `IP_HASH_SECRET` | 제보·좋아요·차단에 공통 사용할 서버 전용 IP 해시 비밀키 (미설정 시 기존 해시 비밀키 또는 서비스 롤 키 사용) |
 | `ADMIN_PASSWORD` | 어드민 로그인 비밀번호 |
 | `ADMIN_TOKEN` | 어드민 쿠키 검증 토큰 |
 | `NEXT_PUBLIC_MAP_TILE_BASE` | 지도 타일 CDN 베이스 URL (Supabase Storage, 미설정 시 public/ 직접 서빙) |
@@ -550,6 +553,8 @@ src/
 - 전체 점검 후 1차 수정: 조직 상세는 `left_at` 기준으로 현재/이전 멤버를 구분합니다. 현재 소속 중 활동·비활동 멤버를 합산하고, 이전 멤버는 별도 섹션과 탈퇴 배지를 표시합니다. 분류 함수: `src/lib/data/organization-members.ts`. 회귀 테스트: `node --experimental-strip-types --test tests/organization-members.test.mjs` (2개 통과), 변경 파일 린트·빌드 통과. `fix/project-audit` 브랜치의 1차 수정입니다.
 
 - 2026-09-12 전체 점검: [PROJECT_AUDIT.md](./PROJECT_AUDIT.md). 빌드 성공, 린트 오류 6개·경고 8개, 기존 테스트 8/10 성공. 발견한 기능 문제·검증 한계·수정 우선순위는 점검 문서 참조. 이번 점검에서는 애플리케이션 코드나 DB를 수정하지 않았습니다.
+
+- 제보 IP 해시 전환 (`main`): 제보 등록·차단 확인·관리자 차단을 원본 IP 대신 기존 좋아요·제보 레이트리밋과 동일한 서버 비밀키 기반 SHA-256 해시로 통일했습니다. 관리자 제보·차단 목록에는 해시 일부만 표시하고 차단 해제는 행 ID로 처리합니다. `036_hash_report_ips.sql`로 해시 컬럼을 추가하고, 기존 차단 데이터가 없음을 확인한 뒤 `037_drop_legacy_blocked_ip.sql`로 `blocked_ips.ip` 원본 컬럼을 제거할 수 있도록 했습니다. 기존 제보의 원본 IP 백필이 필요한 경우에만 `npm run migrate:report-ip-hashes`를 실행합니다. 관련 ESLint·TypeScript·프로덕션 빌드·스크립트 구문 검사·`git diff --check`를 통과했으며, 대상 브랜치는 `main`입니다. 커밋 후 원격 푸시 상태를 확인합니다.
 
 아래 표의 커밋은 `deploy/main`에 반영·푸시 완료했습니다. 1차 멤버 수정은 사용자 동작 확인 후 `d47ade2`로 병합했습니다. 나머지 점검 항목은 [PROJECT_AUDIT.md](./PROJECT_AUDIT.md)를 기준으로 순차 진행합니다. 배포 완료 여부는 Vercel에서 별도로 확인합니다.
 

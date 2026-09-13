@@ -1,22 +1,16 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
+import { getClientIpHash } from '@/lib/bongstagram/like-ip'
 import type { Database } from '@/types/database'
 
-async function getIp(): Promise<string | null> {
-  const h = await headers()
-  return h.get('x-forwarded-for')?.split(',')[0].trim() ?? h.get('x-real-ip') ?? null
-}
-
-async function isBlocked(ip: string): Promise<boolean> {
+async function isBlocked(ipHash: string): Promise<boolean> {
   const supabase = createAdminClient()
   const { count } = await supabase
     .from('blocked_ips')
     .select('*', { count: 'exact', head: true })
-    .eq('ip', ip)
+    .eq('ip_hash', ipHash)
   return (count ?? 0) > 0
 }
 
@@ -56,8 +50,8 @@ export async function submitReport(
   }
 
   // 차단된 IP 체크
-  const ip = await getIp()
-  if (ip && await isBlocked(ip)) {
+  const ipHash = await getClientIpHash()
+  if (ipHash && await isBlocked(ipHash)) {
     return { status: 'error', message: '제보가 제한된 환경입니다.' }
   }
 
@@ -137,7 +131,6 @@ export async function submitReport(
     ? `${content.trim()}\n\n${extras.join('\n')}`
     : content.trim()
 
-  const ipHash = await getBongstagramIpHash()
   if (ipHash) {
     const { data: allowed, error: rateLimitError } = await createAdminClient().rpc('check_report_rate_limit', {
       p_ip_hash: ipHash,
@@ -163,7 +156,7 @@ export async function submitReport(
     contact_method: contact_method.trim() || null,
     reference_url: trimmedReferenceUrl || null,
     status: 'pending',
-    ip: ip ?? null,
+    ip_hash: ipHash,
   } satisfies Database['public']['Tables']['reports']['Insert']
 
   try {

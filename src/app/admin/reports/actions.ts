@@ -11,19 +11,39 @@ export async function updateReportStatus(id: string, status: string) {
   return { success: true }
 }
 
-export async function blockIp(ip: string, reason?: string) {
+function isIpHash(value: string): boolean {
+  return /^[a-f0-9]{64}$/i.test(value)
+}
+
+export async function blockIp(ipHash: string, reason?: string) {
+  if (!isIpHash(ipHash)) return
+
   const supabase = await requireAdmin()
-  await Promise.all([
-    supabase.from('blocked_ips').upsert({ ip, reason: reason ?? null }, { onConflict: 'ip' }),
-    supabase.from('reports').update({ status: 'rejected' }).eq('ip', ip).in('status', ['pending', 'reviewing']),
+  const [blockResult, reportResult] = await Promise.all([
+    supabase.from('blocked_ips').upsert({ ip_hash: ipHash.toLowerCase(), reason: reason ?? null }, { onConflict: 'ip_hash' }),
+    supabase.from('reports').update({ status: 'rejected' }).eq('ip_hash', ipHash.toLowerCase()).in('status', ['pending', 'reviewing']),
   ])
+  if (blockResult.error) {
+    console.error('Failed to block IP hash:', blockResult.error.message)
+    return
+  }
+  if (reportResult.error) {
+    console.error('Failed to reject reports for IP hash:', reportResult.error.message)
+    return
+  }
   revalidatePath('/admin/reports')
   revalidatePath('/admin/blocked-ips')
 }
 
-export async function unblockIp(ip: string) {
+export async function unblockIp(blockedIpId: string) {
+  if (!blockedIpId) return
+
   const supabase = await requireAdmin()
-  await supabase.from('blocked_ips').delete().eq('ip', ip)
+  const { error } = await supabase.from('blocked_ips').delete().eq('id', blockedIpId)
+  if (error) {
+    console.error('Failed to unblock IP hash:', error.message)
+    return
+  }
   revalidatePath('/admin/reports')
   revalidatePath('/admin/blocked-ips')
 }

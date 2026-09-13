@@ -44,6 +44,7 @@ streamers.md
 # test scripts
 /scripts/*
 !/scripts/upload-map-tiles.mjs
+!/scripts/migrate-report-ip-hashes.mjs
 /supabase/.temp/
 
 # map tiles (CDN으로 서빙, git 추적 제외)

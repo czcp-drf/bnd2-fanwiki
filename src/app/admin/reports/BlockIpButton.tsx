@@ -3,12 +3,12 @@
 import { useTransition } from 'react'
 import { blockIp } from './actions'
 
-export default function BlockIpButton({ ip }: { ip: string }) {
+export default function BlockIpButton({ ipHash }: { ipHash: string }) {
   const [pending, startTransition] = useTransition()
 
   function handleBlock() {
-    if (!confirm(`${ip} 를 차단하시겠습니까?`)) return
-    startTransition(() => blockIp(ip))
+    if (!confirm('이 IP 식별자를 차단하시겠습니까?')) return
+    startTransition(() => blockIp(ipHash))
   }
 
   return (

@@ -146,10 +146,20 @@ export type Database = {
           reference_url: string | null
           status: 'pending' | 'reviewing' | 'applied' | 'rejected'
           created_at: string
-          ip: string | null
+          ip_hash: string | null
         }
         Insert: Omit<Database['public']['Tables']['reports']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['reports']['Insert']>
+      }
+      blocked_ips: {
+        Row: {
+          id: string
+          ip_hash: string
+          reason: string | null
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['blocked_ips']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['blocked_ips']['Insert']>
       }
       bbs_articles: {
         Row: {
