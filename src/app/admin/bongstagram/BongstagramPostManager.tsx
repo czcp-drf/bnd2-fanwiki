@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowDown, ArrowUp, Check, ChevronDown, CornerDownRight, LoaderCircle, MessageCircle, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, ChevronDown, CornerDownRight, Heart, LoaderCircle, MessageCircle, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -53,6 +53,7 @@ type Post = {
   posted_at: string
   story_expires_at: string | null
   media: PostMedia[]
+  like_count: number
 }
 
 type Comment = {
@@ -90,6 +91,8 @@ const mediaFilterOptions: SelectOption[] = [
 const sortOptions: SelectOption[] = [
   { value: 'latest', label: '최신 게시일 순' },
   { value: 'oldest', label: '오래된 게시일 순' },
+  { value: 'likes_desc', label: '좋아요 많은 순' },
+  { value: 'likes_asc', label: '좋아요 적은 순' },
 ]
 
 function toLocalDateTime(value: string) {
@@ -115,7 +118,15 @@ function toIsoDateTime(value: string) {
 }
 
 function displayDate(value: string) {
-  return value.replace('T', ' ').slice(0, 16)
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date(value))
 }
 
 async function uploadSelectedFiles(
@@ -235,7 +246,7 @@ function NewPostForm({ characters, profiles }: { characters: Character[]; profil
   const [postType, setPostType] = useState<'post' | 'story'>('post')
   const [media, setMedia] = useState<MediaDraft[]>([])
   const [content, setContent] = useState('')
-  const [postedAt, setPostedAt] = useState('')
+  const [postedAt, setPostedAt] = useState(() => toLocalDateTime(new Date().toISOString()))
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -255,7 +266,7 @@ function NewPostForm({ characters, profiles }: { characters: Character[]; profil
     startTransition(async () => {
       const result = await createBongstagramPost({ characterId, postType, media, content, postedAt: toIsoDateTime(postedAt) })
       if (result.error) { setError(result.error); return }
-      setMessage('게시물이 등록되었습니다.'); setCharacterId(''); setPostType('post'); setMedia([]); setContent(''); setPostedAt(''); router.refresh()
+      setMessage('게시물이 등록되었습니다.'); setCharacterId(''); setPostType('post'); setMedia([]); setContent(''); setPostedAt(toLocalDateTime(new Date().toISOString())); router.refresh()
     })
   }
 
@@ -419,7 +430,7 @@ function PostEditRow({ post, character, profile, comments }: { post: Post; chara
   return (
     <article className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">{profile.avatar_url ? <AppImage src={profile.avatar_url} alt={profile.profile_name} className="h-full w-full object-cover" /> : character.name.slice(0, 1)}</div><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{profile.profile_name}</p><p className="truncate text-xs text-zinc-500">{character.name} · {post.post_type === 'story' ? '스토리' : '게시글'} · {displayDate(post.posted_at)}</p></div></div>
+        <div className="flex min-w-0 items-center gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">{profile.avatar_url ? <AppImage src={profile.avatar_url} alt={profile.profile_name} className="h-full w-full object-cover" /> : character.name.slice(0, 1)}</div><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{profile.profile_name}</p><p className="flex flex-wrap items-center gap-x-2 text-xs text-zinc-500"><span>{character.name} · {post.post_type === 'story' ? '스토리' : '게시글'} · {displayDate(post.posted_at)}</span><span className="inline-flex items-center gap-1 text-rose-300"><Heart size={11} fill="currentColor" />좋아요 {post.like_count}개</span></p></div></div>
         {!editing && <div className="flex items-center gap-2"><button type="button" onClick={() => { setError(null); setEditing(true) }} className="flex cursor-pointer items-center gap-1 rounded-lg border border-zinc-700 px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"><Pencil size={12} />수정</button><button type="button" onClick={remove} disabled={pending} className="flex cursor-pointer items-center gap-1 rounded-lg border border-red-500/20 px-2.5 py-1.5 text-xs text-red-400 transition-colors hover:border-red-500/40 hover:bg-red-500/10 disabled:opacity-40"><Trash2 size={12} />삭제</button></div>}
       </div>
       {editing ? <div className="mt-4 space-y-3 border-t border-zinc-800 pt-4"><PostFields postType={postType} media={media} content={content} postedAt={postedAt} disabled={pending} uploading={uploading} onPostTypeChange={setPostType} onMediaChange={setMedia} onUpload={upload} onContentChange={setContent} onPostedAtChange={setPostedAt} /><div className="flex items-center gap-2"><button type="button" onClick={save} disabled={pending || uploading || (!media.some((item) => item.mediaUrl.trim()) && !content.trim())} className="flex cursor-pointer items-center gap-1 rounded-lg bg-fuchsia-400 px-3 py-1.5 text-xs font-bold text-zinc-950 transition-colors hover:bg-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-40"><Check size={12} />{pending ? '저장 중...' : '저장'}</button><button type="button" onClick={cancel} disabled={pending || uploading} className="flex cursor-pointer items-center gap-1 rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 disabled:opacity-40"><X size={12} />취소</button></div>{error && <p role="alert" className="text-xs text-red-400">{error}</p>}</div> : <div className="mt-4 space-y-3 border-t border-zinc-800 pt-4">{post.media.length > 0 && <div className="flex flex-wrap gap-2">{post.media.map((mediaItem) => <MediaPreview key={mediaItem.id} media={mediaItem} />)}</div>}{post.content ? <p className="whitespace-pre-wrap break-words text-sm leading-6 text-zinc-300">{post.content}</p> : <p className="text-sm text-zinc-600">본문 없음</p>}</div>}
@@ -492,6 +503,10 @@ export default function BongstagramPostManager({ characters, profiles, organizat
         && (mediaFilter === 'all' || post.media.some((media) => media.media_type === mediaFilter))
     })
     .sort((a, b) => {
+      if (sort === 'likes_desc' || sort === 'likes_asc') {
+        const result = (a.like_count ?? 0) - (b.like_count ?? 0)
+        return sort === 'likes_desc' ? -result : result
+      }
       const result = new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime()
       return sort === 'latest' ? result : -result
     })

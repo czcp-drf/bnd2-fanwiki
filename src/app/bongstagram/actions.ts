@@ -26,6 +26,8 @@ type LikeActionResult = {
   error?: string
 }
 
+type StoryLikeActionResult = LikeActionResult
+
 function isValidPostId(postId: string) {
   return UUID_PATTERN.test(postId.trim())
 }
@@ -90,6 +92,71 @@ export async function toggleBongstagramLike(postId: string): Promise<LikeActionR
   }
 
   revalidatePath('/bongstagram')
+  return { success: true, liked, likeCount: count ?? 0 }
+}
+
+export async function toggleBongstagramStoryLike(storyId: string): Promise<StoryLikeActionResult> {
+  const id = storyId.trim()
+  if (!isValidPostId(id)) return { error: '좋아요를 처리할 스토리를 찾을 수 없습니다.' }
+
+  const ipHash = await getBongstagramIpHash()
+  if (!ipHash) return { error: '접속 환경을 확인할 수 없어 좋아요를 처리할 수 없습니다.' }
+
+  const supabase = createAdminClient()
+  const { data: story, error: storyError } = await supabase
+    .from('bongstagram_posts')
+    .select('id, character_id')
+    .eq('id', id)
+    .eq('post_type', 'story')
+    .maybeSingle()
+
+  if (storyError) {
+    console.error('Bongstagram story like lookup failed:', storyError.code, storyError.message)
+    return { error: storyError.code === 'PGRST205' ? '스토리 좋아요 테이블이 아직 연결되지 않았습니다. migration 026을 적용해 주세요.' : '스토리를 확인하지 못했습니다.' }
+  }
+  if (!story) return { error: '스토리를 찾을 수 없습니다.' }
+
+  const { data: existing, error: existingError } = await supabase
+    .from('bongstagram_story_likes')
+    .select('id')
+    .eq('story_id', id)
+    .eq('ip_hash', ipHash)
+    .maybeSingle()
+
+  if (existingError) {
+    console.error('Bongstagram story like lookup failed:', existingError.code, existingError.message)
+    return { error: existingError.code === 'PGRST205' ? '스토리 좋아요 테이블이 아직 연결되지 않았습니다. migration 026을 적용해 주세요.' : '스토리 좋아요 상태를 확인하지 못했습니다.' }
+  }
+
+  let liked: boolean
+  if (existing) {
+    const { error } = await supabase.from('bongstagram_story_likes').delete().eq('id', existing.id)
+    if (error) {
+      console.error('Bongstagram story unlike failed:', error.code, error.message)
+      return { error: '스토리 좋아요를 취소하지 못했습니다.' }
+    }
+    liked = false
+  } else {
+    const { error } = await supabase.from('bongstagram_story_likes').insert({ story_id: id, ip_hash: ipHash })
+    if (error && error.code !== '23505') {
+      console.error('Bongstagram story like failed:', error.code, error.message)
+      return { error: '스토리 좋아요를 등록하지 못했습니다.' }
+    }
+    liked = true
+  }
+
+  const { count, error: countError } = await supabase
+    .from('bongstagram_story_likes')
+    .select('id', { count: 'exact', head: true })
+    .eq('story_id', id)
+
+  if (countError) {
+    console.error('Bongstagram story like count failed:', countError.code, countError.message)
+    return { success: true, liked, likeCount: 0 }
+  }
+
+  revalidatePath('/bongstagram')
+  revalidatePath(`/bongstagram/${story.character_id}`)
   return { success: true, liked, likeCount: count ?? 0 }
 }
 

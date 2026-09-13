@@ -47,6 +47,9 @@ type PostRow = {
   bongstagram_post_media: MediaRow[]
 }
 
+type PostLikeRow = { post_id: string }
+type StoryLikeRow = { story_id: string }
+
 type CommentRow = {
   id: string
   post_id: string
@@ -59,7 +62,7 @@ type CommentRow = {
 
 async function getPostData() {
   const supabase = createAdminClient()
-  const [{ data: characters }, { data: profiles }, { data: posts }, { data: organizations }, { data: memberships }, { data: comments }] = await Promise.all([
+  const [{ data: characters }, { data: profiles }, { data: posts }, { data: organizations }, { data: memberships }, { data: comments }, { data: postLikes }, { data: storyLikes }] = await Promise.all([
     supabase
       .from('characters')
       .select('id, name, avatar_url, streamers ( display_name )')
@@ -83,7 +86,14 @@ async function getPostData() {
       .from('bongstagram_post_comments')
       .select('id, post_id, parent_comment_id, author_character_id, author_name, content, created_at')
       .order('created_at', { ascending: false }),
+    supabase.from('bongstagram_post_likes').select('post_id'),
+    supabase.from('bongstagram_story_likes').select('story_id'),
   ])
+
+  const likeCountByPostId = new Map<string, number>()
+  ;((postLikes ?? []) as PostLikeRow[]).forEach((like) => likeCountByPostId.set(like.post_id, (likeCountByPostId.get(like.post_id) ?? 0) + 1))
+  const likeCountByStoryId = new Map<string, number>()
+  ;((storyLikes ?? []) as StoryLikeRow[]).forEach((like) => likeCountByStoryId.set(like.story_id, (likeCountByStoryId.get(like.story_id) ?? 0) + 1))
 
   return {
     characters: (characters ?? []) as unknown as CharacterRow[],
@@ -98,6 +108,7 @@ async function getPostData() {
       posted_at: post.posted_at,
       story_expires_at: post.story_expires_at,
       media: post.bongstagram_post_media.sort((a, b) => a.sort_order - b.sort_order),
+      like_count: post.post_type === 'story' ? likeCountByStoryId.get(post.id) ?? 0 : likeCountByPostId.get(post.id) ?? 0,
     })),
     comments: (comments ?? []) as unknown as CommentRow[],
   }

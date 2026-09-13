@@ -258,6 +258,18 @@ create table bongstagram_post_likes (
 
 create index bongstagram_post_likes_post_idx on bongstagram_post_likes(post_id);
 
+-- bongstagram_story_likes
+-- 원본 IP는 저장하지 않고 서버에서 해시한 값만 보관한다.
+create table bongstagram_story_likes (
+  id         uuid primary key default gen_random_uuid(),
+  story_id   uuid not null references bongstagram_posts(id) on delete cascade,
+  ip_hash    text not null check (char_length(ip_hash) = 64),
+  created_at timestamptz not null default now(),
+  unique (story_id, ip_hash)
+);
+
+create index bongstagram_story_likes_story_idx on bongstagram_story_likes(story_id);
+
 -- bongstagram_post_comments
 -- 공개 사용자는 조회만 가능하며 등록은 서비스 롤 관리자 작업으로 제한한다.
 create table bongstagram_post_comments (
@@ -278,6 +290,7 @@ create index bongstagram_post_comments_author_character_idx
   on bongstagram_post_comments(author_character_id);
 
 alter table bongstagram_post_likes enable row level security;
+alter table bongstagram_story_likes enable row level security;
 alter table bongstagram_post_comments enable row level security;
 create policy "public read Bongstagram post comments" on bongstagram_post_comments for select using (
   exists (

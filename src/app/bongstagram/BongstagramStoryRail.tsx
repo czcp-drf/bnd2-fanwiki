@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from 'react'
 import Link from 'next/link'
 import { Heart, Plus, Send, Volume2, VolumeX, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
+import { toggleBongstagramStoryLike } from './actions'
 import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
 import {
@@ -13,6 +14,22 @@ import {
   toggleBongstagramMute,
 } from './BongstagramVideoPlayer'
 import { BONGSTAGRAM_FOLLOWING_EVENT, readBongstagramFollowingSnapshot } from '@/lib/bongstagram/following'
+
+const STORY_LIKES_STORAGE_KEY = 'bongstagram-story-likes'
+
+function readStoredStoryLikes() {
+  if (typeof window === 'undefined') return new Set<string>()
+  try {
+    const value: unknown = JSON.parse(window.localStorage.getItem(STORY_LIKES_STORAGE_KEY) ?? '[]')
+    return new Set(Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [])
+  } catch {
+    return new Set<string>()
+  }
+}
+
+function writeStoredStoryLikes(likedIds: Set<string>) {
+  window.localStorage.setItem(STORY_LIKES_STORAGE_KEY, JSON.stringify(Array.from(likedIds)))
+}
 
 export type StoryMedia = {
   id: string
@@ -37,6 +54,8 @@ export type BongstagramStory = {
   character_avatar_url: string | null
   streamer_name: string | null
   streamer_avatar_url: string | null
+  like_count?: number
+  liked_by_viewer?: boolean
 }
 
 function subscribeBongstagramFollowing(callback: () => void) {
@@ -86,14 +105,18 @@ export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, o
   onClose: () => void
   onChange: (groupIndex: number, slideIndex: number) => void
 }) {
+  const activeGroup = slideGroups[activeGroupIndex] ?? []
+  const active = activeGroup[activeSlideIndex] ?? activeGroup[0]
   const [progress, setProgress] = useState(0)
   const [isPendingVideo, setIsPendingVideo] = useState(false)
+  const [storyLiked, setStoryLiked] = useState(() => active.story.liked_by_viewer ?? readStoredStoryLikes().has(active.story.id))
+  const [storyLikeCount, setStoryLikeCount] = useState(() => active.story.like_count ?? 0)
+  const [storyLikeError, setStoryLikeError] = useState('')
+  const [isLikePending, startLikeTransition] = useTransition()
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const suppressClick = useRef(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const muted = useSyncExternalStore(subscribeBongstagramMute, getBongstagramMuted, getServerBongstagramMuted)
-  const activeGroup = slideGroups[activeGroupIndex] ?? []
-  const active = activeGroup[activeSlideIndex] ?? activeGroup[0]
 
   const previous = useCallback(() => {
     if (activeSlideIndex > 0) {
@@ -112,6 +135,26 @@ export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, o
       onClose()
     }
   }, [activeGroup.length, activeGroupIndex, activeSlideIndex, onChange, onClose, slideGroups.length])
+
+  function handleStoryLike() {
+    if (isLikePending) return
+    setStoryLikeError('')
+    startLikeTransition(async () => {
+      const result = await toggleBongstagramStoryLike(active.story.id)
+      if (result.error) {
+        setStoryLikeError(result.error)
+        return
+      }
+
+      const liked = result.liked ?? !storyLiked
+      setStoryLiked(liked)
+      setStoryLikeCount(result.likeCount ?? storyLikeCount)
+      const storedLikes = readStoredStoryLikes()
+      if (liked) storedLikes.add(active.story.id)
+      else storedLikes.delete(active.story.id)
+      writeStoredStoryLikes(storedLikes)
+    })
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -252,10 +295,14 @@ export function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, o
           </div>
         </div>
 
-        <div className="z-30 flex w-full shrink-0 items-center gap-4">
-          <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="flex h-12 min-w-0 flex-1 items-center rounded-full border border-white/90 px-7 text-left text-sm !text-white/90 transition-colors hover:bg-white/10">메시지 보내기</button>
-          <button type="button" aria-label="스토리 좋아요" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="shrink-0 cursor-pointer !text-white transition-transform hover:scale-110"><Heart size={31} strokeWidth={1.8} /></button>
-          <button type="button" aria-label="스토리 공유" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="shrink-0 cursor-pointer !text-white transition-transform hover:scale-110"><Send size={29} strokeWidth={1.8} /></button>
+        <div className="z-30 flex w-full shrink-0 flex-col gap-2">
+          {storyLikeCount > 0 && <p className="text-xs font-semibold !text-white">좋아요 {storyLikeCount}개</p>}
+          {storyLikeError && <p role="status" className="text-xs !text-rose-300">{storyLikeError}</p>}
+          <div className="flex w-full items-center gap-4">
+            <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="flex h-12 min-w-0 flex-1 items-center rounded-full border border-white/90 px-7 text-left text-sm !text-white/90 transition-colors hover:bg-white/10">메시지 보내기</button>
+            <button type="button" aria-label={storyLiked ? '스토리 좋아요 취소' : '스토리 좋아요'} aria-pressed={storyLiked} disabled={isLikePending} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); handleStoryLike() }} className="shrink-0 cursor-pointer !text-white transition-transform hover:scale-110 disabled:cursor-wait disabled:opacity-60"><Heart size={31} strokeWidth={1.8} fill={storyLiked ? 'currentColor' : 'none'} /></button>
+            <button type="button" aria-label="스토리 공유" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="shrink-0 cursor-pointer !text-white transition-transform hover:scale-110"><Send size={29} strokeWidth={1.8} /></button>
+          </div>
         </div>
       </section>
     </div>
@@ -319,7 +366,7 @@ export default function BongstagramStoryRail({ stories }: { stories: Bongstagram
           )
         })}
       </section>
-      {open && slideGroups.length > 0 && <StoryViewer slideGroups={slideGroups} activeGroupIndex={activeGroupIndex} activeSlideIndex={activeSlideIndex} onClose={() => setOpen(false)} onChange={(groupIndex, slideIndex) => { setActiveGroupIndex(groupIndex); setActiveSlideIndex(slideIndex) }} />}
+      {open && slideGroups.length > 0 && <StoryViewer key={`${activeGroupIndex}-${activeSlideIndex}`} slideGroups={slideGroups} activeGroupIndex={activeGroupIndex} activeSlideIndex={activeSlideIndex} onClose={() => setOpen(false)} onChange={(groupIndex, slideIndex) => { setActiveGroupIndex(groupIndex); setActiveSlideIndex(slideIndex) }} />}
     </>
   )
 }
