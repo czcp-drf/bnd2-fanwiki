@@ -9,7 +9,7 @@ import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/c
 
 export const metadata: Metadata = {
   title: '제보하기',
-  description: '봉누도2 위키에 정보를 제보하거나 수정을 요청합니다',
+  description: '봉누도 따라가기에 정보를 제보하거나 수정을 요청합니다',
 }
 
 const processSteps = [
@@ -55,7 +55,7 @@ export default async function ReportPage() {
         <h1 className="text-2xl font-black text-white">제보하기</h1>
         <p className="text-sm text-zinc-400 leading-relaxed">
           위키에 빠진 정보나 잘못된 내용을 알려주세요.
-          여러분의 제보가 봉누도2 위키를 더욱 풍성하게 만듭니다.
+          여러분의 제보가 봉누도 따라가기를 더욱 풍성하게 만듭니다.
         </p>
       </div>
 

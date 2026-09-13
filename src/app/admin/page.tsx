@@ -35,7 +35,7 @@ export default async function AdminPage() {
     <div className="p-8 space-y-8">
       <div>
         <h1 className="text-xl font-black text-white">대시보드</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">봉누도2 위키 관리 현황</p>
+        <p className="text-sm text-zinc-500 mt-0.5">봉누도 따라가기 관리 현황</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

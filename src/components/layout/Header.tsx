@@ -114,9 +114,8 @@ export default function Header() {
         {/* 로고 */}
         <Link href="/" className="flex items-center gap-2 group">
           <span className="text-lg font-black tracking-tight text-white group-hover:text-amber-400 transition-colors">
-            봉누도<span className="text-amber-400 group-hover:text-white transition-colors">2</span>
+            봉누도 따라가기
           </span>
-          <span className="hidden text-xs font-medium text-zinc-500 sm:block">위키</span>
         </Link>
 
         {/* 데스크탑 네비게이션 */}
@@ -172,10 +171,7 @@ export default function Header() {
               className="w-64 border-zinc-800 bg-zinc-950 px-0"
             >
               <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-                <span className="text-base font-black text-white">
-                  봉누도<span className="text-amber-400">2</span>{' '}
-                  <span className="text-zinc-500 font-medium text-sm">위키</span>
-                </span>
+                <span className="text-base font-black text-white">봉누도 따라가기</span>
               </div>
               <nav className="flex flex-col gap-1 p-4">
                 {navItems.map((item) => (

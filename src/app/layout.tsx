@@ -13,10 +13,10 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   title: {
-    default: '봉누도2 위키',
-    template: '%s | 봉누도2 위키',
+    default: '봉누도 따라가기',
+    template: '%s | 봉누도 따라가기',
   },
-  description: 'GTA RP 서버 봉누도2의 스트리머, 캐릭터, 사건을 정리한 팬사이트',
+  description: '봉누도 따라가기',
   robots: {
     index: false,
     follow: false,
@@ -31,15 +31,15 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: '봉누도2 위키',
-    description: 'GTA RP 서버 봉누도2의 스트리머, 캐릭터, 사건을 정리한 팬사이트',
+    title: '봉누도 따라가기',
+    description: '봉누도 따라가기',
     locale: 'ko_KR',
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: '봉누도2 위키',
-    description: 'GTA RP 서버 봉누도2의 스트리머, 캐릭터, 사건을 정리한 팬사이트',
+    title: '봉누도 따라가기',
+    description: '봉누도 따라가기',
   },
 }
 

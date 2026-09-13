@@ -24,7 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="hidden w-52 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 md:flex">
         <div className="border-b border-zinc-800 px-5 py-4">
           <Link href="/" className="text-sm font-black text-white">
-            봉누도<span className="text-amber-400">2</span>
+            봉누도 따라가기
             <span className="ml-1.5 text-xs font-medium text-zinc-500">관리자</span>
           </Link>
         </div>

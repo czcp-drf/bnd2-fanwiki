@@ -113,7 +113,7 @@ export default async function HomePage() {
           <div className="relative flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-3">
               <div className="inline-block rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-400">
-                봉누도 따라잡기
+                봉누도 따라가기
               </div>
               <h1 className="text-3xl font-black tracking-tight text-[var(--site-text)] sm:text-4xl">
                 오늘의 봉누도 소식
