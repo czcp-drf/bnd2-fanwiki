@@ -270,6 +270,94 @@ create table bongstagram_story_likes (
 
 create index bongstagram_story_likes_story_idx on bongstagram_story_likes(story_id);
 
+-- bongstagram_like_rate_limits
+-- 같은 IP 해시의 좋아요 요청을 서버에서 짧은 간격으로 반복하지 못하도록 제한한다.
+create table bongstagram_like_rate_limits (
+  ip_hash          text primary key check (char_length(ip_hash) = 64),
+  last_request_at  timestamptz not null default now()
+);
+
+alter table bongstagram_like_rate_limits enable row level security;
+
+create or replace function check_bongstagram_like_rate_limit(
+  p_ip_hash text,
+  p_window_ms integer default 1000
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  accepted boolean;
+begin
+  if p_ip_hash is null or char_length(p_ip_hash) <> 64 then
+    raise exception 'invalid ip hash';
+  end if;
+  if p_window_ms < 100 then
+    raise exception 'invalid rate limit window';
+  end if;
+
+  insert into bongstagram_like_rate_limits (ip_hash, last_request_at)
+  values (p_ip_hash, now())
+  on conflict (ip_hash) do update
+    set last_request_at = excluded.last_request_at
+    where bongstagram_like_rate_limits.last_request_at
+      <= now() - (p_window_ms * interval '1 millisecond')
+  returning true into accepted;
+
+  return coalesce(accepted, false);
+end;
+$$;
+
+revoke all on table bongstagram_like_rate_limits from public, anon, authenticated;
+revoke all on function check_bongstagram_like_rate_limit(text, integer) from public, anon, authenticated;
+grant execute on function check_bongstagram_like_rate_limit(text, integer) to service_role;
+
+-- report_rate_limits
+-- 공개 제보의 반복 제출을 서버에서 제한한다.
+create table report_rate_limits (
+  ip_hash          text primary key check (char_length(ip_hash) = 64),
+  last_request_at  timestamptz not null default now()
+);
+
+alter table report_rate_limits enable row level security;
+
+create or replace function check_report_rate_limit(
+  p_ip_hash text,
+  p_window_ms integer default 30000
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  accepted boolean;
+begin
+  if p_ip_hash is null or char_length(p_ip_hash) <> 64 then
+    raise exception 'invalid ip hash';
+  end if;
+  if p_window_ms < 1000 then
+    raise exception 'invalid rate limit window';
+  end if;
+
+  insert into report_rate_limits (ip_hash, last_request_at)
+  values (p_ip_hash, now())
+  on conflict (ip_hash) do update
+    set last_request_at = excluded.last_request_at
+    where report_rate_limits.last_request_at
+      <= now() - (p_window_ms * interval '1 millisecond')
+  returning true into accepted;
+
+  return coalesce(accepted, false);
+end;
+$$;
+
+revoke all on table report_rate_limits from public, anon, authenticated;
+revoke all on function check_report_rate_limit(text, integer) from public, anon, authenticated;
+grant execute on function check_report_rate_limit(text, integer) to service_role;
+
 -- bongstagram_post_comments
 -- 공개 사용자는 조회만 가능하며 등록은 서비스 롤 관리자 작업으로 제한한다.
 create table bongstagram_post_comments (

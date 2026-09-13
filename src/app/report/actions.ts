@@ -3,6 +3,7 @@
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
 import type { Database } from '@/types/database'
 
 async function getIp(): Promise<string | null> {
@@ -25,6 +26,7 @@ export type ReportFormState =
   | { status: 'error'; message: string }
 
 const ALLOWED_TYPES = ['new_character', 'new_event', 'correction', 'other'] as const
+const REPORT_RATE_LIMIT_WINDOW_MS = 30000
 
 function isReportType(value: string): value is (typeof ALLOWED_TYPES)[number] {
   return (ALLOWED_TYPES as readonly string[]).includes(value)
@@ -33,6 +35,15 @@ function isReportType(value: string): value is (typeof ALLOWED_TYPES)[number] {
 function getString(formData: FormData, key: string): string {
   const val = formData.get(key)
   return typeof val === 'string' ? val : ''
+}
+
+function isSafeReferenceUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return (url.protocol === 'http:' || url.protocol === 'https:') && Boolean(url.hostname)
+  } catch {
+    return false
+  }
 }
 
 export async function submitReport(
@@ -94,8 +105,13 @@ export async function submitReport(
     return { status: 'error', message: '연락 방법은 100자 이내로 입력해주세요.' }
   }
 
-  if (reference_url.length > 500) {
+  const trimmedReferenceUrl = reference_url.trim()
+  if (trimmedReferenceUrl.length > 500) {
     return { status: 'error', message: '참고 링크는 500자 이내로 입력해주세요.' }
+  }
+
+  if (trimmedReferenceUrl && !isSafeReferenceUrl(trimmedReferenceUrl)) {
+    return { status: 'error', message: '참고 링크는 http 또는 https URL이어야 합니다.' }
   }
 
   const extras: string[] = []
@@ -121,13 +137,31 @@ export async function submitReport(
     ? `${content.trim()}\n\n${extras.join('\n')}`
     : content.trim()
 
+  const ipHash = await getBongstagramIpHash()
+  if (ipHash) {
+    const { data: allowed, error: rateLimitError } = await createAdminClient().rpc('check_report_rate_limit', {
+      p_ip_hash: ipHash,
+      p_window_ms: REPORT_RATE_LIMIT_WINDOW_MS,
+    })
+
+    if (rateLimitError) {
+      console.error('Report rate limit check failed:', rateLimitError.code, rateLimitError.message)
+      return { status: 'error', message: rateLimitError.code === 'PGRST202'
+        ? '제보 제한 기능이 아직 연결되지 않았습니다. migration 029를 적용해 주세요.'
+        : '제보 요청을 확인하지 못했습니다.' }
+    }
+    if (!allowed) {
+      return { status: 'error', message: '제보는 30초에 한 번만 등록할 수 있습니다. 잠시 후 다시 시도해 주세요.' }
+    }
+  }
+
   const payload = {
     type,
     title: title.trim(),
     content: fullContent,
     contact: contact.trim() || null,
     contact_method: contact_method.trim() || null,
-    reference_url: reference_url.trim() || null,
+    reference_url: trimmedReferenceUrl || null,
     status: 'pending',
     ip: ip ?? null,
   } satisfies Database['public']['Tables']['reports']['Insert']

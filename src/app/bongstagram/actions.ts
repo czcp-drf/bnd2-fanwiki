@@ -47,8 +47,27 @@ type LikeCountsResult = {
   error?: string
 }
 
+const LIKE_RATE_LIMIT_WINDOW_MS = 1000
+
 function isValidPostId(postId: string) {
   return UUID_PATTERN.test(postId.trim())
+}
+
+async function checkLikeRateLimit(supabase: ReturnType<typeof createAdminClient>, ipHash: string) {
+  const { data, error } = await supabase.rpc('check_bongstagram_like_rate_limit', {
+    p_ip_hash: ipHash,
+    p_window_ms: LIKE_RATE_LIMIT_WINDOW_MS,
+  })
+
+  if (error) {
+    console.error('Bongstagram like rate limit check failed:', error.code, error.message)
+    return { error: error.code === 'PGRST202'
+      ? '좋아요 제한 기능이 아직 연결되지 않았습니다. migration 028을 적용해 주세요.'
+      : '좋아요 요청을 확인하지 못했습니다.' }
+  }
+
+  if (!data) return { error: '좋아요를 너무 빠르게 누를 수 없습니다. 잠시 후 다시 시도해 주세요.' }
+  return { allowed: true as const }
 }
 
 export type BongstagramFeedPageResult = Awaited<ReturnType<typeof loadBongstagramFeedPage>>
@@ -78,6 +97,9 @@ export async function toggleBongstagramLike(postId: string): Promise<LikeActionR
   if (!ipHash) return { error: '접속 환경을 확인할 수 없어 좋아요를 처리할 수 없습니다.' }
 
   const supabase = createAdminClient()
+  const rateLimit = await checkLikeRateLimit(supabase, ipHash)
+  if ('error' in rateLimit) return rateLimit
+
   const { data: post, error: postError } = await supabase
     .from('bongstagram_posts')
     .select('id')
@@ -146,6 +168,9 @@ export async function toggleBongstagramStoryLike(storyId: string): Promise<Story
   if (!ipHash) return { error: '접속 환경을 확인할 수 없어 좋아요를 처리할 수 없습니다.' }
 
   const supabase = createAdminClient()
+  const rateLimit = await checkLikeRateLimit(supabase, ipHash)
+  if ('error' in rateLimit) return rateLimit
+
   const { data: story, error: storyError } = await supabase
     .from('bongstagram_posts')
     .select('id, character_id')

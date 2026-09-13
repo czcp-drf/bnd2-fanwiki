@@ -18,6 +18,19 @@ const typeLabel: Record<string, string> = {
   other: '기타',
 }
 
+function getSafeReferenceUrl(value: string | null): string | null {
+  if (!value) return null
+
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+      ? url.toString()
+      : null
+  } catch {
+    return null
+  }
+}
+
 export default function AdminReportsClient({ reports }: { reports: Report[] }) {
   const [search, setSearch] = useState('')
 
@@ -95,8 +108,8 @@ export default function AdminReportsClient({ reports }: { reports: Report[] }) {
                     </span>
                   </span>
                 )}
-                {r.reference_url && (
-                  <a href={r.reference_url} target="_blank" rel="noopener noreferrer"
+                {getSafeReferenceUrl(r.reference_url) && (
+                  <a href={getSafeReferenceUrl(r.reference_url)!} target="_blank" rel="noopener noreferrer"
                     className="text-amber-400 hover:underline truncate max-w-xs">
                     참고 링크 →
                   </a>

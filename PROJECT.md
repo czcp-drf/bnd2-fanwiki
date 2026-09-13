@@ -314,6 +314,7 @@ src/
 - [x] 관리자 게시물 작성 시 Supabase Storage 직접 업로드 (이미지 10MB·동영상 100MB, 일회성 업로드 URL, 파일 삭제 시 Storage 정리)
 - [ ] 게시물 상세 페이지
 - [x] 피드 좋아요 — IP 해시 기준 게시물별 1회 등록·취소
+- [x] 좋아요 요청 속도 제한 — IP 해시 기준 게시물·스토리 통합 1초 제한 (`028_bongstagram_like_rate_limit.sql`)
 - [x] 좋아요 비상 전환 — `BONGSTAGRAM_LIKES_MODE=server`(기본) 또는 `local`로 게시물·스토리 좋아요 저장 방식을 전환하며, local 모드에서는 서버 쓰기·방문자별 DB 조회·주기 집계를 중단하고 브라우저 localStorage만 사용
 - [x] 피드 댓글 조회창 — 공개 조회만 지원하며 공개 작성은 차단
 - [x] 관리자 댓글 등록·수정·삭제 및 작성 시간 지정, 게시물별 직접 댓글 관리와 1단계 답글 등록 (`/admin/bongstagram/posts`)
@@ -321,6 +322,7 @@ src/
 - [x] 하단 네비게이션 연결 — 홈·Bongstagram 검색·내 프로필, 만들기 버튼 비활성화 및 현재 페이지 강조
 - [x] 로컬 팔로우 — 팔로우 목록을 브라우저에 저장하고 내 프로필에서 팔로잉 수·검색·해제·재팔로우 지원, 새로고침 시 팔로우 우선 피드와 비팔로우 게시물 일부 랜덤 삽입
 - [x] 인스타그램형 프로필 — 다른 사람 프로필과 내 프로필의 통계·소개·스토리 하이라이트·콘텐츠 탭·게시물 그리드 구성
+- [x] 공개 제보 보호 — 참고 링크는 `http/https`만 허용하고, IP 해시 기준 30초 제출 제한과 클라이언트 카운트다운을 적용 (`029_report_rate_limit.sql`)
 - [ ] 릴스 기능 — 범위에서 제외
 
 ---
@@ -435,6 +437,8 @@ src/
 - Bongstagram 좋아요 비상 전환 준비 (`feat/bonstagram`, 커밋 대기): `BONGSTAGRAM_LIKES_MODE` 환경변수로 서버 저장과 브라우저 localStorage 전용 모드를 전환할 수 있도록 게시물·스토리 좋아요 UI와 Server Action을 연결했습니다. local 모드에서는 좋아요 등록·취소 Server Action을 서버에서 거부하고, 사용자별 DB 좋아요 조회와 60초 집계 갱신도 건너뜁니다. server 모드는 기존 IP 해시 제한 동작을 유지합니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며, 아직 커밋·푸시하지 않았습니다.
 
 - Bongstagram 어드민 좋아요 집계 보정 (`feat/bonstagram`): 어드민 게시물 관리 페이지에 `dynamic = 'force-dynamic'`을 지정해 빌드 시 정적 HTML에 고정되던 좋아요 수를 요청 시점의 Supabase 데이터로 표시하도록 수정했습니다. 사용자가 server 모드에서 DB 좋아요 생성을 확인했고 local 모드에서는 DB 쓰기가 발생하지 않음을 확인했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드를 통과했으며 `git diff --check`도 통과했습니다. 대상 브랜치는 `feat/bonstagram`, 원격은 `deploy/feat/bonstagram`입니다.
+
+- Bongstagram 공개 입력·요청 제한 보완 (`feat/bonstagram`): 게시물·스토리 좋아요는 IP 해시 기준 1초 간격으로 서버에서 제한하고, 공개 제보는 IP 해시 기준 30초 간격으로 제한합니다. 제보 성공 후에는 브라우저 localStorage와 카운트다운으로 제출 버튼을 비활성화하며 서버가 최종 검증합니다. 공개 제보 참고 링크는 `http`·`https` URL만 저장·관리자 화면에 표시해 안전하지 않은 스킴의 링크 실행 경로를 차단했습니다. 좋아요 제한은 `028_bongstagram_like_rate_limit.sql`, 제보 제한은 `029_report_rate_limit.sql`을 Supabase SQL Editor에서 적용합니다. 변경 파일 ESLint(기존 `react-hooks/set-state-in-effect` 규칙 위반 제외)·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `feat/bonstagram`, 원격 대상은 `deploy/feat/bonstagram`입니다.
 
 - Bongstagram 조회 페이지네이션·스토리 레일 개선 (`feat/bonstagram`): 메인 피드는 최초 12개, 검색·해시태그 게시물 그리드는 최초 24개를 cursor 기반으로 조회하고 하단 접근 시 다음 페이지를 무한 스크롤로 추가합니다. `posted_at`과 `id`를 함께 cursor로 사용해 정렬 경계의 중복·누락을 줄였으며, 기존 전체 게시물 일괄 그리드 컴포넌트를 제거했습니다. 홈 스토리 레일에는 모바일 스와이프와 PC 드래그를 유지하고 좌우 이동 버튼은 제거했으며 텍스트 선택도 방지했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치 `feat/bonstagram`에 커밋하고 원격 `deploy/feat/bonstagram`으로 푸시합니다.
 

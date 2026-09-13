@@ -237,6 +237,8 @@ const typeOptions = [
 ]
 
 const initialState: ReportFormState = { status: 'idle' }
+const REPORT_COOLDOWN_MS = 30_000
+const REPORT_COOLDOWN_KEY = 'bnd-report-cooldown-until'
 
 export default function ReportForm({
   streamers,
@@ -251,6 +253,28 @@ export default function ReportForm({
   const [showMap, setShowMap] = useState(false)
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [resetKey, setResetKey] = useState(0)
+  const [cooldownSeconds, setCooldownSeconds] = useState(0)
+
+  useEffect(() => {
+    function syncCooldown() {
+      try {
+        const storedUntil = Number(window.localStorage.getItem(REPORT_COOLDOWN_KEY) ?? 0)
+        const remaining = Math.max(0, Math.ceil((storedUntil - Date.now()) / 1000))
+        setCooldownSeconds(remaining)
+        if (remaining === 0) window.localStorage.removeItem(REPORT_COOLDOWN_KEY)
+      } catch {
+        setCooldownSeconds(0)
+      }
+    }
+
+    syncCooldown()
+    const timer = window.setInterval(syncCooldown, 1000)
+    window.addEventListener('storage', syncCooldown)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('storage', syncCooldown)
+    }
+  }, [])
 
   useEffect(() => {
     if (state.status === 'success') {
@@ -260,7 +284,19 @@ export default function ReportForm({
       setResetKey(k => k + 1)
       // selectedType 유지 — 같은 유형으로 연속 제보 가능
     }
+
+    if (state.status === 'success' || (state.status === 'error' && state.message.includes('30초'))) {
+      const nextCooldownUntil = Date.now() + REPORT_COOLDOWN_MS
+      setCooldownSeconds(Math.ceil(REPORT_COOLDOWN_MS / 1000))
+      try {
+        window.localStorage.setItem(REPORT_COOLDOWN_KEY, String(nextCooldownUntil))
+      } catch {
+        // localStorage를 사용할 수 없는 환경에서도 서버 제한은 유지한다.
+      }
+    }
   }, [state])
+
+  const isCooldown = cooldownSeconds > 0
 
   return (
     <form ref={formRef} action={action} className="space-y-6">
@@ -494,16 +530,16 @@ export default function ReportForm({
       {/* 제출 버튼 */}
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || isCooldown}
         className={cn(
           'flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-colors',
-          isPending
+          isPending || isCooldown
             ? 'cursor-not-allowed bg-zinc-800 text-zinc-500'
             : 'bg-amber-400 text-zinc-900 hover:bg-amber-300'
         )}
       >
         <Send size={15} />
-        {isPending ? '제출 중...' : '제보 제출하기'}
+        {isPending ? '제출 중...' : isCooldown ? `다음 제보까지 ${cooldownSeconds}초` : '제보 제출하기'}
       </button>
     </form>
   )
