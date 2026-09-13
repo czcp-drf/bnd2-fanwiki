@@ -94,7 +94,7 @@ export default function BongstagramVideoPlayer({ src, label }: { src: string; la
         </button>
       )}
 
-      <button type="button" onClick={toggleMute} aria-label={muted ? '동영상 소리 켜기' : '동영상 음소거'} className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 !text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 focus-visible:opacity-100">
+      <button type="button" onClick={toggleMute} aria-label={muted ? '동영상 소리 켜기' : '동영상 음소거'} className="absolute bottom-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 !text-white opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
         {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
       </button>
     </div>
