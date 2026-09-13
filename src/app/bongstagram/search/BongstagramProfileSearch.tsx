@@ -48,7 +48,7 @@ function ProfileSearchRow({
   const { isRedPill } = useRedPill()
 
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div className="flex items-center gap-3 rounded-2xl border border-transparent px-3 py-3 transition-colors hover:bg-zinc-800/40">
       <Link href={`/bongstagram/${profile.character_id}`} onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-800 text-sm font-semibold text-zinc-300">
           <BongstagramProfileAvatar profileAvatarUrl={profile.avatar_url} streamerAvatarUrl={streamer?.profile_image_url} fallbackAvatarUrl={character?.avatar_url} profileName={profile.profile_name} streamerName={streamer?.display_name} className="h-full w-full object-cover" />
@@ -160,7 +160,7 @@ export default function BongstagramProfileSearch({
             <h1 className="text-xl font-bold text-white">{normalizedSearch ? '검색 결과' : '최근 검색 항목'}</h1>
             {!normalizedSearch && recentProfiles.length > 0 && <button type="button" onClick={clearRecent} className="cursor-pointer text-base font-medium text-indigo-400 transition-colors hover:text-indigo-300">모두 지우기</button>}
           </div>
-          <div className="mt-3 divide-y divide-zinc-800/80">
+          <div className="mt-3 space-y-1">
             {(normalizedSearch ? filteredProfiles : recentProfiles).map((profile) => {
               const character = characterById.get(profile.character_id)
               const streamer = character?.streamer_id ? streamerById.get(character.streamer_id) ?? null : null

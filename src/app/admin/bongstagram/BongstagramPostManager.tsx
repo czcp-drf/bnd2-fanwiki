@@ -221,7 +221,7 @@ function PostFields({ postType, media, content, postedAt, disabled, uploading, o
       <div className="grid gap-3 md:grid-cols-[180px_180px_minmax(0,1fr)]">
         <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">게시물 타입</span><Select value={postType} onChange={(value) => onPostTypeChange(value as 'post' | 'story')} options={postTypeOptions} fullWidth disabled={disabled} /></label>
         <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">게시일</span><input type="datetime-local" value={postedAt} disabled={disabled} onChange={(event) => onPostedAtChange(event.target.value)} className={`${inputClass} [color-scheme:dark]`} /></label>
-        <p className="self-end pb-2 text-xs text-zinc-600">{postType === 'story' ? '스토리는 다음 서버 종료(오전 3시)까지 표시되며 프로필에 보관됩니다.' : '게시글은 공개 피드에 표시됩니다.'}</p>
+        <p className="self-end pb-2 text-xs text-zinc-600">{postType === 'story' ? '스토리는 업로드 후 24시간 동안 홈에 표시되며 프로필에 보관됩니다.' : '게시글은 공개 피드에 표시됩니다.'}</p>
       </div>
       <MediaFields media={media} disabled={disabled} uploading={uploading} onChange={onMediaChange} onUpload={onUpload} />
       <label className="block space-y-1.5"><span className="text-xs font-medium text-zinc-500">본문</span><textarea value={content} maxLength={2200} disabled={disabled} onChange={(event) => onContentChange(event.target.value)} placeholder="게시물 본문 (미디어만 등록할 수도 있습니다)" rows={3} className={`${inputClass} resize-y`} /><span className="block text-right text-[11px] text-zinc-600">{content.length}/2200</span></label>

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { ChevronLeft, ChevronRight, Plus, Volume2, VolumeX, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import Link from 'next/link'
+import { Heart, Plus, Send, Volume2, VolumeX, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import BongstagramDisplayName from './BongstagramDisplayName'
 import BongstagramProfileAvatar from './BongstagramProfileAvatar'
@@ -11,6 +12,7 @@ import {
   subscribeBongstagramMute,
   toggleBongstagramMute,
 } from './BongstagramVideoPlayer'
+import { BONGSTAGRAM_FOLLOWING_EVENT, readBongstagramFollowingSnapshot } from '@/lib/bongstagram/following'
 
 type StoryMedia = {
   id: string
@@ -37,21 +39,27 @@ export type BongstagramStory = {
   streamer_avatar_url: string | null
 }
 
-const previewStories = [
-  { label: '명총회', mark: '명', tone: 'from-amber-300 via-pink-500 to-fuchsia-600' },
-  { label: 'zzya', mark: 'Z', tone: 'from-orange-300 via-fuchsia-500 to-violet-600' },
-  { label: '김청순', mark: '김', tone: 'from-fuchsia-400 via-violet-500 to-sky-500' },
-  { label: '차수진', mark: '차', tone: 'from-pink-400 via-red-400 to-orange-300' },
-]
+function subscribeBongstagramFollowing(callback: () => void) {
+  window.addEventListener(BONGSTAGRAM_FOLLOWING_EVENT, callback)
+  window.addEventListener('storage', callback)
+  return () => {
+    window.removeEventListener(BONGSTAGRAM_FOLLOWING_EVENT, callback)
+    window.removeEventListener('storage', callback)
+  }
+}
+
+function getServerFollowingSnapshot() {
+  return '[]'
+}
 
 function formatStoryTime(value: string) {
-  return new Intl.DateTimeFormat('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value))
+  const elapsed = Math.max(0, Date.now() - new Date(value).getTime())
+  const minute = 60 * 1000
+  const hour = 60 * minute
+
+  if (elapsed < minute) return '방금'
+  if (elapsed < hour) return `${Math.floor(elapsed / minute)}분`
+  return `${Math.floor(elapsed / hour)}시간`
 }
 
 function StoryAvatar({ story, mark }: { story: BongstagramStory; mark: string }) {
@@ -71,37 +79,63 @@ function StoryAvatar({ story, mark }: { story: BongstagramStory; mark: string })
   )
 }
 
-function StoryViewer({ slides, activeIndex, onClose, onChange }: {
-  slides: StorySlide[]
-  activeIndex: number
+function StoryViewer({ slideGroups, activeGroupIndex, activeSlideIndex, onClose, onChange }: {
+  slideGroups: StorySlide[][]
+  activeGroupIndex: number
+  activeSlideIndex: number
   onClose: () => void
-  onChange: (index: number) => void
+  onChange: (groupIndex: number, slideIndex: number) => void
 }) {
   const [progress, setProgress] = useState(0)
   const [isPendingVideo, setIsPendingVideo] = useState(false)
-  const pointerStart = useRef<number | null>(null)
+  const pointerStart = useRef<{ x: number; y: number } | null>(null)
+  const suppressClick = useRef(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const muted = useSyncExternalStore(subscribeBongstagramMute, getBongstagramMuted, getServerBongstagramMuted)
-  const active = slides[activeIndex]
+  const activeGroup = slideGroups[activeGroupIndex] ?? []
+  const active = activeGroup[activeSlideIndex] ?? activeGroup[0]
+
+  const previous = useCallback(() => {
+    if (activeSlideIndex > 0) {
+      onChange(activeGroupIndex, activeSlideIndex - 1)
+    } else if (activeGroupIndex > 0) {
+      onChange(activeGroupIndex - 1, (slideGroups[activeGroupIndex - 1]?.length ?? 1) - 1)
+    }
+  }, [activeGroupIndex, activeSlideIndex, onChange, slideGroups])
+
+  const next = useCallback(() => {
+    if (activeSlideIndex < activeGroup.length - 1) {
+      onChange(activeGroupIndex, activeSlideIndex + 1)
+    } else if (activeGroupIndex < slideGroups.length - 1) {
+      onChange(activeGroupIndex + 1, 0)
+    } else {
+      onClose()
+    }
+  }, [activeGroup.length, activeGroupIndex, activeSlideIndex, onChange, onClose, slideGroups.length])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setProgress(0)
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [activeGroupIndex, activeSlideIndex])
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') onClose()
-      if (event.key === 'ArrowLeft') onChange(Math.max(0, activeIndex - 1))
-      if (event.key === 'ArrowRight') onChange(Math.min(slides.length - 1, activeIndex + 1))
+      if (event.key === 'ArrowLeft') previous()
+      if (event.key === 'ArrowRight') next()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [activeIndex, onChange, onClose, slides.length])
+  }, [activeGroupIndex, activeSlideIndex, next, onClose, previous, slideGroups.length])
 
   useEffect(() => {
-    if (active.media?.media_type === 'video') return
-
     const startedAt = Date.now()
     const duration = 5000
     const interval = window.setInterval(() => {
@@ -109,107 +143,120 @@ function StoryViewer({ slides, activeIndex, onClose, onChange }: {
       setProgress(nextProgress)
       if (nextProgress >= 1) {
         window.clearInterval(interval)
-        if (activeIndex < slides.length - 1) onChange(activeIndex + 1)
-        else onClose()
+        next()
       }
     }, 50)
     return () => window.clearInterval(interval)
-  }, [active, activeIndex, onChange, onClose, slides.length])
+  }, [active, activeGroupIndex, activeSlideIndex, next, activeGroup.length])
 
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
     video.muted = muted
     void video.play().catch(() => setIsPendingVideo(false))
-  }, [activeIndex, muted])
-
-  function previous() {
-    if (activeIndex > 0) onChange(activeIndex - 1)
-  }
-
-  function next() {
-    if (activeIndex < slides.length - 1) onChange(activeIndex + 1)
-    else onClose()
-  }
+  }, [activeSlideIndex, muted])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-0 sm:p-4" role="presentation">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-0 sm:p-4" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <section
-        className="relative flex h-dvh w-full max-w-[540px] flex-col overflow-hidden bg-black sm:h-[min(900px,calc(100dvh-2rem))] sm:rounded-2xl"
+        className="relative flex h-dvh w-full max-w-[540px] select-none flex-col overflow-hidden bg-black sm:h-[min(900px,calc(100dvh-2rem))] sm:rounded-2xl"
         role="dialog"
         aria-modal="true"
         aria-label="스토리 보기"
-        onPointerDown={(event) => { pointerStart.current = event.clientX }}
+        onPointerDown={(event) => {
+          suppressClick.current = false
+          if (event.target instanceof Element && event.target.closest('a, button, input')) return
+          pointerStart.current = { x: event.clientX, y: event.clientY }
+        }}
         onPointerUp={(event) => {
           if (pointerStart.current === null) return
-          const distance = event.clientX - pointerStart.current
+          const distance = event.clientX - pointerStart.current.x
           pointerStart.current = null
           if (Math.abs(distance) >= 20) {
+            suppressClick.current = true
             if (distance > 0) previous()
             else next()
           }
         }}
+        onPointerCancel={() => { pointerStart.current = null; suppressClick.current = false }}
+        onClick={(event) => {
+          if (suppressClick.current) {
+            suppressClick.current = false
+            return
+          }
+          if (event.target instanceof Element && event.target.closest('a, button, input')) return
+          const bounds = event.currentTarget.getBoundingClientRect()
+          if (event.clientX - bounds.left < bounds.width / 2) previous()
+          else next()
+        }}
       >
-        <div className="absolute inset-x-3 top-3 z-10 flex gap-1">
-          {slides.map((slide, index) => (
-            <div key={slide.media?.id ?? slide.story.id} className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/30">
-              <div className="h-full origin-left rounded-full bg-white" style={{ width: index < activeIndex ? '100%' : index === activeIndex ? `${progress * 100}%` : '0%' }} />
+        <div className="absolute inset-x-3 top-3 z-30 flex gap-1">
+          {activeGroup.map((slide, index) => (
+            <div key={slide.media?.id ?? slide.story.id} className="h-1 flex-1 overflow-hidden rounded-full bg-white/30">
+              <div className="h-full origin-left rounded-full bg-white" style={{ width: index < activeSlideIndex ? '100%' : index === activeSlideIndex ? `${progress * 100}%` : '0%' }} />
             </div>
           ))}
         </div>
 
-        <header className="absolute inset-x-0 top-6 z-10 flex items-center justify-between px-4 pt-2 !text-white">
+        <header className="absolute inset-x-0 top-6 z-30 flex items-center justify-between px-4 pt-2 !text-white">
           <div className="flex min-w-0 items-center gap-2.5">
-            <BongstagramProfileAvatar
-              profileAvatarUrl={active.story.profile_avatar_url}
-              streamerAvatarUrl={active.story.streamer_avatar_url}
-              fallbackAvatarUrl={active.story.character_avatar_url}
-              profileName={active.story.profile_name}
-              streamerName={active.story.streamer_name}
-              className="h-8 w-8 rounded-full object-cover"
-            />
-            <div className="min-w-0">
+            <Link href={`/bongstagram/${active.story.character_id}`} onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="flex min-w-0 items-center gap-2.5" aria-label="스토리 작성자 프로필 보기">
+              <BongstagramProfileAvatar
+                profileAvatarUrl={active.story.profile_avatar_url}
+                streamerAvatarUrl={active.story.streamer_avatar_url}
+                fallbackAvatarUrl={active.story.character_avatar_url}
+                profileName={active.story.profile_name}
+                streamerName={active.story.streamer_name}
+                className="h-8 w-8 rounded-full object-cover"
+              />
               <p className="truncate text-sm font-semibold !text-white"><BongstagramDisplayName profileName={active.story.profile_name} streamerName={active.story.streamer_name} /></p>
-              <time className="block text-[10px] !text-white/60" dateTime={active.story.posted_at}>{formatStoryTime(active.story.posted_at)}</time>
-            </div>
+            </Link>
+            <time className="shrink-0 text-xs !text-white/60" dateTime={active.story.posted_at}>{formatStoryTime(active.story.posted_at)}</time>
           </div>
           <div className="flex items-center gap-3">
             {active.media?.media_type === 'video' && (
-              <button type="button" aria-label={muted ? '스토리 소리 켜기' : '스토리 음소거'} onClick={(event) => { event.stopPropagation(); toggleBongstagramMute() }} className="!text-white transition-opacity hover:opacity-70">
+              <button type="button" aria-label={muted ? '스토리 소리 켜기' : '스토리 음소거'} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); toggleBongstagramMute() }} className="!text-white transition-opacity hover:opacity-70">
                 {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
               </button>
             )}
-            <button type="button" aria-label="스토리 닫기" onClick={(event) => { event.stopPropagation(); onClose() }} className="!text-white transition-opacity hover:opacity-70"><X size={23} /></button>
+            <button type="button" aria-label="스토리 닫기" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onClose() }} className="cursor-pointer !text-white transition-opacity hover:opacity-70"><X size={30} strokeWidth={2.5} /></button>
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 items-center justify-center px-5 py-16">
-          {active.media?.media_type === 'video' ? (
-            <video
-              key={active.media.id}
-              ref={videoRef}
-              data-bongstagram-story-video
-              src={active.media.media_url}
-              autoPlay
-              muted={muted}
-              playsInline
-              preload="auto"
-              className="max-h-full max-w-full object-contain"
-              aria-label="스토리 동영상"
-              onLoadedMetadata={(event) => { setIsPendingVideo(false); event.currentTarget.muted = muted; void event.currentTarget.play().catch(() => {}) }}
-              onTimeUpdate={(event) => { const video = event.currentTarget; if (video.duration) setProgress(video.currentTime / video.duration) }}
-              onEnded={next}
-            />
-          ) : active.media?.media_type === 'image' ? (
-            <AppImage src={active.media.media_url} alt="스토리 이미지" width={540} height={960} className="max-h-full w-auto max-w-full object-contain" />
-          ) : (
-            <p className="max-w-[28rem] whitespace-pre-wrap break-words px-6 text-center text-lg leading-8 text-white">{active.story.content || '내용이 없는 스토리입니다.'}</p>
-          )}
-          {isPendingVideo && <span className="sr-only">동영상 불러오는 중</span>}
+        <div className="absolute inset-0 z-0 bg-black/90" />
+
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col px-4 pb-3">
+          <div className="relative min-h-0 w-full max-w-[calc(100vw-2rem)] flex-1 touch-pan-y overflow-hidden rounded-2xl bg-black">
+            {active.media?.media_type === 'video' ? (
+              <video
+                key={active.media.id}
+                ref={videoRef}
+                data-bongstagram-story-video
+                src={active.media.media_url}
+                autoPlay
+                muted={muted}
+                playsInline
+                loop
+                preload="auto"
+                className="h-full w-full object-contain"
+                aria-label="스토리 동영상"
+                onLoadedMetadata={(event) => { setIsPendingVideo(false); event.currentTarget.muted = muted; void event.currentTarget.play().catch(() => {}) }}
+              />
+            ) : active.media?.media_type === 'image' ? (
+              <AppImage src={active.media.media_url} alt="스토리 이미지" fill sizes="(max-width: 540px) calc(100vw - 2rem), 540px" className="object-contain" />
+            ) : (
+              <p className="max-w-[28rem] whitespace-pre-wrap break-words px-6 text-center text-lg leading-8 text-white">{active.story.content || '내용이 없는 스토리입니다.'}</p>
+            )}
+            {isPendingVideo && <span className="sr-only">동영상 불러오는 중</span>}
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-36 bg-gradient-to-b from-black/90 via-black/55 to-transparent" aria-hidden="true" />
+          </div>
         </div>
 
-        <button type="button" aria-label="이전 스토리" onClick={(event) => { event.stopPropagation(); previous() }} disabled={activeIndex === 0} className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-zinc-800 transition-opacity hover:bg-white disabled:opacity-0"><ChevronLeft size={24} /></button>
-        <button type="button" aria-label="다음 스토리" onClick={(event) => { event.stopPropagation(); next() }} className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-zinc-800 transition-opacity hover:bg-white"><ChevronRight size={24} /></button>
+        <div className="z-30 flex w-full shrink-0 items-center gap-4">
+          <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="flex h-12 min-w-0 flex-1 items-center rounded-full border border-white/90 px-7 text-left text-sm !text-white/90 transition-colors hover:bg-white/10">메시지 보내기</button>
+          <button type="button" aria-label="스토리 좋아요" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="shrink-0 cursor-pointer !text-white transition-transform hover:scale-110"><Heart size={31} strokeWidth={1.8} /></button>
+          <button type="button" aria-label="스토리 공유" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="shrink-0 cursor-pointer !text-white transition-transform hover:scale-110"><Send size={29} strokeWidth={1.8} /></button>
+        </div>
       </section>
     </div>
   )
@@ -217,19 +264,38 @@ function StoryViewer({ slides, activeIndex, onClose, onChange }: {
 
 export default function BongstagramStoryRail({ stories }: { stories: BongstagramStory[] }) {
   const [open, setOpen] = useState(false)
-  const [activeIndex, setActiveIndex] = useState(0)
-  const slides = useMemo<StorySlide[]>(() => {
-    const nextSlides: StorySlide[] = []
-    for (const story of stories) {
-      if (story.media.length > 0) {
-        for (const media of story.media) nextSlides.push({ story, media })
-      } else {
-        nextSlides.push({ story, media: null })
-      }
+  const [activeGroupIndex, setActiveGroupIndex] = useState(0)
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0)
+  const followingSnapshot = useSyncExternalStore(subscribeBongstagramFollowing, readBongstagramFollowingSnapshot, getServerFollowingSnapshot)
+  const followingIds = useMemo(() => {
+    try {
+      const value: unknown = JSON.parse(followingSnapshot)
+      return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+    } catch {
+      return []
     }
-    return nextSlides
-  }, [stories])
-  const startIndexByStoryId = useMemo(() => new Map(stories.map((story) => [story.id, slides.findIndex((slide) => slide.story.id === story.id)])), [slides, stories])
+  }, [followingSnapshot])
+  const followedStories = useMemo(() => {
+    const followingSet = new Set(followingIds)
+    return stories.filter((story) => followingSet.has(story.character_id))
+  }, [followingIds, stories])
+  const storyGroups = useMemo(() => {
+    const groups = new Map<string, BongstagramStory[]>()
+    followedStories.forEach((story) => groups.set(story.character_id, [...(groups.get(story.character_id) ?? []), story]))
+    return Array.from(groups.values())
+  }, [followedStories])
+  const slideGroups = useMemo<StorySlide[][]>(() => storyGroups.map((group) => {
+    const groupSlides: StorySlide[] = []
+    group.forEach((story) => {
+      if (story.media.length > 0) {
+        story.media.forEach((media) => groupSlides.push({ story, media }))
+      } else {
+        groupSlides.push({ story, media: null })
+      }
+    })
+    return groupSlides
+  }), [storyGroups])
+  const groupIndexByCharacterId = useMemo(() => new Map(storyGroups.map((group, index) => [group[0].character_id, index])), [storyGroups])
 
   return (
     <>
@@ -241,24 +307,19 @@ export default function BongstagramStoryRail({ stories }: { stories: Bongstagram
           </div>
           <span className="max-w-[4.5rem] truncate text-[11px] text-zinc-400">내 스토리</span>
         </div>
-        {stories.length > 0 ? stories.map((story) => {
-          const firstMedia = story.media[0]
-          const startIndex = startIndexByStoryId.get(story.id) ?? 0
+        {storyGroups.map((group) => {
+          const story = group[0]
+          const groupIndex = groupIndexByCharacterId.get(story.character_id) ?? 0
           return (
-            <button key={story.id} type="button" onClick={() => { setActiveIndex(startIndex); setOpen(true) }} className="flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5 text-left">
+            <button key={story.id} type="button" onClick={() => { setActiveGroupIndex(groupIndex); setActiveSlideIndex(0); setOpen(true) }} className="flex w-[4.5rem] shrink-0 cursor-pointer flex-col items-center gap-1.5 text-left">
               <StoryAvatar story={story} mark={story.profile_name.slice(0, 1)} />
               <span className="max-w-[4.5rem] truncate text-[11px] text-zinc-400"><BongstagramDisplayName profileName={story.profile_name} streamerName={story.streamer_name} /></span>
-              {firstMedia && <span className="sr-only">미디어 {story.media.length}개</span>}
+              <span className="sr-only">스토리 {group.reduce((count, item) => count + Math.max(item.media.length, 1), 0)}개</span>
             </button>
           )
-        }) : previewStories.map((story) => (
-          <div key={story.label} className="flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5">
-            <div className={`rounded-full bg-gradient-to-tr ${story.tone} p-[2px]`}><div className="bongstagram-story-avatar flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full border-2 border-zinc-950 text-xl font-bold text-zinc-200">{story.mark}</div></div>
-            <span className="max-w-[4.5rem] truncate text-[11px] text-zinc-400">{story.label}</span>
-          </div>
-        ))}
+        })}
       </section>
-      {open && slides.length > 0 && <StoryViewer key={activeIndex} slides={slides} activeIndex={activeIndex} onClose={() => setOpen(false)} onChange={setActiveIndex} />}
+      {open && slideGroups.length > 0 && <StoryViewer slideGroups={slideGroups} activeGroupIndex={activeGroupIndex} activeSlideIndex={activeSlideIndex} onClose={() => setOpen(false)} onChange={(groupIndex, slideIndex) => { setActiveGroupIndex(groupIndex); setActiveSlideIndex(slideIndex) }} />}
     </>
   )
 }

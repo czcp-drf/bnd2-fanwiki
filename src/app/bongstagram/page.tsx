@@ -145,7 +145,7 @@ async function getFeedContent(): Promise<{ posts: FeedPost[]; stories: FeedPost[
       comment_count: commentsByPostId.get(post.id) ?? 0,
       liked_by_viewer: likedPostIds.has(post.id),
     }))
-  const stories = feedPosts.filter((post) => post.post_type === 'story' && isStoryVisible(post.story_expires_at))
+  const stories = feedPosts.filter((post) => post.post_type === 'story' && isStoryVisible(post.posted_at))
   return { posts: visiblePosts, stories }
 }
 
