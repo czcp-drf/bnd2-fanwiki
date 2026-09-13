@@ -1,8 +1,10 @@
-export const revalidate = 300
+export const revalidate = 86400
 
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import { User, Building2, Skull, Swords, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { Organization } from '@/types/database'
@@ -92,7 +94,7 @@ const statusColor: Record<string, string> = {
 }
 
 async function getOrganization(id: string) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const { data } = await supabase
     .from('organizations')
@@ -112,11 +114,6 @@ async function getOrganization(id: string) {
 
   if (!data) return null
   const org = data as unknown as OrgDetail
-
-  // 불법 사업체는 별도 상세 페이지 없음 → 갱단 페이지 또는 목록으로
-  if (org.category === 'illegal') {
-    redirect(org.gang_id ? `/organizations/${org.gang_id}` : '/organizations')
-  }
 
   // 갱단이면 → 운영 중인 사업체 목록 조회
   let businesses: BusinessSummary[] = []
@@ -141,7 +138,7 @@ type OrgEvent = {
 }
 
 async function getOrgEvents(orgId: string): Promise<OrgEvent[]> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   // 조직 멤버 캐릭터 ID 목록
   const { data: members } = await supabase
@@ -174,9 +171,18 @@ async function getOrgEvents(orgId: string): Promise<OrgEvent[]> {
   })
 }
 
+const getOrganizationCached = unstable_cache(getOrganization, ['wiki-organization-detail'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.organizations, WIKI_CACHE_TAGS.characters],
+})
+const getOrgEventsCached = unstable_cache(getOrgEvents, ['wiki-organization-events'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.organizations, WIKI_CACHE_TAGS.events, WIKI_CACHE_TAGS.characters],
+})
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const result = await getOrganization(id)
+  const result = await getOrganizationCached(id)
   if (!result) return {}
   const { org } = result
   const name = org.name_confirmed ? org.name : typeLabel[org.type ?? ''] ?? '미정'
@@ -191,12 +197,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function OrganizationDetailPage({ params }: Props) {
   const { id } = await params
   const [result, orgEvents] = await Promise.all([
-    getOrganization(id),
-    getOrgEvents(id),
+    getOrganizationCached(id),
+    getOrgEventsCached(id),
   ])
   if (!result) notFound()
 
   const { org, businesses } = result
+  if (org.category === 'illegal') {
+    redirect(org.gang_id ? `/organizations/${org.gang_id}` : '/organizations')
+  }
   const orgName = org.name_confirmed ? org.name : (typeLabel[org.type ?? ''] ?? '미정')
   const { active: activeMembers, inactive: inactiveMembers, former: formerMembers } =
     groupOrganizationMembers(org.organization_members)

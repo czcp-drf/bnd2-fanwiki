@@ -1,8 +1,10 @@
-export const revalidate = 300
+export const revalidate = 86400
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import { ExternalLink, Calendar, Swords, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
@@ -62,7 +64,7 @@ type RelationshipRow = {
 }
 
 async function getCharacter(id: string): Promise<CharacterDetail | null> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('characters')
     .select(`
@@ -95,7 +97,7 @@ type CharacterEvent = {
 }
 
 async function getCharacterEvents(id: string): Promise<CharacterEvent[]> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('event_participants')
     .select(`role, events ( id, title, type, occurred_at, summary, is_published )`)
@@ -104,7 +106,7 @@ async function getCharacterEvents(id: string): Promise<CharacterEvent[]> {
 }
 
 async function getRelationships(id: string): Promise<RelationshipRow[]> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('character_relationships')
     .select(`
@@ -121,9 +123,22 @@ async function getRelationships(id: string): Promise<RelationshipRow[]> {
   return (data ?? []) as unknown as RelationshipRow[]
 }
 
+const getCharacterCached = unstable_cache(getCharacter, ['wiki-character-detail'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.streamers, WIKI_CACHE_TAGS.organizations],
+})
+const getCharacterEventsCached = unstable_cache(getCharacterEvents, ['wiki-character-events'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.events],
+})
+const getRelationshipsCached = unstable_cache(getRelationships, ['wiki-character-relationships'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.relationships],
+})
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const character = await getCharacter(id)
+  const character = await getCharacterCached(id)
   if (!character) return {}
   return {
     title: character.name,
@@ -187,9 +202,9 @@ const orgTypeLabel: Record<string, string> = {
 export default async function CharacterDetailPage({ params }: Props) {
   const { id } = await params
   const [character, relationships, participations] = await Promise.all([
-    getCharacter(id),
-    getRelationships(id),
-    getCharacterEvents(id),
+    getCharacterCached(id),
+    getRelationshipsCached(id),
+    getCharacterEventsCached(id),
   ])
 
   if (!character) notFound()

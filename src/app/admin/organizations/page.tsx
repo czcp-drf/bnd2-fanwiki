@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import OrgEditRow from './OrgEditRow'
 import OrgAddForm from './OrgAddForm'
+import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
 const categoryOrder = ['city_hall', 'public_service', 'gang', 'business', 'illegal']
 const categoryLabel: Record<string, string> = {
@@ -44,12 +45,15 @@ export default async function AdminOrganizationsPage() {
 
   return (
     <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-black text-white">조직 관리</h1>
           <p className="text-sm text-zinc-500 mt-0.5">총 {orgs.length}개</p>
         </div>
-        <OrgAddForm />
+        <div className="flex items-center gap-2">
+          <CacheRefreshButton scope="organizations" />
+          <OrgAddForm />
+        </div>
       </div>
 
       {categoryOrder.map((cat) => {

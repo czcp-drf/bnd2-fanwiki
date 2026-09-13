@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import RelationshipEditor from './RelationshipEditor'
+import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
 async function getRelationships() {
   const supabase = createAdminClient()
@@ -35,9 +36,12 @@ export default async function AdminRelationshipsPage() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-xl font-black text-white">관계 관리</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">총 {relationships.length}건</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-black text-white">관계 관리</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">총 {relationships.length}건</p>
+        </div>
+        <CacheRefreshButton scope="relationships" />
       </div>
 
       <RelationshipEditor

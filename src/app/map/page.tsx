@@ -1,6 +1,8 @@
-export const revalidate = 300
+export const revalidate = 86400
 
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import MapView from './MapView'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
@@ -57,7 +59,16 @@ async function getLocations(): Promise<LocationMarker[]> {
   return (data ?? []) as LocationMarker[]
 }
 
+const getOrgsWithHqCached = unstable_cache(getOrgsWithHq, ['wiki-map-organizations'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.map, WIKI_CACHE_TAGS.organizations],
+})
+const getLocationsCached = unstable_cache(getLocations, ['wiki-map-locations'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.map],
+})
+
 export default async function MapPage() {
-  const [orgs, locations] = await Promise.all([getOrgsWithHq(), getLocations()])
+  const [orgs, locations] = await Promise.all([getOrgsWithHqCached(), getLocationsCached()])
   return <Suspense fallback={<div className="p-10 text-zinc-400">지도를 불러오는 중입니다.</div>}><MapView orgs={orgs} locations={locations} /></Suspense>
 }

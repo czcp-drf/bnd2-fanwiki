@@ -2,6 +2,13 @@
 
 import { requireAdmin } from '@/lib/admin/auth'
 import { revalidatePath } from 'next/cache'
+import { invalidateWikiCache } from '@/lib/cache/wiki'
+
+function invalidateAndRevalidate(path: string, type?: 'page' | 'layout') {
+  invalidateWikiCache()
+  if (type) revalidatePath(path, type)
+  else revalidatePath(path)
+}
 
 // ── 조직 거점 ──────────────────────────────────────────
 
@@ -13,8 +20,8 @@ export async function updateOrgHq(
   const { data: rows, error } = await supabase.from('organizations').update(data).eq('id', id).select('id')
   if (error) return { error: '지도 변경을 저장하지 못했습니다. 다시 시도해주세요.' }
   if (!rows?.length) return { error: '변경할 대상이 없습니다. 목록을 새로고침해주세요.' }
-  revalidatePath('/admin/map')
-  revalidatePath('/map')
+  invalidateAndRevalidate('/admin/map')
+  invalidateAndRevalidate('/map')
   return { success: true }
 }
 
@@ -28,8 +35,8 @@ export async function updateOrgBiz(
   const { data: rows, error } = await supabase.from('organizations').update(data).eq('id', id).select('id')
   if (error) return { error: '지도 변경을 저장하지 못했습니다. 다시 시도해주세요.' }
   if (!rows?.length) return { error: '변경할 대상이 없습니다. 목록을 새로고침해주세요.' }
-  revalidatePath('/admin/map')
-  revalidatePath('/map')
+  invalidateAndRevalidate('/admin/map')
+  invalidateAndRevalidate('/map')
   return { success: true }
 }
 
@@ -47,8 +54,8 @@ export async function addMapLocation(data: {
   const { data: rows, error } = await supabase.from('map_locations').insert(data).select('id')
   if (error) return { error: '지도 변경을 저장하지 못했습니다. 다시 시도해주세요.' }
   if (!rows?.length) return { error: '변경할 대상이 없습니다. 목록을 새로고침해주세요.' }
-  revalidatePath('/admin/map')
-  revalidatePath('/map')
+  invalidateAndRevalidate('/admin/map')
+  invalidateAndRevalidate('/map')
   return { success: true }
 }
 
@@ -60,8 +67,8 @@ export async function updateMapLocation(
   const { data: rows, error } = await supabase.from('map_locations').update(data).eq('id', id).select('id')
   if (error) return { error: '지도 변경을 저장하지 못했습니다. 다시 시도해주세요.' }
   if (!rows?.length) return { error: '변경할 대상이 없습니다. 목록을 새로고침해주세요.' }
-  revalidatePath('/admin/map')
-  revalidatePath('/map')
+  invalidateAndRevalidate('/admin/map')
+  invalidateAndRevalidate('/map')
   return { success: true }
 }
 
@@ -70,7 +77,7 @@ export async function deleteMapLocation(id: string) {
   const { data: rows, error } = await supabase.from('map_locations').delete().eq('id', id).select('id')
   if (error) return { error: '지도 변경을 저장하지 못했습니다. 다시 시도해주세요.' }
   if (!rows?.length) return { error: '변경할 대상이 없습니다. 목록을 새로고침해주세요.' }
-  revalidatePath('/admin/map')
-  revalidatePath('/map')
+  invalidateAndRevalidate('/admin/map')
+  invalidateAndRevalidate('/map')
   return { success: true }
 }

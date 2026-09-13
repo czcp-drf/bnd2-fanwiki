@@ -1,7 +1,9 @@
-export const revalidate = 300
+export const revalidate = 86400
 
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import type { Metadata } from 'next'
 import CharactersClientSection from '@/components/characters/CharactersClientSection'
 import type { Character, Streamer, Organization } from '@/types/database'
@@ -22,7 +24,7 @@ type CharacterWithRelations = Character & {
 }
 
 async function getAllCharacters() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('characters')
     .select(`
@@ -39,10 +41,15 @@ async function getAllCharacters() {
   return (data ?? []) as unknown as CharacterWithRelations[]
 }
 
+const getAllCharactersCached = unstable_cache(getAllCharacters, ['wiki-characters-list'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.organizations],
+})
+
 export default async function CharactersPage() {
   const [organizations, allCharacters]: [OrganizationFilterOption[], CharacterWithRelations[]] = await Promise.all([
     getOrganizationFilterOptions(),
-    getAllCharacters(),
+    getAllCharactersCached(),
   ])
 
   return (

@@ -2,6 +2,13 @@
 
 import { requireAdmin } from '@/lib/admin/auth'
 import { revalidatePath } from 'next/cache'
+import { invalidateWikiCache } from '@/lib/cache/wiki'
+
+function invalidateAndRevalidate(path: string, type?: 'page' | 'layout') {
+  invalidateWikiCache()
+  if (type) revalidatePath(path, type)
+  else revalidatePath(path)
+}
 
 export async function createEvent(data: {
   title: string
@@ -21,8 +28,8 @@ export async function createEvent(data: {
     .select('id')
     .single()
   if (error) return { error: error.message }
-  revalidatePath('/admin/events')
-  revalidatePath('/events')
+  invalidateAndRevalidate('/admin/events')
+  invalidateAndRevalidate('/events')
   return { id: event.id }
 }
 
@@ -40,10 +47,10 @@ export async function updateEvent(id: string, data: {
   const supabase = await requireAdmin()
   const { error } = await supabase.from('events').update(data).eq('id', id)
   if (error) return { error: error.message }
-  revalidatePath('/admin/events')
-  revalidatePath(`/admin/events/${id}/edit`)
-  revalidatePath('/events')
-  revalidatePath(`/events/${id}`)
+  invalidateAndRevalidate('/admin/events')
+  invalidateAndRevalidate(`/admin/events/${id}/edit`)
+  invalidateAndRevalidate('/events')
+  invalidateAndRevalidate(`/events/${id}`)
   return { success: true }
 }
 
@@ -51,8 +58,8 @@ export async function deleteEvent(id: string) {
   const supabase = await requireAdmin()
   const { error } = await supabase.from('events').delete().eq('id', id)
   if (error) return { error: error.message }
-  revalidatePath('/admin/events')
-  revalidatePath('/events')
+  invalidateAndRevalidate('/admin/events')
+  invalidateAndRevalidate('/events')
   return { success: true }
 }
 
@@ -60,9 +67,9 @@ export async function togglePublish(id: string, current: boolean) {
   const supabase = await requireAdmin()
   const { error } = await supabase.from('events').update({ is_published: !current }).eq('id', id)
   if (error) return { error: error.message }
-  revalidatePath('/admin/events')
-  revalidatePath('/events')
-  revalidatePath(`/events/${id}`)
+  invalidateAndRevalidate('/admin/events')
+  invalidateAndRevalidate('/events')
+  invalidateAndRevalidate(`/events/${id}`)
 }
 
 export async function addParticipant(eventId: string, characterId: string, role: string | null) {
@@ -73,8 +80,8 @@ export async function addParticipant(eventId: string, characterId: string, role:
     role: role || null,
   })
   if (error) return { error: error.message }
-  revalidatePath(`/admin/events/${eventId}/edit`)
-  revalidatePath(`/events/${eventId}`)
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
   return { success: true }
 }
 
@@ -82,8 +89,8 @@ export async function updateParticipant(eventId: string, participantId: string, 
   const supabase = await requireAdmin()
   const { error } = await supabase.from('event_participants').update({ role }).eq('id', participantId)
   if (error) return { error: error.message }
-  revalidatePath(`/admin/events/${eventId}/edit`)
-  revalidatePath(`/events/${eventId}`)
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
   return { success: true }
 }
 
@@ -91,8 +98,8 @@ export async function removeParticipant(eventId: string, participantId: string) 
   const supabase = await requireAdmin()
   const { error } = await supabase.from('event_participants').delete().eq('id', participantId)
   if (error) return { error: error.message }
-  revalidatePath(`/admin/events/${eventId}/edit`)
-  revalidatePath(`/events/${eventId}`)
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
   return { success: true }
 }
 
@@ -105,8 +112,8 @@ export async function addClip(eventId: string, data: {
   const supabase = await requireAdmin()
   const { error } = await supabase.from('event_clips').insert({ event_id: eventId, ...data })
   if (error) return { error: error.message }
-  revalidatePath(`/admin/events/${eventId}/edit`)
-  revalidatePath(`/events/${eventId}`)
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
   return { success: true }
 }
 
@@ -114,8 +121,8 @@ export async function updateClip(eventId: string, clipId: string, data: { clip_u
   const supabase = await requireAdmin()
   const { error } = await supabase.from('event_clips').update(data).eq('id', clipId)
   if (error) return { error: error.message }
-  revalidatePath(`/admin/events/${eventId}/edit`)
-  revalidatePath(`/events/${eventId}`)
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
   return { success: true }
 }
 
@@ -123,8 +130,8 @@ export async function removeClip(eventId: string, clipId: string) {
   const supabase = await requireAdmin()
   const { error } = await supabase.from('event_clips').delete().eq('id', clipId)
   if (error) return { error: error.message }
-  revalidatePath(`/admin/events/${eventId}/edit`)
-  revalidatePath(`/events/${eventId}`)
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
   return { success: true }
 }
 
@@ -137,8 +144,8 @@ export async function reorderClips(eventId: string, orders: { id: string; sortOr
   )
   const failed = results.find((r) => r.error)
   if (failed?.error) return { error: failed.error.message }
-  revalidatePath(`/admin/events/${eventId}/edit`)
-  revalidatePath(`/events/${eventId}`)
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
   return { success: true }
 }
 
@@ -151,7 +158,7 @@ export async function reorderParticipants(eventId: string, orders: { id: string;
   )
   const failed = results.find((r) => r.error)
   if (failed?.error) return { error: failed.error.message }
-  revalidatePath(`/admin/events/${eventId}/edit`)
-  revalidatePath(`/events/${eventId}`)
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
   return { success: true }
 }

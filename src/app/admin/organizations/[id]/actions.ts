@@ -2,12 +2,19 @@
 
 import { requireAdmin } from '@/lib/admin/auth'
 import { revalidatePath } from 'next/cache'
+import { invalidateWikiCache } from '@/lib/cache/wiki'
+
+function invalidateAndRevalidate(path: string, type?: 'page' | 'layout') {
+  invalidateWikiCache()
+  if (type) revalidatePath(path, type)
+  else revalidatePath(path)
+}
 
 function paths(orgId: string) {
-  revalidatePath(`/admin/organizations/${orgId}`)
-  revalidatePath('/admin/organizations')
-  revalidatePath(`/organizations/${orgId}`)
-  revalidatePath('/organizations')
+  invalidateAndRevalidate(`/admin/organizations/${orgId}`)
+  invalidateAndRevalidate('/admin/organizations')
+  invalidateAndRevalidate(`/organizations/${orgId}`)
+  invalidateAndRevalidate('/organizations')
 }
 
 export async function addOrgMembers(

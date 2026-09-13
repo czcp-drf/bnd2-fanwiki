@@ -1,8 +1,10 @@
-export const revalidate = 300
+export const revalidate = 86400
 
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import type { Metadata } from 'next'
 import type { Event } from '@/types/database'
 import EventTypeFilter from '@/components/events/EventTypeFilter'
@@ -22,7 +24,7 @@ type Props = {
 }
 
 async function getEvents(type: string) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   let query = supabase
     .from('events')
     .select('*')
@@ -35,9 +37,14 @@ async function getEvents(type: string) {
   return (data ?? []) as Event[]
 }
 
+const getEventsCached = unstable_cache(getEvents, ['wiki-events-list'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events],
+})
+
 export default async function EventsPage({ searchParams }: Props) {
   const { type = '' } = await searchParams
-  const events = await getEvents(type)
+  const events = await getEventsCached(type)
 
   const featured = events[0]
   const rest = events.slice(1)

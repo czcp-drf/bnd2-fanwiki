@@ -2,6 +2,13 @@
 
 import { requireAdmin } from '@/lib/admin/auth'
 import { revalidatePath } from 'next/cache'
+import { invalidateWikiCache } from '@/lib/cache/wiki'
+
+function invalidateAndRevalidate(path: string, type?: 'page' | 'layout') {
+  invalidateWikiCache()
+  if (type) revalidatePath(path, type)
+  else revalidatePath(path)
+}
 
 export async function saveCharacter(id: string, data: {
   name: string; job: string | null; status: string; orgId: string | null; orgRole: string | null
@@ -20,7 +27,7 @@ export async function saveCharacter(id: string, data: {
     if (error.code === '23503' || error.code === 'P0002') return { error: '캐릭터 또는 소속이 존재하지 않습니다. 목록을 새로고침해 주세요.' }
     return { error: '저장하지 못했습니다. 입력값을 확인한 후 다시 시도해 주세요.' }
   }
-  revalidatePath('/', 'layout')
+  invalidateAndRevalidate('/', 'layout')
   return { success: true }
 }
 
@@ -44,7 +51,7 @@ export async function createCharacter(data: {
   if (error?.code === 'PGRST202') return { error: '생성 기능의 DB 업데이트(017)가 필요합니다.' }
   if (error?.code === '23503') return { error: '선택한 스트리머 또는 조직이 없습니다. 목록을 새로고침해주세요.' }
   if (error || !characterId) return { error: '캐릭터 생성에 실패했습니다.' }
-  revalidatePath('/', 'layout')
+  invalidateAndRevalidate('/', 'layout')
   return { success: true }
 }
 
@@ -54,6 +61,6 @@ export async function renameCharacter(id: string, name: string) {
   const supabase = await requireAdmin()
   const { error } = await supabase.from('characters').update({ name: trimmed }).eq('id', id)
   if (error) return { error: '저장하지 못했습니다.' }
-  revalidatePath('/', 'layout')
+  invalidateAndRevalidate('/', 'layout')
   return { success: true }
 }

@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import AdminReportsClient from './AdminReportsClient'
 import type { Report } from '@/types/database'
+import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
 const statusOptions = [
   { value: '', label: '전체' },
@@ -50,7 +51,10 @@ export default async function AdminReportsPage({ searchParams }: Props) {
   return (
     <div className="p-8 space-y-6">
       <div className="space-y-3">
-        <h1 className="text-xl font-black text-white">제보 관리</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-xl font-black text-white">제보 관리</h1>
+          <CacheRefreshButton scope="reports" />
+        </div>
 
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-medium text-zinc-500 w-8 shrink-0">상태</span>

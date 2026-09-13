@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import AdminCharactersClient from './AdminCharactersClient'
+import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
 const statusLabels: Record<string, string> = {
   active: '활동', dead: '사망', retired: '은퇴', hiatus: '휴식',
@@ -98,8 +99,11 @@ export default async function AdminCharactersPage({ searchParams }: Props) {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-xl font-black text-white">캐릭터 관리</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-black text-white">캐릭터 관리</h1>
+        </div>
+        <CacheRefreshButton scope="characters" />
       </div>
       <AdminCharactersClient
         characters={characters}

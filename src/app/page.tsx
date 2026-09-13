@@ -1,7 +1,9 @@
 export const revalidate = 60
 
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import { Users, Building2, Map, FileText } from 'lucide-react'
 import type { Event } from '@/types/database'
 import StreamerListWithLive from '@/components/streamers/StreamerListWithLive'
@@ -15,7 +17,7 @@ import { getBongstagramFeedPage } from '@/lib/bongstagram/feed-data'
 import type { BongstagramFeedPost } from '@/lib/bongstagram/types'
 
 async function getStats() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const [{ count: streamerCount }, { count: characterCount }, { count: eventCount }] =
     await Promise.all([
       supabase.from('streamers').select('*', { count: 'exact', head: true }).eq('is_active', true),
@@ -27,7 +29,7 @@ async function getStats() {
 
 
 async function getRecentEvents() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('events')
     .select('*')
@@ -36,6 +38,15 @@ async function getRecentEvents() {
     .limit(4)
   return (data ?? []) as Event[]
 }
+
+const getStatsCached = unstable_cache(getStats, ['wiki-home-stats'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.streamers, WIKI_CACHE_TAGS.events],
+})
+const getRecentEventsCached = unstable_cache(getRecentEvents, ['wiki-home-events'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events],
+})
 
 function formatRelativeTime(value: string) {
   const elapsedSeconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000))
@@ -84,9 +95,9 @@ const quickLinks = [
 
 export default async function HomePage() {
   const [stats, streamers, events] = await Promise.all([
-    getStats(),
+    getStatsCached(),
     LIVE_ENABLED ? getLiveStreamers().catch(() => null) : Promise.resolve(null),
-    getRecentEvents(),
+    getRecentEventsCached(),
   ])
   const [{ articles: bbsArticles }, { posts: bongstagramPosts }] = await Promise.all([
     getPublishedBbsArticlesPage(undefined, undefined, 1, 4),

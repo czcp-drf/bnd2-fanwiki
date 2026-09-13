@@ -1,8 +1,10 @@
-export const revalidate = 300
+export const revalidate = 86400
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import { Calendar, MapPin, Users, Play } from 'lucide-react'
 import type { Metadata } from 'next'
 import ReactMarkdown from 'react-markdown'
@@ -54,7 +56,7 @@ const statusColor: Record<string, string> = {
 }
 
 async function getEvent(id: string): Promise<EventDetail | null> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('events')
     .select(`
@@ -78,9 +80,14 @@ async function getEvent(id: string): Promise<EventDetail | null> {
   return data as unknown as EventDetail | null
 }
 
+const getEventCached = unstable_cache(getEvent, ['wiki-event-detail'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.streamers],
+})
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const event = await getEvent(id)
+  const event = await getEventCached(id)
   if (!event) return {}
   return {
     title: event.title,
@@ -95,7 +102,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EventDetailPage({ params }: Props) {
   const { id } = await params
-  const event = await getEvent(id)
+  const event = await getEventCached(id)
   if (!event) notFound()
 
   const clips = [...(event.event_clips ?? [])].sort((a, b) => a.sort_order - b.sort_order)

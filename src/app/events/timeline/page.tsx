@@ -1,5 +1,7 @@
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import type { Metadata } from 'next'
 import BackButton from '@/components/ui/BackButton'
 import TimelineFilters from '@/components/events/TimelineFilters'
@@ -26,7 +28,7 @@ type TimelineEvent = {
 }
 
 async function getFilterOptions() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const [{ data: characters }, { data: orgs }] = await Promise.all([
     supabase.from('characters').select('id, name, streamers(display_name)').order('name'),
     supabase.from('organizations').select('id, name, category').neq('category', 'illegal').order('name'),
@@ -43,7 +45,7 @@ async function getFilterOptions() {
 }
 
 async function getEvents(characterId?: string, orgId?: string): Promise<TimelineEvent[]> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   let eventIds: string[] | null = null
 
@@ -84,11 +86,20 @@ async function getEvents(characterId?: string, orgId?: string): Promise<Timeline
   return (data ?? []) as unknown as TimelineEvent[]
 }
 
+const getFilterOptionsCached = unstable_cache(getFilterOptions, ['wiki-timeline-filter-options'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.organizations],
+})
+const getEventsCached = unstable_cache(getEvents, ['wiki-timeline-events'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.organizations],
+})
+
 export default async function TimelinePage({ searchParams }: Props) {
   const { character: characterId, org: orgId } = await searchParams
   const [events, { characters, orgs }] = await Promise.all([
-    getEvents(characterId, orgId),
-    getFilterOptions(),
+    getEventsCached(characterId, orgId),
+    getFilterOptionsCached(),
   ])
 
   const selectedChar = characters.find((c) => c.id === characterId)

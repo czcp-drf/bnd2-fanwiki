@@ -1,8 +1,10 @@
-export const revalidate = 300
+export const revalidate = 86400
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import { ExternalLink } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { Streamer } from '@/types/database'
@@ -33,7 +35,7 @@ type StreamerDetail = Streamer & {
 }
 
 async function getStreamer(id: string): Promise<StreamerDetail | null> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('streamers')
     .select(`
@@ -75,9 +77,14 @@ async function getStreamer(id: string): Promise<StreamerDetail | null> {
   } as StreamerDetail
 }
 
+const getStreamerCached = unstable_cache(getStreamer, ['wiki-streamer-detail'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.streamers, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.organizations],
+})
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const streamer = await getStreamer(id)
+  const streamer = await getStreamerCached(id)
   if (!streamer) return {}
   return {
     title: streamer.display_name,
@@ -106,7 +113,7 @@ const statusColor: Record<string, string> = {
 
 export default async function StreamerDetailPage({ params }: Props) {
   const { id } = await params
-  const streamer = await getStreamer(id)
+  const streamer = await getStreamerCached(id)
 
   if (!streamer) notFound()
 

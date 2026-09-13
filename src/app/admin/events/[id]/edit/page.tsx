@@ -6,6 +6,7 @@ import ClipsEditor from '../ClipsEditor'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import BackButton from '@/components/ui/BackButton'
+import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -52,6 +53,7 @@ export default async function EditEventPage({ params }: Props) {
           <h1 className="text-xl font-black text-white">{event.title}</h1>
           <p className="text-sm text-zinc-500 mt-0.5">사건 편집</p>
         </div>
+        <CacheRefreshButton scope="events" />
         {event.is_published && (
           <Link href={`/events/${id}`} target="_blank" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-amber-400 transition-colors">
             <ExternalLink size={13} />

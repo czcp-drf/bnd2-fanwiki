@@ -1,7 +1,9 @@
 export const revalidate = 60
 
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import type { Metadata } from 'next'
 import type { Streamer } from '@/types/database'
 import StreamerFilters from '@/components/streamers/StreamerFilters'
@@ -25,7 +27,7 @@ export const metadata: Metadata = {
 }
 
 async function getStreamers(sort: string): Promise<StreamerWithCharacters[]> {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('streamers')
     .select('*, characters ( id, name, job, status )')
@@ -65,11 +67,16 @@ async function getStreamers(sort: string): Promise<StreamerWithCharacters[]> {
   }))
 }
 
+const getStreamersCached = unstable_cache(getStreamers, ['wiki-streamers-list'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.streamers, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.organizations],
+})
+
 type Props = { searchParams: Promise<{ sort?: string }> }
 
 export default async function StreamersPage({ searchParams }: Props) {
   const { sort = 'name' } = await searchParams
-  const streamers = await getStreamers(sort)
+  const streamers = await getStreamersCached(sort)
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 space-y-10">

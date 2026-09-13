@@ -1,4 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 
 export type OrganizationFilterOption = {
   id: string
@@ -7,8 +9,8 @@ export type OrganizationFilterOption = {
   category: string | null
 }
 
-export async function getOrganizationFilterOptions(): Promise<OrganizationFilterOption[]> {
-  const supabase = await createClient()
+async function getOrganizationFilterOptions(): Promise<OrganizationFilterOption[]> {
+  const supabase = createPublicClient()
   const [{ data: organizations }, { data: businesses }] = await Promise.all([
     supabase
       .from('organizations')
@@ -38,3 +40,11 @@ export async function getOrganizationFilterOptions(): Promise<OrganizationFilter
       : organization.name,
   }))
 }
+
+export const getOrganizationFilterOptionsCached = unstable_cache(
+  getOrganizationFilterOptions,
+  ['wiki-organization-filter-options'],
+  { revalidate: WIKI_CACHE_REVALIDATE, tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.organizations, WIKI_CACHE_TAGS.characters] },
+)
+
+export { getOrganizationFilterOptionsCached as getOrganizationFilterOptions }

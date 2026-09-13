@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import BackButton from '@/components/ui/BackButton'
 import { createAdminClient } from '@/lib/supabase/admin'
 import MemberManageClient, { type MemberRow, type CharOption } from './MemberManageClient'
+import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -94,18 +95,19 @@ export default async function OrgMembersPage({ params }: Props) {
 
   return (
     <div className="p-8 space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <BackButton iconOnly />
         <div
           className="h-4 w-4 rounded-sm shrink-0"
           style={{ backgroundColor: org.color ?? '#52525b' }}
         />
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-black text-white">{orgName} — 멤버 관리</h1>
           <p className="mt-0.5 text-xs text-zinc-500">
             현재 멤버 {activeCount}명 · 멤버 추가·역할 편집·탈퇴 처리
           </p>
         </div>
+        <CacheRefreshButton scope="organizations" />
       </div>
 
       <MemberManageClient orgId={id} members={memberRows} characters={charOptions} />

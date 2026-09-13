@@ -1,5 +1,7 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import { ExternalLink, Search } from 'lucide-react'
 import type { Metadata } from 'next'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
@@ -98,7 +100,7 @@ type SearchStreamer = Pick<Streamer, 'id' | 'display_name' | 'profile_image_url'
 
 async function buildCharEventMap(
   charIds: string[],
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: ReturnType<typeof createPublicClient>
 ): Promise<Record<string, EventSnippet[]>> {
   if (charIds.length === 0) return {}
   const { data } = await supabase
@@ -119,7 +121,7 @@ async function buildCharEventMap(
 }
 
 async function searchAll(q: string) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const term = `%${q}%`
 
   const [streamersRes, charactersRes, orgsRes, eventsRes] = await Promise.all([
@@ -227,6 +229,11 @@ async function searchAll(q: string) {
   }
 }
 
+const searchAllCached = unstable_cache(searchAll, ['wiki-search'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.streamers, WIKI_CACHE_TAGS.organizations, WIKI_CACHE_TAGS.events],
+})
+
 type Props = { searchParams: Promise<{ q?: string }> }
 
 export default async function SearchPage({ searchParams }: Props) {
@@ -234,7 +241,7 @@ export default async function SearchPage({ searchParams }: Props) {
   const query = q.trim()
 
   const { streamers, characters, orgs, events } = query
-    ? await searchAll(query)
+    ? await searchAllCached(query)
     : { streamers: [], characters: [], orgs: [], events: [] }
 
   const total = streamers.length + characters.length + orgs.length + events.length

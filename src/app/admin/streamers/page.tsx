@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import AdminStreamersClient from './AdminStreamersClient'
 import StreamerAddForm from './StreamerAddForm'
 import type { Metadata } from 'next'
+import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
 export const metadata: Metadata = { title: '스트리머 관리' }
 
@@ -26,9 +27,12 @@ export default async function AdminStreamersPage() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-xl font-black text-white">스트리머 관리</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">총 {streamers.length}명</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-black text-white">스트리머 관리</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">총 {streamers.length}명</p>
+        </div>
+        <CacheRefreshButton scope="streamers" />
       </div>
 
       {/* 추가 폼 */}

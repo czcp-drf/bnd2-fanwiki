@@ -2,6 +2,13 @@
 
 import { requireAdmin } from '@/lib/admin/auth'
 import { revalidatePath } from 'next/cache'
+import { invalidateWikiCache } from '@/lib/cache/wiki'
+
+function invalidateAndRevalidate(path: string, type?: 'page' | 'layout') {
+  invalidateWikiCache()
+  if (type) revalidatePath(path, type)
+  else revalidatePath(path)
+}
 
 export async function addStreamer(formData: FormData) {
   const supabase = await requireAdmin()
@@ -20,8 +27,8 @@ export async function addStreamer(formData: FormData) {
   if (error?.code === 'PGRST202') return { error: '생성 기능의 DB 업데이트(017)가 필요합니다.' }
   if (error || !streamer) return { error: error?.code === '23505' ? '이미 등록된 채널 ID입니다.' : '스트리머를 추가하지 못했습니다.' }
 
-  revalidatePath('/admin/streamers')
-  revalidatePath('/admin/characters')
+  invalidateAndRevalidate('/admin/streamers')
+  invalidateAndRevalidate('/admin/characters')
   return { success: true }
 }
 
@@ -34,7 +41,7 @@ export async function updateStreamer(
   const { data: rows, error } = await supabase.from('streamers').update(data).eq('id', id).select('id')
   if (error) return { error: error.code === '23505' ? '이미 등록된 채널 ID입니다.' : '스트리머를 수정하지 못했습니다.' }
   if (!rows?.length) return { error: '스트리머가 존재하지 않습니다. 목록을 새로고침해주세요.' }
-  revalidatePath('/admin/streamers')
+  invalidateAndRevalidate('/admin/streamers')
   return { success: true }
 }
 
@@ -43,6 +50,6 @@ export async function deleteStreamer(id: string) {
   const { data: rows, error } = await supabase.from('streamers').delete().eq('id', id).select('id')
   if (error) return { error: '스트리머를 삭제하지 못했습니다.' }
   if (!rows?.length) return { error: '스트리머가 존재하지 않습니다. 목록을 새로고침해주세요.' }
-  revalidatePath('/admin/streamers')
+  invalidateAndRevalidate('/admin/streamers')
   return { success: true }
 }

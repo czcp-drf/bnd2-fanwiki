@@ -1,9 +1,11 @@
-export const revalidate = 300
+export const revalidate = 86400
 
 import type { Metadata } from 'next'
+import { unstable_cache } from 'next/cache'
 import { FileText, Clock, CheckCheck, MessageSquare } from 'lucide-react'
 import ReportForm from '@/components/report/ReportForm'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 
 export const metadata: Metadata = {
   title: '제보하기',
@@ -34,8 +36,13 @@ async function getFormOptions() {
   return { streamers, characters }
 }
 
+const getFormOptionsCached = unstable_cache(getFormOptions, ['wiki-report-form-options'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.reports, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.streamers],
+})
+
 export default async function ReportPage() {
-  const { streamers, characters } = await getFormOptions()
+  const { streamers, characters } = await getFormOptionsCached()
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 space-y-10">

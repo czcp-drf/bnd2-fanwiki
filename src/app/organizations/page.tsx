@@ -1,7 +1,9 @@
-export const revalidate = 300
+export const revalidate = 86400
 
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import { Users } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { Organization } from '@/types/database'
@@ -69,7 +71,7 @@ const categories = [
 type OrgRow = Organization & { member_count: number; gang_id: string | null; is_disbanded: boolean }
 
 async function getOrganizations() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const { data: orgs } = await supabase
     .from('organizations')
@@ -93,8 +95,13 @@ async function getOrganizations() {
   }))
 }
 
+const getOrganizationsCached = unstable_cache(getOrganizations, ['wiki-organizations-list'], {
+  revalidate: WIKI_CACHE_REVALIDATE,
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.organizations, WIKI_CACHE_TAGS.characters],
+})
+
 export default async function OrganizationsPage() {
-  const orgs = await getOrganizations()
+  const orgs = await getOrganizationsCached()
 
   // 해체된 조직은 제외 (활성/비활성 모두 표시하되 해체만 숨김)
   const activeOrgs = orgs.filter((o) => !o.is_disbanded)
