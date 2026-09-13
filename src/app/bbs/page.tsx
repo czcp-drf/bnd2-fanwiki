@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import BbsArticleCard from './components/BbsArticleCard'
 import BbsCategoryNav from './components/BbsCategoryNav'
 import BbsHeader from './components/BbsHeader'
-import { BBS_ARTICLES, BBS_CATEGORIES, type BbsCategory } from '@/lib/bbs/articles'
+import { BBS_CATEGORIES, type BbsCategory } from '@/lib/bbs/articles'
+import { getPublishedBbsArticles } from '@/lib/bbs/data'
 
 export const metadata: Metadata = {
   title: 'BBS',
@@ -16,9 +17,7 @@ type Props = {
 export default async function BbsPage({ searchParams }: Props) {
   const { category = '전체' } = await searchParams
   const activeCategory = BBS_CATEGORIES.includes(category as BbsCategory) ? category as BbsCategory : '전체'
-  const articles = activeCategory === '전체'
-    ? BBS_ARTICLES
-    : BBS_ARTICLES.filter((article) => article.category === activeCategory)
+  const articles = await getPublishedBbsArticles(activeCategory === '전체' ? undefined : activeCategory)
 
   return (
     <div className="bbs-theme min-h-[calc(100vh-3.5rem)] bg-[var(--bbs-page)] text-[var(--bbs-text)] md:px-4 md:py-8">

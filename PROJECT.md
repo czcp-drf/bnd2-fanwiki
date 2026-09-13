@@ -53,7 +53,7 @@ src/
 │   │       └── OrgMiniMapWrapper.tsx  # Client Component 래퍼 (ssr:false dynamic import)
 │   ├── events/                 # 사건 목록 / 상세 / 연대표 [ISR 300s]
 │   ├── bongstagram/page.tsx    # Bongstagram 기본 피드 화면 (1단계)
-│   ├── bbs/                    # BBS 반응형 메인·기사 상세 화면 (초기 샘플 데이터)
+│   ├── bbs/                    # BBS 반응형 메인·기사 상세 화면 (Supabase 공개 기사 연동)
 │   ├── map/                    # 공개 거점 지도 [ISR 300s]
 │   │   ├── page.tsx            # 서버 컴포넌트 (orgs + locations 패치)
 │   │   ├── MapView.tsx         # 클라이언트 래퍼 (카테고리 필터, 위치 토글)
@@ -354,6 +354,7 @@ src/
 | `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 서비스 롤 key (어드민, 업로드 스크립트) |
 | `BONGSTAGRAM_SERVER_FINAL_DATE` | 서버 마지막 종료일 (`YYYY-MM-DD`, 해당일 오전 3시에 스토리 전체 종료) |
 | `BONGSTAGRAM_LIKES_MODE` | 좋아요 저장 모드 (`server` 기본값, `local`은 브라우저 localStorage만 사용) |
+| `BBS_REACTIONS_MODE` | BBS 좋아요·싫어요 저장 모드 (`local` 기본값, `server` 설정 시 IP 해시 DB 저장) |
 | `ADMIN_PASSWORD` | 어드민 로그인 비밀번호 |
 | `ADMIN_TOKEN` | 어드민 쿠키 검증 토큰 |
 | `NEXT_PUBLIC_MAP_TILE_BASE` | 지도 타일 CDN 베이스 URL (Supabase Storage, 미설정 시 public/ 직접 서빙) |
@@ -383,6 +384,8 @@ src/
 ---
 
 ## 최근 작업 기록
+
+- BBS 공개 기사·상세페이지 및 반응 UI (`feat/bss`): 공개 기사 목록과 상세페이지를 `bbs_articles`·`bbs_article_media` 실데이터와 연결하고, 승인일시 기준 기사 카드와 `16:9` 대표 이미지 영역을 적용했습니다. 기사 상세 상단은 제목·담당기자·승인일시만 표시하며, 하단에는 우측 정렬 좋아요·싫어요·댓글·공유 버튼을 배치했습니다. 좋아요·싫어요는 `BBS_REACTIONS_MODE`가 `local`이면 브라우저별로만 저장하고 Supabase 반응 테이블을 조회·변경하지 않으며, 댓글 수·관리자 등록 댓글은 계속 조회합니다. 공유 버튼은 기사 URL을 클립보드에 복사하고 toast를 표시합니다. BBS 리본 아이콘은 좌측 상단·우측 하단 접힘과 대칭 명암, `NEWS` 라벨을 반영했으며 메인·상세 헤더에서 동일한 크기와 Geist Sans 폰트를 사용합니다. Bongstagram도 local 좋아요 모드에서 좋아요 수 조회까지 건너뛰도록 보완했습니다. `BBS_REACTIONS_MODE`의 기본값은 `local`이며 `server`로 전환하면 기존 IP 해시 반응 저장을 사용할 수 있습니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했고, `feat/bss`에서 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
 
 - Bongstagram 빈 화면 세로 스크롤 수정 (`feat/bss`, 커밋 대기): 전역 헤더 아래 페이지가 `min-h-screen`으로 다시 전체 뷰포트 높이를 차지하던 구조를 헤더 제외 높이 기준으로 조정했습니다. 검색·프로필·내 프로필·게시물 상세·해시태그·로딩 화면에 동일한 레이아웃 기준을 적용해 콘텐츠가 없을 때 불필요한 세로 스크롤이 생기지 않도록 했습니다. 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다.
 

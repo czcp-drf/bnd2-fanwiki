@@ -1,6 +1,7 @@
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createPublicClient } from '@/lib/supabase/public'
+import { getBongstagramLikeMode } from './like-mode'
 
 export const BONGSTAGRAM_DIRECTORY_TAG = 'bongstagram-directory'
 export const BONGSTAGRAM_POSTS_TAG = 'bongstagram-posts'
@@ -401,8 +402,28 @@ export type BongstagramEngagementResult = {
 export async function getBongstagramPostEngagement(postIds: string[]): Promise<BongstagramEngagementResult> {
   const ids = Array.from(new Set(postIds)).sort()
   if (ids.length === 0) return { likeCounts: {}, commentCounts: {} }
+  if (getBongstagramLikeMode() === 'local') return getCachedCommentEngagement(ids.join(','))
   return getCachedEngagement(ids.join(','))
 }
+
+const getCachedCommentEngagement = unstable_cache(
+  async (postIdsKey: string) => {
+    const postIds = postIdsKey.split(',').filter(Boolean)
+    const supabase = createAdminClient()
+    const commentsResult = await supabase.from('bongstagram_post_comments').select('post_id').in('post_id', postIds)
+    const commentCounts: Record<string, number> = Object.fromEntries(postIds.map((postId) => [postId, 0]))
+    for (const row of (commentsResult.data ?? []) as { post_id: string }[]) commentCounts[row.post_id] = (commentCounts[row.post_id] ?? 0) + 1
+
+    return {
+      likeCounts: Object.fromEntries(postIds.map((postId) => [postId, 0])),
+      commentCounts,
+      errorCode: commentsResult.error?.code,
+      errorMessage: commentsResult.error?.message,
+    }
+  },
+  ['bongstagram-comment-engagement'],
+  { revalidate: 60, tags: [BONGSTAGRAM_ENGAGEMENT_TAG] },
+)
 
 const getCachedEngagement = unstable_cache(
   async (postIdsKey: string) => {
