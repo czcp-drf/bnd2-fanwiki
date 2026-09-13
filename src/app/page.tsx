@@ -4,27 +4,27 @@ import Link from 'next/link'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
-import { Users, Building2, Map, FileText } from 'lucide-react'
 import type { Event } from '@/types/database'
 import StreamerListWithLive from '@/components/streamers/StreamerListWithLive'
 import { getLiveStreamers } from '@/lib/data/live-streamers'
 import AppImage from '@/components/ui/AppImage'
 import LiveDataError from '@/components/live/LiveDataError'
 import { LIVE_ENABLED } from '@/lib/live/config'
-import { getPublishedBbsArticlesPage } from '@/lib/bbs/data'
+import { BBS_ARTICLES_TAG, getPublishedBbsArticlesPage } from '@/lib/bbs/data'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
 import { getBongstagramFeedPage } from '@/lib/bongstagram/feed-data'
+import { BONGSTAGRAM_POSTS_TAG } from '@/lib/bongstagram/public-data'
 import type { BongstagramFeedPost } from '@/lib/bongstagram/types'
 
 async function getStats() {
   const supabase = createPublicClient()
-  const [{ count: streamerCount }, { count: characterCount }, { count: eventCount }] =
+  const [{ count: eventCount }, { count: bbsArticleCount }, { count: bongstagramPostCount }] =
     await Promise.all([
-      supabase.from('streamers').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase.from('characters').select('*', { count: 'exact', head: true }).eq('status', 'active'),
       supabase.from('events').select('*', { count: 'exact', head: true }).eq('is_published', true),
+      supabase.from('bbs_articles').select('*', { count: 'exact', head: true }).eq('is_published', true),
+      supabase.from('bongstagram_posts').select('*', { count: 'exact', head: true }).eq('post_type', 'post'),
     ])
-  return { streamerCount, characterCount, eventCount }
+  return { eventCount, bbsArticleCount, bongstagramPostCount }
 }
 
 
@@ -41,7 +41,7 @@ async function getRecentEvents() {
 
 const getStatsCached = unstable_cache(getStats, ['wiki-home-stats'], {
   revalidate: WIKI_CACHE_REVALIDATE,
-  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.streamers, WIKI_CACHE_TAGS.events],
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, BBS_ARTICLES_TAG, BONGSTAGRAM_POSTS_TAG],
 })
 const getRecentEventsCached = unstable_cache(getRecentEvents, ['wiki-home-events'], {
   revalidate: WIKI_CACHE_REVALIDATE,
@@ -86,13 +86,6 @@ const eventTypeColor: Record<string, string> = {
   other: 'text-zinc-400 bg-zinc-400/10',
 }
 
-const quickLinks = [
-  { href: '/characters', icon: Users, label: '캐릭터 위키', desc: '등장인물 및 관계도' },
-  { href: '/organizations', icon: Building2, label: '조직 정보', desc: '세력과 단체 목록' },
-  { href: '/map', icon: Map, label: '거점 지도', desc: '조직 거점 및 주요 장소' },
-  { href: '/report', icon: FileText, label: '제보하기', desc: '정보 제보 및 수정 요청' },
-]
-
 export default async function HomePage() {
   const [stats, streamers, events] = await Promise.all([
     getStatsCached(),
@@ -112,7 +105,7 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent" />
           <div className="relative flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-3">
-              <div className="inline-block rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-400">
+              <div className="inline-block rounded-full border border-amber-300 bg-amber-300 px-3 py-1 text-xs font-bold text-zinc-950 shadow-sm shadow-amber-500/30">
                 봉누도 따라가기
               </div>
               <h1 className="text-3xl font-black tracking-tight text-[var(--site-text)] sm:text-4xl">
@@ -130,12 +123,12 @@ export default async function HomePage() {
                 <p className="mt-1 text-[11px] text-[var(--site-muted)]">사건 기록</p>
               </div>
               <div>
-                <p className="text-xl font-bold text-[var(--site-text)]">{stats.characterCount ?? 0}</p>
-                <p className="mt-1 text-[11px] text-[var(--site-muted)]">활동 캐릭터</p>
+                <p className="text-xl font-bold text-[var(--site-text)]">{stats.bbsArticleCount ?? 0}</p>
+                <p className="mt-1 text-[11px] text-[var(--site-muted)]">BBS 기사 수</p>
               </div>
               <div>
-                <p className="text-xl font-bold text-[var(--site-text)]">{stats.streamerCount ?? 0}</p>
-                <p className="mt-1 text-[11px] text-[var(--site-muted)]">활동 스트리머</p>
+                <p className="text-xl font-bold text-[var(--site-text)]">{stats.bongstagramPostCount ?? 0}</p>
+                <p className="mt-1 text-[11px] text-[var(--site-muted)]">봉스타그램 게시글 수</p>
               </div>
             </div>
           </div>
@@ -302,30 +295,6 @@ export default async function HomePage() {
           )}
         </section>
 
-        {/* 기존 위키 바로가기 */}
-        <section className="space-y-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--site-muted)]">Explore</p>
-            <h2 className="mt-1 text-xl font-bold text-[var(--site-text)]">위키 둘러보기</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {quickLinks.map(({ href, icon: Icon, label, desc }) => (
-              <Link
-                key={href}
-                href={href}
-                className="group flex items-center gap-3 rounded-xl border border-[var(--site-border)] bg-[var(--site-card)] p-3 transition-colors hover:border-amber-400/40 hover:bg-[var(--site-card-raised)] sm:flex-col sm:items-start sm:gap-3 sm:p-4"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 text-amber-400 transition-colors group-hover:bg-amber-400/20">
-                  <Icon size={18} />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-[var(--site-text)]">{label}</p>
-                  <p className="mt-0.5 truncate text-xs text-[var(--site-muted)]">{desc}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   )

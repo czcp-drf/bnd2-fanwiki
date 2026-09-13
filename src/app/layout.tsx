@@ -49,7 +49,19 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ko" className={`${geist.variable} h-full antialiased`}>
+    <html lang="ko" className={`${geist.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(() => {
+  try {
+    const theme = window.localStorage.getItem('bongstagram-theme') === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.bongstagramTheme = theme;
+  } catch {}
+})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
         <RedPillProvider>
           <Header />
