@@ -424,6 +424,12 @@ src/
 
 - Supabase·좋아요 부하 검증 (`feat/bonstagram`): k6로 운영 Supabase REST API의 공개 데이터 조회와 테스트 게시물의 좋아요 등록·동일 IP 중복 등록·취소를 측정했습니다. 10 VU·10초 테스트에서 등록 269회, 중복 등록 269회(`409` 차단), 취소 269회가 모두 기대 상태 코드로 처리됐고, 기능 검증 체크는 100%, 응답 p95는 38.26ms였습니다. 중복 등록 `409`는 정상 동작이므로 k6의 전체 HTTP 실패율에서 제외해 해석해야 합니다. 테스트 전용 좋아요 행은 종료 후 0건임을 확인했습니다. 실제 사용자 대상 Preview 부하 테스트와 Vercel·Next Server Action 경유 검증은 후속 작업으로 남겨둡니다.
 
+- Preview 읽기 부하 검증 (`feat/bonstagram`): 로그인 없이 접근 가능한 Preview URL에서 `/`, `/bongstagram`, `/bongstagram/search`를 대상으로 k6 10 VU·30초 조회 테스트를 진행했습니다. 총 465건 요청이 모두 HTML 200으로 응답했고 실패율은 0%, 평균 325.76ms, 중앙값 345.63ms, p95 651.66ms, 최대 2.51초였습니다. 데이터 변경 요청은 포함하지 않았으므로 좋아요·댓글 Server Action과 Supabase 쓰기 부하는 별도 검증 대상입니다.
+
+- Supabase 캐시·조회 최적화 (`feat/bonstagram`): 홈 스토리 조회를 만료 시각이 지난 행까지 읽지 않도록 `story_expires_at` 조건을 포함한 60초 캐시 함수로 분리했습니다. 댓글 조회는 댓글별로 전체 프로필·캐릭터·스트리머를 반복 조회하지 않고 캐시된 Bongstagram 디렉터리를 재사용하며, 좋아요 수 주기 갱신도 캐시된 engagement 조회를 사용합니다. 피드 커서·활성 스토리 조회 인덱스를 담은 `027_bongstagram_query_indexes.sql`을 추가했고, 사용자가 Supabase SQL Editor에서 운영 DB 적용을 완료했습니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `feat/bonstagram`이며 원격 `deploy/feat/bonstagram`에 반영합니다.
+
+- 검색엔진 임시 차단 (`feat/bonstagram`): 루트 metadata에 `noindex`, `nofollow`, `noarchive`와 Googlebot 세부 지시를 추가해 전체 페이지가 검색 결과에 새로 색인되지 않도록 했습니다. robots.txt로 크롤링 자체를 차단하지 않아 이미 색인된 주소가 noindex 지시를 확인할 수 있도록 구성했습니다. 생성 HTML의 robots·googlebot 메타 태그를 확인했으며 대상 브랜치는 `feat/bonstagram`, 원격은 `deploy/feat/bonstagram`입니다.
+
 - Bongstagram 조회 페이지네이션·스토리 레일 개선 (`feat/bonstagram`): 메인 피드는 최초 12개, 검색·해시태그 게시물 그리드는 최초 24개를 cursor 기반으로 조회하고 하단 접근 시 다음 페이지를 무한 스크롤로 추가합니다. `posted_at`과 `id`를 함께 cursor로 사용해 정렬 경계의 중복·누락을 줄였으며, 기존 전체 게시물 일괄 그리드 컴포넌트를 제거했습니다. 홈 스토리 레일에는 모바일 스와이프와 PC 드래그를 유지하고 좌우 이동 버튼은 제거했으며 텍스트 선택도 방지했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치 `feat/bonstagram`에 커밋하고 원격 `deploy/feat/bonstagram`으로 푸시합니다.
 
 - Bongstagram 게시물 상세·프로필 UI 개선 (`feat/bonstagram`): `/bongstagram/post/[postId]` 게시물 상세 페이지를 추가해 피드와 동일한 작성자·팔로우·미디어 캐러셀·좋아요·댓글·본문·업로드 시간 UI를 제공합니다. 검색·프로필 게시물 그리드에서 상세 페이지로 연결하고, 상세·다른 유저 프로필의 뒤로가기는 직전 페이지로 이동하도록 했습니다. 프로필 헤더 제목을 중앙 정렬하고 우측 Bongstagram 문구를 제거했으며, 다른 유저 프로필의 팔로우 버튼을 설명 아래 전체 너비로 확장했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.

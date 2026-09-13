@@ -17,6 +17,19 @@ export const metadata: Metadata = {
     template: '%s | 봉누도2 위키',
   },
   description: 'GTA RP 서버 봉누도2의 스트리머, 캐릭터, 사건을 정리한 팬사이트',
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'none',
+      'max-snippet': -1,
+    },
+  },
   openGraph: {
     title: '봉누도2 위키',
     description: 'GTA RP 서버 봉누도2의 스트리머, 캐릭터, 사건을 정리한 팬사이트',

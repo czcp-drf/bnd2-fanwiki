@@ -2,8 +2,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
 import {
   getBongstagramDirectory,
+  getBongstagramActiveStories,
   getBongstagramPostEngagement,
-  getBongstagramPosts,
   getBongstagramPostsPage,
 } from '@/lib/bongstagram/public-data'
 import { isStoryVisible } from '@/lib/bongstagram/story-schedule'
@@ -109,7 +109,7 @@ async function getViewerStoryLikeIds(storyIds: string[]) {
 export async function getBongstagramStoryFeed() {
   const [{ profiles, characters, streamers }, storyPosts] = await Promise.all([
     getBongstagramDirectory(),
-    getBongstagramPosts('story'),
+    getBongstagramActiveStories(),
   ])
   const maps = createDirectoryMaps({ profiles, characters, streamers })
   const stories = storyPosts.flatMap((post) => {

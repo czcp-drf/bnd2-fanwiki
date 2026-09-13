@@ -3,7 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
-import { getBongstagramComments as getCachedBongstagramComments } from '@/lib/bongstagram/public-data'
+import {
+  getBongstagramComments as getCachedBongstagramComments,
+  getBongstagramPostEngagement,
+} from '@/lib/bongstagram/public-data'
 import {
   getBongstagramFeedPage as loadBongstagramFeedPage,
   getBongstagramHashtagGridPage as loadBongstagramHashtagGridPage,
@@ -121,22 +124,13 @@ export async function getBongstagramLikeCounts(postIds: string[]): Promise<LikeC
   const ids = Array.from(new Set(postIds.map((postId) => postId.trim()).filter(isValidPostId))).slice(0, 100)
   if (ids.length === 0) return { counts: {} }
 
-  const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('bongstagram_post_likes')
-    .select('post_id')
-    .in('post_id', ids)
-
-  if (error) {
-    console.error('Bongstagram like counts refresh failed:', error.code, error.message)
-    return { error: error.code === 'PGRST205' ? '좋아요 테이블이 아직 연결되지 않았습니다. migration 023을 적용해 주세요.' : '좋아요 수를 갱신하지 못했습니다.' }
+  const result = await getBongstagramPostEngagement(ids)
+  if (result.errorCode) {
+    console.error('Bongstagram like counts refresh failed:', result.errorCode, result.errorMessage)
+    return { error: result.errorCode === 'PGRST205' ? '좋아요 테이블이 아직 연결되지 않았습니다. migration 023을 적용해 주세요.' : '좋아요 수를 갱신하지 못했습니다.' }
   }
 
-  const counts = Object.fromEntries(ids.map((id) => [id, 0]))
-  for (const row of (data ?? []) as { post_id: string }[]) {
-    counts[row.post_id] = (counts[row.post_id] ?? 0) + 1
-  }
-  return { counts }
+  return { counts: result.likeCounts }
 }
 
 export async function toggleBongstagramStoryLike(storyId: string): Promise<StoryLikeActionResult> {

@@ -129,6 +129,43 @@ export function getBongstagramPosts(postType: PostTypeFilter = 'all') {
   return getCachedPosts(postType)
 }
 
+const getCachedActiveStories = unstable_cache(
+  async (): Promise<BongstagramPublicPost[]> => {
+    const supabase = createPublicClient()
+    const now = new Date().toISOString()
+    const { data } = await supabase
+      .from('bongstagram_posts')
+      .select('id, character_id, post_type, content, posted_at, story_expires_at, bongstagram_post_media ( id, media_type, media_url, sort_order )')
+      .eq('post_type', 'story')
+      .or(`story_expires_at.gt.${now},story_expires_at.is.null`)
+      .order('posted_at', { ascending: false })
+
+    return ((data ?? []) as {
+      id: string
+      character_id: string
+      post_type: 'post' | 'story'
+      content: string
+      posted_at: string
+      story_expires_at: string | null
+      bongstagram_post_media: BongstagramPublicMedia[]
+    }[]).map((post) => ({
+      id: post.id,
+      character_id: post.character_id,
+      post_type: post.post_type,
+      content: post.content,
+      posted_at: post.posted_at,
+      story_expires_at: post.story_expires_at,
+      media: [...(post.bongstagram_post_media ?? [])].sort((a, b) => a.sort_order - b.sort_order),
+    }))
+  },
+  ['bongstagram-active-stories'],
+  { revalidate: 60, tags: [BONGSTAGRAM_POSTS_TAG] },
+)
+
+export function getBongstagramActiveStories() {
+  return getCachedActiveStories()
+}
+
 const getCachedPostsPage = unstable_cache(
   async (postType: 'post' | 'story', cursorPostedAt: string, cursorId: string, requestedLimit: number): Promise<BongstagramPostsPage> => {
     const supabase = createPublicClient()
@@ -307,27 +344,23 @@ export function getBongstagramPost(postId: string) {
 const getCachedComments = unstable_cache(
   async (postId: string): Promise<{ comments: BongstagramPublicComment[]; errorCode?: string; errorMessage?: string }> => {
     const supabase = createAdminClient()
-    const [{ data: comments, error }, { data: profiles }, { data: characters }, { data: streamers }] = await Promise.all([
+    const [{ data: comments, error }, directory] = await Promise.all([
       supabase
         .from('bongstagram_post_comments')
         .select('id, post_id, parent_comment_id, author_character_id, author_name, content, created_at')
         .eq('post_id', postId)
         .order('created_at', { ascending: true }),
-      supabase.from('bongstagram_profiles').select('profile_name, character_id, avatar_url'),
-      supabase.from('characters').select('id, streamer_id, avatar_url'),
-      supabase.from('streamers').select('id, display_name, profile_image_url'),
+      getBongstagramDirectory(),
     ])
 
     if (error) return { comments: [], errorCode: error.code, errorMessage: error.message }
 
     type CommentRow = Omit<BongstagramPublicComment, 'streamer_name' | 'profile_avatar_url' | 'streamer_avatar_url'>
-    type ProfileRow = { profile_name: string; character_id: string; avatar_url: string | null }
-    type CharacterRow = { id: string; streamer_id: string | null; avatar_url: string | null }
-    type StreamerRow = { id: string; display_name: string; profile_image_url: string | null }
-    const profileRows = (profiles ?? []) as unknown as ProfileRow[]
-    const characterRows = (characters ?? []) as unknown as CharacterRow[]
-    const streamerRows = (streamers ?? []) as unknown as StreamerRow[]
+    const profileRows = directory.profiles
+    const characterRows = directory.characters
+    const streamerRows = directory.streamers
     const profileByName = new Map(profileRows.map((profile) => [profile.profile_name, profile]))
+    const profileByCharacterId = new Map(profileRows.map((profile) => [profile.character_id, profile]))
     const characterById = new Map(characterRows.map((character) => [character.id, character]))
     const streamerById = new Map(streamerRows.map((streamer) => [streamer.id, streamer]))
 
@@ -335,7 +368,7 @@ const getCachedComments = unstable_cache(
     return {
       comments: commentRows.map((comment) => {
         const profile = comment.author_character_id
-          ? profileRows.find((item) => item.character_id === comment.author_character_id) ?? null
+          ? profileByCharacterId.get(comment.author_character_id) ?? null
           : profileByName.get(comment.author_name) ?? null
         const character = profile ? characterById.get(profile.character_id) : null
         const streamer = character?.streamer_id ? streamerById.get(character.streamer_id) : null
@@ -358,7 +391,14 @@ export function getBongstagramComments(postId: string) {
   return getCachedComments(postId)
 }
 
-export async function getBongstagramPostEngagement(postIds: string[]) {
+export type BongstagramEngagementResult = {
+  likeCounts: Record<string, number>
+  commentCounts: Record<string, number>
+  errorCode?: string
+  errorMessage?: string
+}
+
+export async function getBongstagramPostEngagement(postIds: string[]): Promise<BongstagramEngagementResult> {
   const ids = Array.from(new Set(postIds)).sort()
   if (ids.length === 0) return { likeCounts: {}, commentCounts: {} }
   return getCachedEngagement(ids.join(','))
@@ -372,13 +412,19 @@ const getCachedEngagement = unstable_cache(
       supabase.from('bongstagram_post_likes').select('post_id').in('post_id', postIds),
       supabase.from('bongstagram_post_comments').select('post_id').in('post_id', postIds),
     ])
+    const firstError = likesResult.error ?? commentsResult.error
 
     const likeCounts: Record<string, number> = Object.fromEntries(postIds.map((postId) => [postId, 0]))
     const commentCounts: Record<string, number> = Object.fromEntries(postIds.map((postId) => [postId, 0]))
     for (const row of (likesResult.data ?? []) as { post_id: string }[]) likeCounts[row.post_id] = (likeCounts[row.post_id] ?? 0) + 1
     for (const row of (commentsResult.data ?? []) as { post_id: string }[]) commentCounts[row.post_id] = (commentCounts[row.post_id] ?? 0) + 1
 
-    return { likeCounts, commentCounts }
+    return {
+      likeCounts,
+      commentCounts,
+      errorCode: firstError?.code,
+      errorMessage: firstError?.message,
+    }
   },
   ['bongstagram-engagement'],
   { revalidate: 60, tags: [BONGSTAGRAM_ENGAGEMENT_TAG] },
