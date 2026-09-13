@@ -51,6 +51,7 @@ type CommentRow = {
   id: string
   post_id: string
   parent_comment_id: string | null
+  author_character_id: string | null
   author_name: string
   content: string
   created_at: string
@@ -80,7 +81,7 @@ async function getPostData() {
       .is('left_at', null),
     supabase
       .from('bongstagram_post_comments')
-      .select('id, post_id, parent_comment_id, author_name, content, created_at')
+      .select('id, post_id, parent_comment_id, author_character_id, author_name, content, created_at')
       .order('created_at', { ascending: false }),
   ])
 

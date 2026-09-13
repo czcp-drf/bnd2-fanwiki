@@ -10,6 +10,7 @@ export type BongstagramComment = {
   id: string
   post_id: string
   parent_comment_id: string | null
+  author_character_id: string | null
   author_name: string
   content: string
   created_at: string
@@ -100,7 +101,7 @@ export async function getBongstagramComments(postId: string): Promise<{ comments
   const [{ data, error }, { data: profiles }, { data: characters }, { data: streamers }] = await Promise.all([
     supabase
       .from('bongstagram_post_comments')
-      .select('id, post_id, parent_comment_id, author_name, content, created_at')
+      .select('id, post_id, parent_comment_id, author_character_id, author_name, content, created_at')
       .eq('post_id', id)
       .order('created_at', { ascending: true }),
     supabase.from('bongstagram_profiles').select('profile_name, character_id, avatar_url'),
@@ -122,7 +123,9 @@ export async function getBongstagramComments(postId: string): Promise<{ comments
   const streamerById = new Map(((streamers ?? []) as StreamerRow[]).map((streamer) => [streamer.id, streamer]))
 
   const comments = ((data ?? []) as CommentRow[]).map((comment) => {
-    const profile = profileByName.get(comment.author_name)
+    const profile = comment.author_character_id
+      ? ((profiles ?? []) as ProfileRow[]).find((item) => item.character_id === comment.author_character_id) ?? null
+      : profileByName.get(comment.author_name)
     const character = profile ? characterById.get(profile.character_id) : null
     const streamer = character?.streamer_id ? streamerById.get(character.streamer_id) : null
     return {

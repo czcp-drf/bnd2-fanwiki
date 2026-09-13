@@ -264,6 +264,7 @@ create table bongstagram_post_comments (
   id                uuid primary key default gen_random_uuid(),
   post_id           uuid not null references bongstagram_posts(id) on delete cascade,
   parent_comment_id uuid references bongstagram_post_comments(id) on delete cascade,
+  author_character_id uuid references characters(id) on delete set null,
   author_name       text not null check (char_length(btrim(author_name)) between 1 and 40),
   content           text not null check (char_length(btrim(content)) between 1 and 1000),
   created_at        timestamptz not null default now()
@@ -273,6 +274,8 @@ create index bongstagram_post_comments_post_created_idx
   on bongstagram_post_comments(post_id, created_at asc);
 create index bongstagram_post_comments_parent_idx
   on bongstagram_post_comments(parent_comment_id, created_at asc);
+create index bongstagram_post_comments_author_character_idx
+  on bongstagram_post_comments(author_character_id);
 
 alter table bongstagram_post_likes enable row level security;
 alter table bongstagram_post_comments enable row level security;

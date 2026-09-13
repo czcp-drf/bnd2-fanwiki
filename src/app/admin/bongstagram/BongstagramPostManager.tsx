@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp, Check, ChevronDown, CornerDownRight, LoaderCircle, 
 import AppImage from '@/components/ui/AppImage'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
-import { createBongstagramComment, createBongstagramPost, createBongstagramUploadUrl, deleteBongstagramComment, deleteBongstagramPost, deleteBongstagramUploadedMedia, updateBongstagramPost } from './actions'
+import { createBongstagramComment, createBongstagramPost, createBongstagramUploadUrl, deleteBongstagramComment, deleteBongstagramPost, deleteBongstagramUploadedMedia, updateBongstagramComment, updateBongstagramPost } from './actions'
 
 type Character = {
   id: string
@@ -59,6 +59,7 @@ type Comment = {
   id: string
   post_id: string
   parent_comment_id: string | null
+  author_character_id: string | null
   author_name: string
   content: string
   created_at: string
@@ -295,8 +296,14 @@ function PostEditRow({ post, character, profile, comments }: { post: Post; chara
   const [replyAuthor, setReplyAuthor] = useState(profile.profile_name)
   const [replyContent, setReplyContent] = useState('')
   const [replyCreatedAt, setReplyCreatedAt] = useState('')
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editCommentAuthor, setEditCommentAuthor] = useState('')
+  const [editCommentContent, setEditCommentContent] = useState('')
+  const [editCommentCreatedAt, setEditCommentCreatedAt] = useState('')
   const [pending, startTransition] = useTransition()
-  const postComments = comments.filter((comment) => comment.post_id === post.id)
+  const postComments = comments
+    .filter((comment) => comment.post_id === post.id)
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
   function upload(files: File[]) {
     void uploadSelectedFiles(files, media, setMedia, setError, setUploading)
@@ -328,7 +335,7 @@ function PostEditRow({ post, character, profile, comments }: { post: Post; chara
   function addComment() {
     setError(null)
     startTransition(async () => {
-      const result = await createBongstagramComment({ postId: post.id, authorName: commentAuthor, content: commentContent, createdAt: toIsoDateTime(commentCreatedAt) })
+      const result = await createBongstagramComment({ postId: post.id, authorCharacterId: profile.character_id, authorName: commentAuthor, content: commentContent, createdAt: toIsoDateTime(commentCreatedAt) })
       if (result.error) {
         setError(result.error)
         return
@@ -356,12 +363,41 @@ function PostEditRow({ post, character, profile, comments }: { post: Post; chara
   function addReply(comment: Comment) {
     setError(null)
     startTransition(async () => {
-      const result = await createBongstagramComment({ postId: post.id, parentCommentId: comment.id, authorName: replyAuthor, content: replyContent, createdAt: toIsoDateTime(replyCreatedAt) })
+      const result = await createBongstagramComment({ postId: post.id, parentCommentId: comment.id, authorCharacterId: profile.character_id, authorName: replyAuthor, content: replyContent, createdAt: toIsoDateTime(replyCreatedAt) })
       if (result.error) {
         setError(result.error)
         return
       }
       cancelReply()
+      router.refresh()
+    })
+  }
+
+  function beginCommentEdit(comment: Comment) {
+    setEditingCommentId(comment.id)
+    setEditCommentAuthor(comment.author_name)
+    setEditCommentContent(comment.content)
+    setEditCommentCreatedAt(toLocalDateTime(comment.created_at))
+    setReplyToId(null)
+    setError(null)
+  }
+
+  function cancelCommentEdit() {
+    setEditingCommentId(null)
+    setEditCommentAuthor('')
+    setEditCommentContent('')
+    setEditCommentCreatedAt('')
+  }
+
+  function saveCommentEdit(comment: Comment) {
+    setError(null)
+    startTransition(async () => {
+      const result = await updateBongstagramComment(comment.id, { authorName: editCommentAuthor, content: editCommentContent, createdAt: toIsoDateTime(editCommentCreatedAt) })
+      if (result.error) {
+        setError(result.error)
+        return
+      }
+      cancelCommentEdit()
       router.refresh()
     })
   }
@@ -375,6 +411,7 @@ function PostEditRow({ post, character, profile, comments }: { post: Post; chara
         setError(result.error)
         return
       }
+      if (editingCommentId === comment.id) cancelCommentEdit()
       router.refresh()
     })
   }
@@ -396,11 +433,7 @@ function PostEditRow({ post, character, profile, comments }: { post: Post; chara
             <div className="mt-3 space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
               {postComments.length > 0 && <div className="space-y-2">{postComments.map((comment) => (
                 <div key={comment.id} className={`rounded-md border border-zinc-800/70 px-2.5 py-2 ${comment.parent_comment_id ? 'ml-6' : ''}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0"><p className="text-xs font-semibold text-zinc-200">{comment.author_name}</p><p className="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-zinc-400">{comment.content}</p><p className="mt-1 text-[10px] text-zinc-600">{displayDate(comment.created_at)}</p></div>
-                    <div className="flex shrink-0 items-center gap-2"><button type="button" aria-label="답글 등록" onClick={() => beginReply(comment)} disabled={pending || Boolean(comment.parent_comment_id)} className="text-zinc-600 transition-colors hover:text-fuchsia-300 disabled:opacity-30"><CornerDownRight size={13} /></button><button type="button" aria-label="댓글 삭제" onClick={() => removeComment(comment)} disabled={pending} className="text-zinc-600 transition-colors hover:text-red-400 disabled:opacity-40"><Trash2 size={13} /></button></div>
-                  </div>
-                  {replyToId === comment.id && <div className="mt-3 space-y-2 border-t border-zinc-800 pt-2"><div className="flex flex-col gap-2 sm:flex-row"><input value={replyAuthor} onChange={(event) => setReplyAuthor(event.target.value)} maxLength={40} disabled={pending} aria-label="답글 작성자" className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 sm:w-36" placeholder="작성자명" /><input type="datetime-local" value={replyCreatedAt} onChange={(event) => setReplyCreatedAt(event.target.value)} disabled={pending} aria-label="답글 작성 시간" className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 [color-scheme:dark]" /><input value={replyContent} onChange={(event) => setReplyContent(event.target.value)} maxLength={1000} disabled={pending} aria-label="답글 내용" className="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600" placeholder="답글 내용을 입력해 주세요." /><button type="button" onClick={() => addReply(comment)} disabled={pending || !replyAuthor.trim() || !replyContent.trim() || !replyCreatedAt} className="flex shrink-0 items-center justify-center gap-1 rounded-md bg-fuchsia-400 px-2.5 py-1.5 text-xs font-bold text-zinc-950 disabled:opacity-40"><Plus size={12} />등록</button></div><button type="button" onClick={cancelReply} disabled={pending} className="text-xs text-zinc-500 hover:text-zinc-300">취소</button></div>}
+                  {editingCommentId === comment.id ? <div className="space-y-2"><input value={editCommentAuthor} onChange={(event) => setEditCommentAuthor(event.target.value)} maxLength={40} disabled={pending} aria-label="댓글 작성자 수정" className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200" /><textarea value={editCommentContent} onChange={(event) => setEditCommentContent(event.target.value)} maxLength={1000} rows={2} disabled={pending} aria-label="댓글 내용 수정" className="w-full resize-y rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200" /><div className="flex flex-wrap gap-2"><input type="datetime-local" value={editCommentCreatedAt} onChange={(event) => setEditCommentCreatedAt(event.target.value)} disabled={pending} aria-label="댓글 작성 시간 수정" className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 [color-scheme:dark]" /><button type="button" onClick={() => saveCommentEdit(comment)} disabled={pending || !editCommentAuthor.trim() || !editCommentContent.trim() || !editCommentCreatedAt} className="flex items-center gap-1 rounded-md bg-fuchsia-400 px-2.5 py-1.5 text-xs font-bold text-zinc-950 disabled:opacity-40"><Check size={12} />저장</button><button type="button" onClick={cancelCommentEdit} disabled={pending} className="flex items-center gap-1 rounded-md bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-400 disabled:opacity-40"><X size={12} />취소</button></div></div> : <><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs font-semibold text-zinc-200">{comment.author_name}</p><p className="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-zinc-400">{comment.content}</p><p className="mt-1 text-[10px] text-zinc-600">{displayDate(comment.created_at)}</p></div><div className="flex shrink-0 items-center gap-2"><button type="button" aria-label="댓글 수정" onClick={() => beginCommentEdit(comment)} disabled={pending} className="text-zinc-600 transition-colors hover:text-zinc-200 disabled:opacity-40"><Pencil size={13} /></button><button type="button" aria-label="답글 등록" onClick={() => beginReply(comment)} disabled={pending || Boolean(comment.parent_comment_id)} className="text-zinc-600 transition-colors hover:text-fuchsia-300 disabled:opacity-30"><CornerDownRight size={13} /></button><button type="button" aria-label="댓글 삭제" onClick={() => removeComment(comment)} disabled={pending} className="text-zinc-600 transition-colors hover:text-red-400 disabled:opacity-40"><Trash2 size={13} /></button></div></div>{replyToId === comment.id && <div className="mt-3 space-y-2 border-t border-zinc-800 pt-2"><div className="flex flex-col gap-2 sm:flex-row"><input value={replyAuthor} onChange={(event) => setReplyAuthor(event.target.value)} maxLength={40} disabled={pending} aria-label="답글 작성자" className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 sm:w-36" placeholder="작성자명" /><input type="datetime-local" value={replyCreatedAt} onChange={(event) => setReplyCreatedAt(event.target.value)} disabled={pending} aria-label="답글 작성 시간" className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 [color-scheme:dark]" /><input value={replyContent} onChange={(event) => setReplyContent(event.target.value)} maxLength={1000} disabled={pending} aria-label="답글 내용" className="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600" placeholder="답글 내용을 입력해 주세요." /><button type="button" onClick={() => addReply(comment)} disabled={pending || !replyAuthor.trim() || !replyContent.trim() || !replyCreatedAt} className="flex shrink-0 items-center justify-center gap-1 rounded-md bg-fuchsia-400 px-2.5 py-1.5 text-xs font-bold text-zinc-950 disabled:opacity-40"><Plus size={12} />등록</button></div><button type="button" onClick={cancelReply} disabled={pending} className="text-xs text-zinc-500 hover:text-zinc-300">취소</button></div>}</>}
                 </div>
               ))}</div>}
               <div className="flex flex-col gap-2 sm:flex-row">

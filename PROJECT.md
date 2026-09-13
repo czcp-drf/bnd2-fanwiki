@@ -268,6 +268,7 @@ src/
 | `022_bongstagram_storage.sql` | Bongstagram 직접 업로드용 Storage 버킷과 미디어 storage_path 추가 |
 | `023_bongstagram_interactions.sql` | 게시물별 IP 제한 좋아요와 관리자 전용 댓글 테이블 추가 |
 | `024_bongstagram_comment_replies.sql` | 댓글 작성 시간 관리와 1단계 답글용 parent_comment_id 추가 |
+| `025_bongstagram_comment_author.sql` | 댓글 작성자 캐릭터 연결과 기존 프로필명 기반 데이터 보정 |
 
 ---
 
@@ -391,6 +392,8 @@ src/
 - Bongstagram 스토리·프로필 UI 개선: 스토리 클릭 시 전체 화면 이미지·동영상 뷰어를 열고, 진행 바·자동 재생·좌우 버튼·스와이프·키보드 이동·닫기를 지원합니다. 프로필 상세의 빨간약 이름·프로필 이미지 전환과 피드 헤더 프로필 이미지 링크를 추가했으며, 댓글창 제목은 라이트모드 검은색·다크모드 흰색으로 표시하고 안내 문구를 제거했습니다. 스토리 뷰어도 전체 Bongstagram 음소거 상태를 공유합니다. 변경 파일 린트·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며 `feat/bonstagram`에 커밋하고 `deploy/feat/bonstagram`에 푸시합니다.
 
 - Bongstagram 댓글 관리 확장 (`feat/bonstagram`): 관리자 게시물 목록에서 댓글 수를 펼쳐 게시물별 댓글 등록·삭제가 가능하도록 하고, 댓글 관리 섹션에 작성 시간 지정·수정과 1단계 답글 등록을 추가했습니다. `024_bongstagram_comment_replies.sql`을 통해 답글 관계를 저장하며, 사용자가 migration 024 적용을 완료했습니다. 공개 댓글창은 답글을 들여쓰기하고, 작성자 프로필·스트리머 정보와 연결해 빨간약 상태에 따라 이름과 프로필 이미지를 전환합니다. 댓글 시간 입력·저장은 브라우저 시간대와 관계없이 KST(UTC+9)를 사용합니다. 관련 린트·TypeScript 검사·`git diff --check`·프로덕션 빌드를 통과했습니다. 대상 브랜치는 `feat/bonstagram`이며 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
+
+- Bongstagram 댓글 관리 마무리 (`feat/bonstagram`): 등록된 게시물 목록에서 댓글 직접 수정과 작성 시간 수정, 댓글별 작성 시간순 정렬을 추가했습니다. 댓글·답글에 `author_character_id`를 저장해 프로필명 변경에도 빨간약 이름·이미지 전환이 유지되도록 했으며, 기존 댓글은 Bongstagram 프로필명 기준으로 가능한 경우 자동 연결합니다. `025_bongstagram_comment_author.sql`은 사용자의 운영 DB 적용이 아직 대기 중입니다. 변경 파일 린트·TypeScript 검사·`git diff --check`·프로덕션 빌드를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
 
 - 사용자 전달 사항 반영: 마이그레이션 017 적용 완료 및 운영진과 논의한 ‘봉누도 따라가기’ 개발 의향을 기록했습니다. 공식 위키 준비 소식은 사용자 전달 기준이며, 새 콘텐츠 기능은 아직 기획·구현 미확정입니다.
 

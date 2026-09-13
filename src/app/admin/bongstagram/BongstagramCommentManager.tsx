@@ -27,6 +27,7 @@ type Comment = {
   id: string
   post_id: string
   parent_comment_id: string | null
+  author_character_id: string | null
   author_name: string
   content: string
   created_at: string
@@ -95,6 +96,7 @@ export default function BongstagramCommentManager({
   const [pending, startTransition] = useTransition()
 
   const profileByCharacterId = useMemo(() => new Map(profiles.map((profile) => [profile.character_id, profile])), [profiles])
+  const profileByName = useMemo(() => new Map(profiles.map((profile) => [profile.profile_name, profile])), [profiles])
   const characterById = useMemo(() => new Map(characters.map((character) => [character.id, character])), [characters])
   const postById = useMemo(() => new Map(posts.map((post) => [post.id, post])), [posts])
 
@@ -123,7 +125,7 @@ export default function BongstagramCommentManager({
     setError(null)
     setMessage(null)
     startTransition(async () => {
-      const result = await createBongstagramComment({ postId, authorName, content, createdAt: toIsoDateTime(createdAt) })
+      const result = await createBongstagramComment({ postId, authorCharacterId: profileByName.get(authorName)?.character_id, authorName, content, createdAt: toIsoDateTime(createdAt) })
       if (result.error) {
         setError(result.error)
         return
@@ -156,7 +158,7 @@ export default function BongstagramCommentManager({
   function saveEdit(commentId: string) {
     setError(null)
     startTransition(async () => {
-      const result = await updateBongstagramComment(commentId, { authorName: editAuthorName, content: editContent, createdAt: toIsoDateTime(editCreatedAt) })
+      const result = await updateBongstagramComment(commentId, { authorCharacterId: profileByName.get(editAuthorName)?.character_id, authorName: editAuthorName, content: editContent, createdAt: toIsoDateTime(editCreatedAt) })
       if (result.error) {
         setError(result.error)
         return
@@ -187,7 +189,7 @@ export default function BongstagramCommentManager({
     setError(null)
     setMessage(null)
     startTransition(async () => {
-      const result = await createBongstagramComment({ postId: comment.post_id, parentCommentId: comment.id, authorName: replyAuthorName, content: replyContent, createdAt: toIsoDateTime(replyCreatedAt) })
+      const result = await createBongstagramComment({ postId: comment.post_id, parentCommentId: comment.id, authorCharacterId: profileByName.get(replyAuthorName)?.character_id, authorName: replyAuthorName, content: replyContent, createdAt: toIsoDateTime(replyCreatedAt) })
       if (result.error) {
         setError(result.error)
         return
