@@ -58,16 +58,6 @@ function StreamerCard({ streamer }: { streamer: StreamerItem }) {
 
         <div className="min-w-0 flex-1">
           <p className="min-w-0 truncate font-bold text-white">{streamer.display_name}</p>
-          {isRedPill && activeChars[0] && (
-            <p className="mt-0.5 truncate text-xs text-zinc-500">{activeChars[0].name}</p>
-          )}
-          {isRedPill && activeChars[0] && (
-            <p className="mt-0.5 truncate text-xs text-zinc-500">
-              {activeChars[0].organizations?.length
-                ? activeChars[0].organizations.map((organization) => organization.name).join(' · ')
-                : '무소속'}
-            </p>
-          )}
         </div>
       </div>
 

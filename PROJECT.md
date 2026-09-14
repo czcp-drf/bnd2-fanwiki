@@ -217,6 +217,10 @@ src/
 - 플레이리스트: 좌우 버튼 내비게이션 (끝 도달 시 버튼 `opacity-0`), `scrollBy(clientWidth)` 단위 이동
 - 툴팁: `overflow-x: scroll` 클리핑 우회를 위해 `getBoundingClientRect` + `fixed` 포지션으로 렌더링
 
+### 스트리머 목록
+
+- 빨간약 ON에서도 카드 헤더에는 스트리머명만 표시하고, 캐릭터·소속 정보는 카드 본문에서만 표시해 중복 노출을 방지
+
 ### 타일 Storage
 
 - Supabase Storage 공개 버킷: `map-tiles`
