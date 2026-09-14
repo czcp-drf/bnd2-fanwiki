@@ -30,6 +30,8 @@ export type BbsArticlePage = {
   totalPages: number
 }
 
+export type BbsArticleNeighbor = { id: string; title: string } | null
+
 type ArticleRow = {
   id: string
   title: string
@@ -195,6 +197,41 @@ export async function getPublishedBbsArticlesPage(category: string | undefined, 
   const actualPage = Math.min(safePage, totalPages)
   if (actualPage !== safePage) result = await loadArticles(categoryKey, undefined, reporterIds, { page: actualPage, pageSize: safePageSize }, dayKey, sortOrder)
   return { articles: result.articles, page: actualPage, pageSize: safePageSize, total: result.total, totalPages }
+}
+
+const getCachedBbsArticleNeighbors = unstable_cache(
+  async (articleId: string, category: string | undefined, reporterIdsKey: string, dayKey: BbsDayKey | undefined, sortOrder: BbsSortOrder) => {
+    const supabase = createPublicClient()
+    let query = supabase
+      .from('bbs_articles')
+      .select('id, title, approved_at')
+      .eq('is_published', true)
+      .not('approved_at', 'is', null)
+    const categoryKey = getBbsCategoryKey(category) ?? undefined
+    if (categoryKey) query = query.eq('category', categoryKey)
+    if (reporterIdsKey) query = query.in('reporter_character_id', reporterIdsKey.split(','))
+    if (dayKey) {
+      const day = BBS_DAYS.find((item) => item.key === dayKey)
+      if (day) query = query.gte('approved_at', day.start).lte('approved_at', day.end)
+    }
+    const { data, error } = await query.order('approved_at', { ascending: sortOrder === 'oldest' }).order('id', { ascending: false })
+    if (error) {
+      console.error('BBS article neighbor load failed:', error.message)
+      return { previous: null, next: null }
+    }
+    const rows = (data ?? []) as { id: string; title: string }[]
+    const currentIndex = rows.findIndex((row) => row.id === articleId)
+    return {
+      previous: currentIndex > 0 ? rows[currentIndex - 1] : null,
+      next: currentIndex >= 0 && currentIndex < rows.length - 1 ? rows[currentIndex + 1] : null,
+    }
+  },
+  ['bbs-article-neighbors'],
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
+)
+
+export async function getPublishedBbsArticleNeighbors(articleId: string, category?: string, reporterIds?: string[], dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest') {
+  return getCachedBbsArticleNeighbors(articleId, getBbsCategoryKey(category) ?? undefined, serializeReporterIds(reporterIds), dayKey, sortOrder)
 }
 
 const getCachedBbsReporterOptions = unstable_cache(

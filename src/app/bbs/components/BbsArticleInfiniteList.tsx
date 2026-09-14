@@ -19,7 +19,6 @@ export default function BbsArticleInfiniteList({ initialArticles, total, categor
   if (day) listParams.set('day', day)
   if (sortOrder === 'oldest') listParams.set('order', 'oldest')
   const listQuery = listParams.toString()
-
   useEffect(() => {
     const sentinel = sentinelRef.current
     if (!sentinel || !hasMore) return
