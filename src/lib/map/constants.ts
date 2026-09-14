@@ -16,9 +16,9 @@ export const MAP_DEFAULT_ZOOM = 3
 // GTA V 세계 좌표 경계 [[minY, minX], [maxY, maxX]]
 export const MAP_MAX_BOUNDS = [[-4000, -5500], [8000, 6000]] as [[number, number], [number, number]]
 
-// 타일 피라미드 전체 범위. 커스텀 CRS의 0레벨 256px 세계를 역변환한 값으로,
-// 타일 파일이 존재하는 x/y = 0 ~ 2^z-1 영역만 TileLayer가 요청하도록 제한합니다.
-export const MAP_TILE_BOUNDS = [[-4058.5366, -5661.1969], [8429.2683, 6694.0154]] as [[number, number], [number, number]]
+// 타일 요청 범위. 타일 세계의 정확한 끝점 대신 실제 게임맵 영역을 사용해
+// 경계 바깥의 인접 타일이 TileLayer bounds와 겹치지 않도록 합니다.
+export const MAP_TILE_BOUNDS = MAP_MAX_BOUNDS
 
 // GTA V CRS 변환 파라미터 (출처: RiceaRaul/gta-v-map-leaflet)
 export const GTA_CRS_CONFIG = {
