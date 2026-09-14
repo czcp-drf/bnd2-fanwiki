@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- 어드민 제보 관리 보완 (`main`): 제보 카드에 유형·제목·내용·참고 링크·위치·연락처·KST 제보일시를 항목명 다음 줄에 배치한 템플릿 복사 기능을 추가하고, 제보 관리 페이지의 기본 상태 필터를 `대기중`으로 변경했습니다. TypeScript·관련 ESLint·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
 - BBS 공개 화면 보완 (`main`): 기사 목록 카드에 카테고리 뱃지를 추가하고, 사용자 화면의 싫어요 버튼·개수를 숨겼습니다. 서버 액션에서도 싫어요 요청을 거부하며 기존 어드민 집계 데이터는 유지합니다. TypeScript·관련 ESLint·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - BBS 기사 리액션 요청 제한 및 인게임 수집 스키마 반영 (`main`): `040_ingame_ingest_source.sql`을 포함해 Bongstagram·BBS 데이터의 source·external_id와 중복 방지 제약을 추가하고, `041_bbs_article_reaction_rate_limit.sql`에서 같은 기사·IP 해시 조합의 좋아요·싫어요 요청을 30초에 한 번으로 제한했습니다. 서버 모드의 반복 요청은 Supabase RPC에서 차단하며, 클라이언트 제한 중에는 커스텀 툴팁을 표시합니다. 두 migration 모두 운영 DB 적용을 사용자에게 확인받았고, TypeScript·관련 ESLint·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.

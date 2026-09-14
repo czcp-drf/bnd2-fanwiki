@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Search, X } from 'lucide-react'
+import { Check, Copy, Search, X } from 'lucide-react'
 import ReportStatusSelect from './ReportStatusSelect'
 import BlockIpButton from './BlockIpButton'
 import ReportCoordAction from './ReportCoordAction'
@@ -30,6 +30,50 @@ function getSafeReferenceUrl(value: string | null): string | null {
   } catch {
     return null
   }
+}
+
+function extractCoordinates(content: string) {
+  const match = content.match(/\n\n\[지도 좌표\] X: ([-\d.]+), Y: ([-\d.]+)$/)
+  return match ? `X: ${match[1]}, Y: ${match[2]}` : null
+}
+
+function buildReportTemplate(report: Report) {
+  const fields = [
+    ['제보 유형', typeLabel[report.type] ?? report.type],
+    ['제목', report.title],
+    ['내용', stripCoordLine(report.content)],
+    ['참고 링크', getSafeReferenceUrl(report.reference_url) ?? '없음'],
+    ['위치', extractCoordinates(report.content) ?? '없음'],
+    ['연락처', [report.contact_method, report.contact].filter(Boolean).join(' · ') || '없음'],
+    ['제보일시', formatKstDateTime(report.created_at)],
+  ]
+  return fields.map(([label, value]) => `${label}:\n${value}`).join('\n\n')
+}
+
+function ReportTemplateButton({ report }: { report: Report }) {
+  const [copied, setCopied] = useState(false)
+
+  const copyTemplate = async () => {
+    try {
+      await navigator.clipboard.writeText(buildReportTemplate(report))
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1800)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copyTemplate}
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-700 px-2.5 py-1.5 text-xs text-zinc-400 transition-colors hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-200"
+      title="제보 템플릿 복사"
+    >
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+      {copied ? '복사됨' : '템플릿 복사'}
+    </button>
+  )
 }
 
 export default function AdminReportsClient({ reports }: { reports: Report[] }) {
@@ -98,6 +142,7 @@ export default function AdminReportsClient({ reports }: { reports: Report[] }) {
               <ReportCoordAction content={r.content} title={r.title} />
 
               <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-600 border-t border-zinc-800 pt-3">
+                <ReportTemplateButton report={r} />
                 {(r.contact || r.contact_method) && (
                   <span>
                     연락처:{' '}

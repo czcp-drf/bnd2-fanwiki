@@ -45,7 +45,7 @@ function buildHref(status: string, type: string) {
 type Props = { searchParams: Promise<{ status?: string; type?: string }> }
 
 export default async function AdminReportsPage({ searchParams }: Props) {
-  const { status = '', type = '' } = await searchParams
+  const { status = 'pending', type = '' } = await searchParams
   const reports = await getReports(status, type)
 
   return (
