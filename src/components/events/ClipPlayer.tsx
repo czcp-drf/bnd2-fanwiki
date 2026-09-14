@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { ExternalLink, Play, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ExternalLink, Play, ChevronLeft, ChevronRight, EyeOff } from 'lucide-react'
 import { useRedPill } from '@/lib/context/RedPillContext'
 import ClipLabel from './ClipLabel'
 
@@ -45,6 +45,9 @@ export default function ClipPlayer({
   const [tooltip, setTooltip] = useState<{ label: string; streamerLine: string | null } | null>(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
   const { isRedPill } = useRedPill()
+  // 빨간약이 켜져 있으면 즉시 공개하고, 사용자가 직접 연 상태도 유지한다.
+  const [isManuallyRevealed, setIsManuallyRevealed] = useState(false)
+  const isRevealed = isRedPill || isManuallyRevealed
 
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current
@@ -92,8 +95,8 @@ export default function ClipPlayer({
     <div className="flex flex-col gap-4">
       {/* 플레이어 */}
       <div className="w-full space-y-0 rounded-xl border border-zinc-800 overflow-hidden">
-        {/* 영상 영역 — 모든 iframe을 미리 로드하고 활성 클립만 표시 */}
-        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+        {/* 영상 영역 — 보호 상태에서도 iframe은 미리 로드하고 오버레이로 가린다. */}
+        <div className="relative w-full overflow-hidden" style={{ paddingBottom: '56.25%' }}>
           {clips.map((clip) => {
             const url = parseClipUrl(clip.clip_url)
             const isActive = clip.id === activeId
@@ -125,6 +128,25 @@ export default function ClipPlayer({
               />
             )
           })}
+
+          {!isRevealed && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-zinc-950 px-6 text-center">
+              <EyeOff size={26} className="text-amber-400" />
+              <div>
+                <p className="text-sm font-semibold text-white">빨간약 주의</p>
+                <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                  클립에 스트리머 정보가 포함될 수 있습니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsManuallyRevealed(true)}
+                className="cursor-pointer rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-100 transition-colors hover:bg-zinc-700"
+              >
+                클립 보기
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 클립 정보 바 */}
