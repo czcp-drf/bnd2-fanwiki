@@ -289,6 +289,8 @@ src/
 | `037_drop_legacy_blocked_ip.sql`           | 기존 차단 데이터 확인 후 blocked_ips의 원본 ip 컬럼 제거             |
 | `038_map_location_wiki_path.sql`           | 주요 장소 핀에 선택형 위키 링크 컬럼 추가                            |
 | `039_map_location_external_wiki_links.sql` | 주요 장소 위키 링크를 외부 URL로 전환하고 조직 거점 위키 링크 컬럼 추가         |
+| `040_ingame_ingest_source.sql` | Bongstagram·BBS 인게임 수집 대비 source·external_id 컬럼과 중복 방지 제약 추가 |
+| `041_bbs_article_reaction_rate_limit.sql` | 기사별 IP 해시 기준 좋아요·싫어요 30초 요청 제한 |
 
 
 ---
@@ -366,6 +368,8 @@ src/
 - [x] BBS 기사 어드민 등록/수정/삭제 (`/admin/bbs`) — 기사 검색·말머리/공개 상태 필터, 활성 언론 조직 소속 담당기자 선택, KST 승인일시, 대표/첨부 이미지 최대 5장 관리
 - [x] BBS 기사 이미지 Storage migration 운영 DB 적용 (`034_bss_storage.sql`, 사용자 확인)
 - [x] BBS 기사 DB 식별자 rename migration 운영 DB 적용 (`035_rename_bss_tables_to_bbs.sql`, 사용자 확인)
+- [x] 인게임 수집 대비 source·external_id migration 운영 DB 적용 (`040_ingame_ingest_source.sql`, 사용자 확인)
+- [x] BBS 기사 리액션 rate limit migration 운영 DB 적용 (`041_bbs_article_reaction_rate_limit.sql`, 사용자 확인)
 - [x] 이미지 전송 최적화 기반 — Supabase Storage 이미지는 Vercel `next/image` 최적화·캐시 사용, 동영상·외부 이미지는 기존 전달 방식 유지
 
 ---

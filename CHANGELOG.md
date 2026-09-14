@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- BBS 기사 리액션 요청 제한 및 인게임 수집 스키마 반영 (`main`): `040_ingame_ingest_source.sql`을 포함해 Bongstagram·BBS 데이터의 source·external_id와 중복 방지 제약을 추가하고, `041_bbs_article_reaction_rate_limit.sql`에서 같은 기사·IP 해시 조합의 좋아요·싫어요 요청을 30초에 한 번으로 제한했습니다. 서버 모드의 반복 요청은 Supabase RPC에서 차단하며, 클라이언트 제한 중에는 커스텀 툴팁을 표시합니다. 두 migration 모두 운영 DB 적용을 사용자에게 확인받았고, TypeScript·관련 ESLint·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
 - 일정 페이지 운영 상태·타임라인 보완: 일정 표시와 서버 상태를 KST 기준으로 통일하고, 평일 18:00~03:00 운영·금요일 휴식·운영 시간 외 휴식·10월 5일 00:00 서버 종료 상태를 반영했습니다. 지난 일정은 겹친 카드로 접어 표시하고 클릭 시 펼칠 수 있으며, 전체 유저 베타 접속 핀은 회색으로 통일했습니다. `npm run build`, `npx tsc --noEmit`, 일정 파일 ESLint, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - 홈 빠른 탐색 카드 추가 (`main`): 상단의 최근 사건·BBS 최신 기사와 중복되던 통합 업데이트 피드를 제거하고, 사건 아카이브·BBS 기사·주요 장소 지도·인물 둘러보기로 이동하는 반응형 빠른 탐색 카드 4개를 배치했습니다. TypeScript·홈 페이지 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.

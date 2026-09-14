@@ -7,6 +7,7 @@ import { getBbsArticleComments, getBbsArticleEngagement, type BbsArticleReaction
 import { getBbsReactionMode } from '@/lib/bbs/reaction-mode'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const BBS_REACTION_RATE_LIMIT_SECONDS = 30
 
 export async function getBbsArticleEngagementAction(articleId: string) {
   return getBbsArticleEngagement(articleId)
@@ -36,6 +37,24 @@ export async function toggleBbsArticleReaction(articleId: string, reaction: BbsA
     .maybeSingle()
 
   if (articleError || !article) return { error: '공개된 기사를 찾을 수 없습니다.' }
+
+  const { data: rateLimitAccepted, error: rateLimitError } = await supabase.rpc('check_bbs_article_reaction_rate_limit', {
+    p_article_id: id,
+    p_ip_hash: ipHash,
+    p_window_seconds: BBS_REACTION_RATE_LIMIT_SECONDS,
+  })
+
+  if (rateLimitError) {
+    console.error('BBS article reaction rate limit failed:', rateLimitError.message)
+    return { error: '기사 반응을 처리하지 못했습니다.' }
+  }
+  if (!rateLimitAccepted) {
+    return {
+      error: `${BBS_REACTION_RATE_LIMIT_SECONDS}초 후 다시 시도해 주세요.`,
+      rateLimited: true,
+      retryAfterSeconds: BBS_REACTION_RATE_LIMIT_SECONDS,
+    }
+  }
 
   const { data: existing, error: existingError } = await supabase
     .from('bbs_article_reactions')
