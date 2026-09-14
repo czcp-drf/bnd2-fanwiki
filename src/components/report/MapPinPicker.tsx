@@ -54,7 +54,7 @@ export default function MapPinPicker({ coords, onPick, readOnly = false }: Props
       zoomControl={!readOnly}
       style={{ height: '100%', width: '100%', background: '#0FA8D2', cursor: readOnly ? 'default' : 'crosshair' }}
     >
-      <TileLayer url={MAP_TILE_URLS.atlas} noWrap />
+      <TileLayer url={MAP_TILE_URLS.atlas} noWrap bounds={MAP_MAX_BOUNDS} />
       {!readOnly && onPick && <ClickHandler onPick={onPick} />}
       {coords && (
         <CircleMarker

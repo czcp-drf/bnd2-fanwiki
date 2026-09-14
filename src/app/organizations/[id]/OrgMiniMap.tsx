@@ -87,7 +87,7 @@ export default function OrgMiniMap({ org }: { org: OrgMapData }) {
         zoomControl={false}
         attributionControl={false}
       >
-        <TileLayer url={MAP_TILE_URLS.atlas} noWrap />
+        <TileLayer url={MAP_TILE_URLS.atlas} noWrap bounds={MAP_MAX_BOUNDS} />
 
         <Marker position={[org.hq_y, org.hq_x]} icon={createDropIcon(color)}>
           <Tooltip permanent direction="top" offset={[0, -2]}>
