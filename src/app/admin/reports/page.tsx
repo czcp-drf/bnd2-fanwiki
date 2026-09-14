@@ -36,7 +36,7 @@ async function getReports(status: string, type: string) {
 
 function buildHref(status: string, type: string) {
   const params = new URLSearchParams()
-  if (status) params.set('status', status)
+  params.set('status', status || 'all')
   if (type) params.set('type', type)
   const qs = params.toString()
   return qs ? `/admin/reports?${qs}` : '/admin/reports'
@@ -45,7 +45,9 @@ function buildHref(status: string, type: string) {
 type Props = { searchParams: Promise<{ status?: string; type?: string }> }
 
 export default async function AdminReportsPage({ searchParams }: Props) {
-  const { status = 'pending', type = '' } = await searchParams
+  const params = await searchParams
+  const status = params.status === undefined ? 'pending' : params.status === 'all' ? '' : params.status
+  const type = params.type ?? ''
   const reports = await getReports(status, type)
 
   return (
