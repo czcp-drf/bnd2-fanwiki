@@ -296,6 +296,27 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .events-thumbnail-fallback { background-color: #27272a; }
 html[data-bongstagram-theme="light"] .wiki-theme .events-thumbnail-fallback { background-color: #e4e4e7; }
 
+html[data-bongstagram-theme="light"] .wiki-dropdown {
+  border-color: #e4e4e7;
+  background-color: #ffffff;
+}
+html[data-bongstagram-theme="light"] .wiki-dropdown .border-zinc-800 { border-color: #e4e4e7; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .border-zinc-700 { border-color: #d4d4d8; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .bg-zinc-950 { background-color: #fafafa; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .bg-zinc-900 { background-color: #ffffff; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .bg-zinc-800 { background-color: #f4f4f5; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .bg-zinc-800\/60 { background-color: rgb(244 244 245 / 0.6); }
+html[data-bongstagram-theme="light"] .wiki-dropdown .text-zinc-100 { color: #18181b; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .text-zinc-200 { color: #3f3f46; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .text-zinc-300 { color: #52525b; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .text-zinc-400 { color: #71717a; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .text-zinc-500 { color: #71717a; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .text-zinc-600 { color: #a1a1aa; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .hover\:bg-zinc-800:hover,
+html[data-bongstagram-theme="light"] .wiki-dropdown .focus\:bg-zinc-700:focus { background-color: #f3f3f3; }
+html[data-bongstagram-theme="light"] .wiki-dropdown .hover\:text-zinc-100:hover,
+html[data-bongstagram-theme="light"] .wiki-dropdown .focus\:text-white:focus { color: #18181b; }
+
 html[data-bongstagram-theme="light"] .wiki-theme .prose-invert {
   --tw-prose-body: var(--wiki-muted);
   --tw-prose-headings: var(--wiki-text);

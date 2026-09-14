@@ -5,11 +5,7 @@ import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import type { Event } from '@/types/database'
-import StreamerListWithLive from '@/components/streamers/StreamerListWithLive'
-import { getLiveStreamers } from '@/lib/data/live-streamers'
 import AppImage from '@/components/ui/AppImage'
-import LiveDataError from '@/components/live/LiveDataError'
-import { LIVE_ENABLED } from '@/lib/live/config'
 import { BBS_ARTICLES_TAG, getPublishedBbsArticlesPage } from '@/lib/bbs/data'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
 import { getBongstagramFeedPage } from '@/lib/bongstagram/feed-data'
@@ -87,9 +83,8 @@ const eventTypeColor: Record<string, string> = {
 }
 
 export default async function HomePage() {
-  const [stats, streamers, events] = await Promise.all([
+  const [stats, events] = await Promise.all([
     getStatsCached(),
-    LIVE_ENABLED ? getLiveStreamers().catch(() => null) : Promise.resolve(null),
     getRecentEventsCached(),
   ])
   const [{ articles: bbsArticles }, { posts: bongstagramPosts }] = await Promise.all([
@@ -133,27 +128,6 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-
-        {/* 라이브 바로가기 */}
-        {LIVE_ENABLED && <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-              <h2 className="text-lg font-bold text-[var(--site-text)]">라이브 바로가기</h2>
-            </div>
-            <Link href="/live" className="text-sm text-[var(--site-muted)] transition-colors hover:text-amber-400">
-              전체 보기 →
-            </Link>
-          </div>
-
-          {streamers === null ? <LiveDataError /> : streamers.length === 0 ? (
-            <div className="rounded-xl border border-[var(--site-border)] bg-[var(--site-card)] py-12 text-center text-sm text-[var(--site-muted)]">
-              등록된 스트리머가 없습니다.
-            </div>
-          ) : (
-            <StreamerListWithLive streamers={streamers} onlineOnly />
-          )}
-        </section>}
 
         <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           {/* 최근 사건 */}

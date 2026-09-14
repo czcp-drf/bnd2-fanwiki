@@ -120,7 +120,8 @@ export default async function StreamerDetailPage({ params }: Props) {
   const characters = streamer.characters ?? []
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-4xl space-y-8">
       {/* 뒤로가기 */}
       <BackButton />
 
@@ -245,6 +246,7 @@ export default async function StreamerDetailPage({ params }: Props) {
         )}
         </StreamerReveal>
       </section>
+      </div>
     </div>
   )
 }

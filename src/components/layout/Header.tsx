@@ -7,13 +7,11 @@ import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useRedPill } from '@/lib/context/RedPillContext'
-import { LIVE_ENABLED } from '@/lib/live/config'
 import { BongstagramThemeToggle } from '@/components/bongstagram/BongstagramTheme'
 
 const navItems = [
   { href: '/', label: '홈' },
   { href: '/schedule', label: '일정' },
-  ...(LIVE_ENABLED ? [{ href: '/live', label: '라이브' }] : []),
   { href: '/streamers', label: '스트리머' },
   { href: '/characters', label: '캐릭터' },
   { href: '/organizations', label: '조직' },

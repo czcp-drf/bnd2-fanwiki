@@ -40,7 +40,7 @@ export default function DropdownPortal({ anchor, children }: {
     }
   }, [anchor])
   return createPortal(
-    <div ref={layer} className="dropdown-scroll fixed z-[1000] overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl" style={{ visibility: 'hidden' }}>
+    <div ref={layer} className="dropdown-scroll wiki-dropdown fixed z-[1000] overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl" style={{ visibility: 'hidden' }}>
       {children}
     </div>, document.body,
   )

@@ -79,7 +79,8 @@ export default async function StreamersPage({ searchParams }: Props) {
   const streamers = await getStreamersCached(sort)
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 space-y-10">
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-6xl space-y-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-white">스트리머</h1>
@@ -90,7 +91,8 @@ export default async function StreamersPage({ searchParams }: Props) {
         </Suspense>
       </div>
 
-        <StreamerListWithLive streamers={streamers as unknown as StreamerItem[]} liveStatus={false} />
+        <StreamerListWithLive streamers={streamers as unknown as StreamerItem[]} />
+      </div>
     </div>
   )
 }
