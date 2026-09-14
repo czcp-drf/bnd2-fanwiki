@@ -81,6 +81,7 @@ function validateArticleInput(input: BbsArticleInput): { error: string } | { dat
       storagePath: item.storagePath?.trim() || null,
     }))
     .filter((item) => item.imageUrl)
+  const firstContentImage = content.match(/!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i)?.[1] ?? ''
 
   if (!title) return { error: '기사 제목을 입력해 주세요.' }
   if (title.length > 200) return { error: '기사 제목은 200자 이내로 입력해 주세요.' }
@@ -113,7 +114,7 @@ function validateArticleInput(input: BbsArticleInput): { error: string } | { dat
       category,
       summary: summary || null,
       content,
-      thumbnailUrl: thumbnailUrl || null,
+      thumbnailUrl: thumbnailUrl || firstContentImage || media[0]?.imageUrl || null,
       reporterCharacterId,
       approvedAt: approvedAtIso,
       isPublished: input.isPublished,

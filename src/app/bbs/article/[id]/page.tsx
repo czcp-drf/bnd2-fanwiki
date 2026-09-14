@@ -20,6 +20,11 @@ function formatArticleDate(value: string) {
   return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false }).format(new Date(value))
 }
 
+function removeRepresentativeImage(content: string, imageUrl: string) {
+  const escapedUrl = imageUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return content.replace(new RegExp(`!\\[[^\\]]*\\]\\(${escapedUrl}\\)\\s*`, 'i'), '').trim()
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const article = await getPublishedBbsArticle(id)
@@ -34,6 +39,8 @@ export default async function BbsArticlePage({ params }: Props) {
 
   const heroMediaIndex = article.thumbnailUrl ? article.media.findIndex((media) => media.imageUrl === article.thumbnailUrl) : 0
   const additionalMedia = article.media.filter((_, index) => index !== heroMediaIndex)
+  const heroImageUrl = article.thumbnailUrl ?? article.media[0]?.imageUrl
+  const bodyContent = heroImageUrl ? removeRepresentativeImage(article.content, heroImageUrl) : article.content
 
   return (
     <div className="bbs-theme min-h-[calc(100vh-3.5rem)] bg-[var(--bbs-page)] px-0 py-0 text-[var(--bbs-text)] md:px-4 md:py-8">
@@ -65,7 +72,7 @@ export default async function BbsArticlePage({ params }: Props) {
               ))}
             </div>
           )}
-          <BbsArticleContent content={article.content} className="mt-7" />
+          <BbsArticleContent content={bodyContent} className="mt-7" />
           <BbsArticleInteractions articleId={article.id} initial={engagement} />
         </main>
         </article>
