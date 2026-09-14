@@ -309,6 +309,24 @@ export async function updateBbsArticle(id: string, input: BbsArticleInput): Prom
   return { success: true }
 }
 
+export async function toggleBbsArticlePublished(id: string, current: boolean): Promise<ActionResult> {
+  const articleId = id.trim()
+  if (!UUID_PATTERN.test(articleId)) return { error: '변경할 기사를 찾을 수 없습니다.' }
+
+  const supabase = await requireAdmin()
+  const { error } = await supabase
+    .from('bbs_articles')
+    .update({ is_published: !current })
+    .eq('id', articleId)
+  if (error) {
+    console.error('BBS article publish toggle failed:', error.code, error.message)
+    return { error: '기사 공개 상태를 변경하지 못했습니다.' }
+  }
+
+  revalidateBbs(articleId)
+  return { success: true }
+}
+
 export async function deleteBbsArticle(id: string): Promise<ActionResult> {
   const articleId = id.trim()
   if (!UUID_PATTERN.test(articleId)) return { error: '삭제할 기사를 찾을 수 없습니다.' }

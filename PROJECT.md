@@ -222,6 +222,11 @@ src/
 
 - 빨간약 ON에서도 카드 헤더에는 스트리머명만 표시하고, 캐릭터·소속 정보는 카드 본문에서만 표시해 중복 노출을 방지
 
+### BBS 관리자
+
+- 기사 목록에서 공개·비공개 상태를 직접 전환할 수 있으며, 공개 상태 변경 시 BBS 관련 캐시를 갱신
+- `public/bbs-json-to-markdown.html`에서 기사 JSON의 본문 HTML을 BBS 입력용 Markdown으로 변환하고 첫 본문 이미지 URL을 대표 이미지로 복사 가능
+
 ### 타일 Storage
 
 - Supabase Storage 공개 버킷: `map-tiles`

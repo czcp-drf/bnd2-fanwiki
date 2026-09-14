@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BBS JSON → Markdown 변환기</title>
+  <style>
+    :root{color-scheme:light;--bg:#f4f4f2;--card:#fff;--text:#202124;--muted:#6b7280;--line:#ddd;--accent:#d84017}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 system-ui,-apple-system,"Malgun Gothic",sans-serif}
+    main{max-width:1100px;margin:0 auto;padding:32px 18px 64px}h1{margin:0 0 6px;font-size:24px}h2{margin:0;font-size:16px}.hint{margin:0 0 22px;color:var(--muted)}
+    .panel,.article{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px}.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    input[type=file],button{font:inherit}button{border:1px solid #c9c9c9;border-radius:7px;background:#fff;padding:7px 11px;cursor:pointer}button:hover{background:#f1f1f1}.primary{color:#fff;background:var(--accent);border-color:var(--accent)}
+    textarea{display:block;width:100%;min-height:130px;margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:10px;resize:vertical;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+    select{border:1px solid var(--line);border-radius:7px;padding:7px;background:#fff}.status{color:var(--muted);margin-left:auto}.article-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.meta{margin-top:3px;color:var(--muted);font-size:12px}.url-row{display:flex;gap:8px;margin-top:12px}.url-row input{min-width:0;flex:1;border:1px solid var(--line);border-radius:7px;padding:7px 9px;color:var(--muted);font:12px ui-monospace,SFMono-Regular,Consolas,monospace}.output{min-height:180px;margin-top:12px;background:#fafafa}.empty{padding:32px;text-align:center;color:var(--muted)}
+    @media(max-width:600px){.article-head{display:block}.article-head button{margin-top:10px}.status{width:100%;margin:4px 0 0}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>BBS JSON → Markdown 변환기</h1>
+  <p class="hint">기사 JSON을 불러오면 본문 HTML에서 필요한 서식과 이미지만 남겨 BBS 입력용 Markdown으로 변환합니다.</p>
+  <section class="panel">
+    <div class="toolbar">
+      <input id="file" type="file" accept=".json,application/json">
+      <select id="encoding" aria-label="JSON 인코딩"><option value="utf-8">UTF-8</option><option value="euc-kr">EUC-KR</option></select>
+      <button id="convert" class="primary">JSON 변환</button><button id="copyAll">전체 복사</button>
+      <span id="status" class="status">JSON 파일을 선택해 주세요.</span>
+    </div>
+    <textarea id="input" placeholder='파일 대신 JSON을 직접 붙여넣어도 됩니다.'></textarea>
+  </section>
+  <section id="results"><div class="empty">변환 결과가 여기에 표시됩니다.</div></section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id)
+  let results = []
+  const categoryLabels = {info:'정보',incident:'사건사고',economy:'경제',column:'칼럼',etc:'기타',other:'기타'}
+  function text(node){ return node.textContent.replace(/\s+/g,' ').trim() }
+  function inline(node){
+    if(node.nodeType===Node.TEXT_NODE)return node.textContent.replace(/\s+/g,' ')
+    if(!(node instanceof HTMLElement))return [...node.childNodes].map(inline).join('')
+    const tag=node.tagName.toLowerCase(), content=[...node.childNodes].map(inline).join('')
+    if(tag==='strong'||tag==='b')return content.trim()?`**${content.trim()}**`:''
+    if(tag==='em'||tag==='i')return content.trim()?`*${content.trim()}*`:''
+    if(['s','del','strike'].includes(tag))return content.trim()?`~~${content.trim()}~~`:''
+    if(tag==='br')return '\n'
+    if(tag==='a'){const href=node.getAttribute('href');return /^https?:\/\//i.test(href||'')?`[${content.trim()||href}](${href})`:content}
+    if(tag==='img'){const src=node.getAttribute('src');return /^https?:\/\//i.test(src||'')?`![${node.getAttribute('alt')||'기사 이미지'}](${src})`:''}
+    return content
+  }
+  function block(node){
+    if(node.nodeType===Node.TEXT_NODE)return text(node)
+    if(!(node instanceof HTMLElement))return [...node.childNodes].map(block).filter(Boolean).join('\n\n')
+    const tag=node.tagName.toLowerCase()
+    if(['script','style','noscript','iframe','svg','form','input','button'].includes(tag))return ''
+    if(/^h[1-3]$/.test(tag)){const heading=inline(node).trim();if(!heading)return '';const prefix=tag==='h1'?'#':tag==='h2'?'##':'###';return `${prefix} ${heading}`}
+    if(tag==='ul'||tag==='ol')return [...node.children].filter(x=>x.tagName.toLowerCase()==='li').map((x,i)=>`${tag==='ol'?i+1+'.':'-'} ${inline(x).trim()}`).join('\n')
+    if(tag==='img')return inline(node)
+    const content=[...node.childNodes].map(block).filter(Boolean).join('\n\n')
+    return content||inline(node).trim()
+  }
+  function htmlToMarkdown(html){
+    const doc=new DOMParser().parseFromString(html,'text/html')
+    return [...doc.body.childNodes].map(block).filter(Boolean).join('\n\n').replace(/\n{3,}/g,'\n\n').trim()
+  }
+  function firstImageUrl(html){
+    const doc=new DOMParser().parseFromString(html,'text/html'), image=doc.querySelector('img[src]'), src=image?.getAttribute('src')||''
+    return /^https?:\/\//i.test(src)?src:''
+  }
+  function articleMarkdown(article){
+    return htmlToMarkdown(article.body||article.content||'')
+  }
+  function safe(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function render(){
+    $('results').innerHTML=results.length?results.map((r,i)=>`<article class="article"><div class="article-head"><div><h2>${safe(r.title||`기사 ${i+1}`)}</h2><div class="meta">${safe(categoryLabels[r.category]||r.category||'말머리 없음')} · ${safe(r.reporter||'기자 미상')} · ${safe(r.publishedAt||'승인일시 없음')}</div></div><button data-copy="${i}">Markdown 복사</button></div><div class="url-row"><input value="${safe(r.thumbnailUrl)}" readonly aria-label="대표 이미지 URL"><button data-url-copy="${i}" ${r.thumbnailUrl?'':'disabled'}>대표 URL 복사</button></div><textarea class="output" readonly>${safe(r.markdown)}</textarea><button data-download="${i}">.md 파일 다운로드</button></article>`).join(''):'<div class="empty">변환 결과가 여기에 표시됩니다.</div>'
+    document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(results[b.dataset.copy].markdown).then(()=>b.textContent='복사됨'))
+    document.querySelectorAll('[data-url-copy]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(results[b.dataset.urlCopy].thumbnailUrl).then(()=>b.textContent='복사됨'))
+    document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>{const r=results[b.dataset.download], blob=new Blob([r.markdown],{type:'text/markdown;charset=utf-8'}), a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(r.title||`article-${Number(b.dataset.download)+1}`).replace(/[\\/:*?"<>|]/g,'_')+'.md';a.click();URL.revokeObjectURL(a.href)})
+  }
+  async function readFile(file){const buffer=await file.arrayBuffer();return new TextDecoder($('encoding').value).decode(buffer)}
+  function convert(raw){
+    try{const parsed=JSON.parse(raw), rows=Array.isArray(parsed)?parsed:(parsed.rows||parsed.data||[]);if(!Array.isArray(rows))throw Error('rows 배열을 찾을 수 없습니다.');results=rows.map(article=>({...article,markdown:articleMarkdown(article),thumbnailUrl:firstImageUrl(article.body||article.content||'')}));$('status').textContent=`${results.length}건 변환 완료`;render()}catch(e){results=[];render();$('status').textContent='JSON 형식을 확인해 주세요.';alert(e.message)}}
+  $('file').onchange=async()=>{const f=$('file').files[0];if(f){$('input').value=await readFile(f);convert($('input').value)}}
+  $('convert').onclick=()=>convert($('input').value)
+  $('copyAll').onclick=()=>navigator.clipboard.writeText(results.map((r,i)=>`<!-- ${r.title||`기사 ${i+1}`} -->\n${r.markdown}`).join('\n\n---\n\n'))
+</script>
+</body>
+</html>
