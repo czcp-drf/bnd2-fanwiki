@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- 홈 빠른 탐색 카드 추가 (`main`): 상단의 최근 사건·BBS 최신 기사와 중복되던 통합 업데이트 피드를 제거하고, 사건 아카이브·BBS 기사·주요 장소 지도·인물 둘러보기로 이동하는 반응형 빠른 탐색 카드 4개를 배치했습니다. TypeScript·홈 페이지 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
 - Bongstagram 공개 노출 임시 중단 (`main`): 홈 화면의 소셜피드 섹션·게시글 수 통계·관련 데이터 조회를 제거하고 전역 헤더의 Bongstagram 메뉴를 숨겼습니다. `/bongstagram` 및 하위 공개 경로는 Proxy에서 404로 차단하며, 관리자 `/admin/bongstagram` 경로는 유지합니다. `npx tsc --noEmit`, 관련 ESLint, `npm run build`, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - 제보 테마·검증 보완: `/report`에 전역 라이트·다크 테마를 적용하고, 제보 FormData 타입·추가 필드 개수·URL·좌표·최종 본문 길이를 서버에서 검증하도록 보강했습니다. 관리자 제보 시각을 KST로 통일하고 상태값 검증과 IP 차단 실패 안내를 추가했으며, 폼 초기화 방식을 정리했습니다. `npx tsc --noEmit`, 관련 ESLint, `npm run build`, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.

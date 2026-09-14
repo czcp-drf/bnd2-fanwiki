@@ -8,6 +8,7 @@ import type { Event } from '@/types/database'
 import AppImage from '@/components/ui/AppImage'
 import { BBS_ARTICLES_TAG, getPublishedBbsArticlesPage } from '@/lib/bbs/data'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
+import { Archive, Map, Newspaper, Users } from 'lucide-react'
 
 async function getStats() {
   const supabase = createPublicClient()
@@ -73,6 +74,13 @@ const eventTypeColor: Record<string, string> = {
   accident: 'text-yellow-400 bg-yellow-400/10',
   other: 'text-zinc-400 bg-zinc-400/10',
 }
+
+const quickLinks = [
+  { href: '/events', label: '사건 아카이브', description: '봉누도2의 주요 사건과 흐름을 확인하세요.', icon: Archive, color: 'text-amber-500 bg-amber-400/10' },
+  { href: '/bbs', label: 'BBS 기사', description: '봉누도 방송국의 최신 기사를 확인하세요.', icon: Newspaper, color: 'text-[#e14b32] bg-[#e14b32]/10' },
+  { href: '/map', label: '주요 장소 지도', description: '사건과 조직의 위치를 지도에서 살펴보세요.', icon: Map, color: 'text-sky-500 bg-sky-400/10' },
+  { href: '/characters', label: '인물 둘러보기', description: '스트리머와 캐릭터 정보를 찾아보세요.', icon: Users, color: 'text-emerald-500 bg-emerald-400/10' },
+]
 
 export default async function HomePage() {
   const [stats, events] = await Promise.all([
@@ -209,6 +217,36 @@ export default async function HomePage() {
             )}
           </section>
         </div>
+
+        {/* 빠른 탐색 */}
+        <section className="space-y-4">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--site-muted)]">Explore the archive</p>
+              <h2 className="mt-1 text-xl font-bold text-[var(--site-text)]">빠른 탐색</h2>
+            </div>
+            <span className="text-xs text-[var(--site-muted)]">봉누도 따라가기</span>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {quickLinks.map(({ href, label, description, icon: Icon, color }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group rounded-2xl border border-[var(--site-border)] bg-[var(--site-card)] p-5 transition-colors hover:border-amber-400/40 hover:bg-[var(--site-card-raised)]"
+              >
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
+                  <Icon size={19} />
+                </span>
+                <span className="mt-4 flex items-center justify-between gap-2">
+                  <span className="font-bold text-[var(--site-text)] transition-colors group-hover:text-amber-400">{label}</span>
+                  <span aria-hidden="true" className="text-lg text-[var(--site-muted)] transition-transform group-hover:translate-x-0.5 group-hover:text-amber-400">→</span>
+                </span>
+                <span className="mt-2 block text-xs leading-5 text-[var(--site-muted)]">{description}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
 
       </div>
     </div>
