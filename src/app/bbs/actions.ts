@@ -22,7 +22,7 @@ export async function toggleBbsArticleReaction(articleId: string, reaction: BbsA
 
   const id = articleId.trim()
   if (!UUID_PATTERN.test(id)) return { error: '기사를 찾을 수 없습니다.' }
-  if (reaction !== 'like' && reaction !== 'dislike') return { error: '반응을 확인할 수 없습니다.' }
+  if (reaction !== 'like') return { error: '현재 좋아요만 사용할 수 있습니다.' }
 
   const ipHash = await getBongstagramIpHash()
   if (!ipHash) return { error: '접속 환경을 확인할 수 없어 반응을 처리할 수 없습니다.' }

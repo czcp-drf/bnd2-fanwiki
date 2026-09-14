@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { ArrowLeft, MessageCircle, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { ArrowLeft, MessageCircle, ThumbsUp } from 'lucide-react'
 import { getBbsArticleCommentsAction, toggleBbsArticleReaction } from '../actions'
 import type { BbsArticleComment, BbsArticleEngagement, BbsArticleReaction } from '@/lib/bbs/engagement'
 import BbsShareButton from './BbsShareButton'
@@ -125,13 +125,6 @@ export default function BbsArticleInteractions({ articleId, initial }: { article
               <span>{engagement.reactionMode === 'local' ? (localReaction === 'like' ? 1 : 0) : engagement.likeCount}</span>
             </button>
             {rateLimitTooltip === 'like' && <span role="status" className="pointer-events-none absolute bottom-full right-0 z-10 mb-2 whitespace-nowrap rounded-lg bg-[var(--bbs-text)] px-3 py-2 text-xs text-[var(--bbs-surface)] shadow-lg">잠시 후 다시 눌러주세요.</span>}
-          </div>
-          <div className="relative">
-            <button type="button" onClick={() => handleReaction('dislike')} disabled={isPending} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${reactionButtonClass((engagement.reactionMode === 'local' ? localReaction : engagement.viewerReaction) === 'dislike', 'dislike')}`} aria-label="기사 싫어요">
-              <ThumbsDown size={18} fill={(engagement.reactionMode === 'local' ? localReaction : engagement.viewerReaction) === 'dislike' ? 'currentColor' : 'none'} />
-              <span>{engagement.reactionMode === 'local' ? (localReaction === 'dislike' ? 1 : 0) : engagement.dislikeCount}</span>
-            </button>
-            {rateLimitTooltip === 'dislike' && <span role="status" className="pointer-events-none absolute bottom-full right-0 z-10 mb-2 whitespace-nowrap rounded-lg bg-[var(--bbs-text)] px-3 py-2 text-xs text-[var(--bbs-surface)] shadow-lg">잠시 후 다시 눌러주세요.</span>}
           </div>
           <button type="button" onClick={openComments} className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[var(--bbs-subtle-text)] transition-colors hover:bg-[var(--bbs-muted)] hover:text-[var(--bbs-text)]" aria-label="기사 댓글 보기">
             <MessageCircle size={18} />
