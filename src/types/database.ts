@@ -173,6 +173,8 @@ export type Database = {
           approved_at: string | null
           is_published: boolean
           reporter_character_id: string
+          source: 'manual' | 'ingame'
+          external_id: string | null
           created_at: string
           updated_at: string
         }

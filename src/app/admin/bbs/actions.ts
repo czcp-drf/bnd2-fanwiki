@@ -20,6 +20,19 @@ const STORAGE_PATH_PATTERN = /^articles\/[0-9a-f-]+\/[0-9a-f-]+\.(jpg|png|webp|g
 
 type ActionResult = { success?: true; id?: string; error?: string }
 
+export type BbsImportRow = {
+  externalId: string
+  title: string
+  category: string
+  content: string
+  thumbnailUrl: string
+  reporterName: string
+  reporterCharacterId?: string
+  approvedAt: string
+}
+
+export type BbsImportResult = { imported: number; skipped: number; errors: string[] }
+
 export type BbsArticleInput = {
   title: string
   category: string
@@ -308,6 +321,57 @@ export async function updateBbsArticle(id: string, input: BbsArticleInput): Prom
 
   revalidateBbs(articleId)
   return { success: true }
+}
+
+export async function importBbsArticles(rows: BbsImportRow[]): Promise<BbsImportResult> {
+  const supabase = await requireAdmin()
+  const safeRows = rows.slice(0, 500)
+  const externalIds = [...new Set(safeRows.map((row) => row.externalId.trim()).filter(Boolean))]
+  const { data: existingRows, error: existingError } = externalIds.length
+    ? await supabase.from('bbs_articles').select('external_id').in('external_id', externalIds)
+    : { data: [], error: null }
+  if (existingError) return { imported: 0, skipped: 0, errors: ['기존 기사 중복 여부를 확인하지 못했습니다.'] }
+
+  const existingIds = new Set((existingRows ?? []).map((row) => row.external_id).filter((id): id is string => Boolean(id)))
+  const candidates = safeRows.filter((row) => row.externalId.trim() && !existingIds.has(row.externalId.trim()))
+  const reporterNames = [...new Set(candidates.map((row) => row.reporterName.trim()).filter(Boolean))]
+  const { data: reporterRows, error: reporterError } = reporterNames.length
+    ? await supabase.from('characters').select('id, name').in('name', reporterNames)
+    : { data: [], error: null }
+  if (reporterError) return { imported: 0, skipped: existingIds.size, errors: ['담당기자 목록을 확인하지 못했습니다.'] }
+  const reporterByName = new Map((reporterRows ?? []).map((row) => [row.name, row.id]))
+  let imported = 0
+  const errors: string[] = []
+
+  for (const [index, row] of candidates.entries()) {
+    const reporterId = row.reporterCharacterId && UUID_PATTERN.test(row.reporterCharacterId) ? row.reporterCharacterId : reporterByName.get(row.reporterName.trim())
+    const approvedAt = row.approvedAt.trim()
+    const approvedDate = approvedAt ? new Date(/^[0-9]{4}-[0-9]{2}-[0-9]{2} /.test(approvedAt) ? `${approvedAt.replace(' ', 'T')}+09:00` : approvedAt) : null
+    if (!row.title.trim() || !BBS_CATEGORIES.has(row.category.trim()) || !reporterId || !row.content.trim() || !approvedDate || Number.isNaN(approvedDate.getTime())) {
+      errors.push(`${index + 1}번째 기사: 제목·카테고리·본문·담당기자·승인일시를 확인해 주세요.`)
+      continue
+    }
+    const { data: article, error } = await supabase.from('bbs_articles').insert({
+      title: row.title.trim().slice(0, 200),
+      category: row.category.trim(),
+      summary: null,
+      content: row.content.trim().slice(0, 50000),
+      thumbnail_url: row.thumbnailUrl.trim() || null,
+      approved_at: approvedDate.toISOString(),
+      is_published: false,
+      reporter_character_id: reporterId,
+      source: 'ingame',
+      external_id: row.externalId.trim(),
+    }).select('id').single()
+    if (error || !article) {
+      errors.push(`${index + 1}번째 기사: 저장하지 못했습니다.`)
+      continue
+    }
+    imported += 1
+  }
+
+  revalidateBbs()
+  return { imported, skipped: safeRows.length - candidates.length, errors }
 }
 
 export async function toggleBbsArticlePublished(id: string, current: boolean): Promise<ActionResult> {

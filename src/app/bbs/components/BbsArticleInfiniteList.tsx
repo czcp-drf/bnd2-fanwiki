@@ -13,6 +13,12 @@ export default function BbsArticleInfiniteList({ initialArticles, total, categor
   const [loading, setLoading] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const hasMore = articles.length < total
+  const listParams = new URLSearchParams()
+  if (category !== '전체') listParams.set('category', category)
+  if (reporterIds.length) listParams.set('reporter', reporterIds.join(','))
+  if (day) listParams.set('day', day)
+  if (sortOrder === 'oldest') listParams.set('order', 'oldest')
+  const listQuery = listParams.toString()
 
   useEffect(() => {
     const sentinel = sentinelRef.current
@@ -34,7 +40,7 @@ export default function BbsArticleInfiniteList({ initialArticles, total, categor
   return (
     <>
       <section aria-label="BBS 기사 목록" className="grid gap-4 md:grid-cols-2">
-        {articles.map((article) => <BbsArticleCard key={article.id} article={article} />)}
+        {articles.map((article) => <BbsArticleCard key={article.id} article={article} listQuery={listQuery} />)}
       </section>
       <div ref={sentinelRef} className="flex min-h-12 items-center justify-center pt-3 text-xs text-[var(--bbs-subtle-text)]" aria-live="polite">
         {loading ? '기사를 불러오는 중입니다.' : hasMore ? '' : articles.length ? '모든 기사를 불러왔습니다.' : ''}

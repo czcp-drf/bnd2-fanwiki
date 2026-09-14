@@ -14,6 +14,7 @@ import { getBbsArticleEngagement } from '@/lib/bbs/engagement'
 
 type Props = {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ category?: string; reporter?: string | string[]; day?: string; order?: string }>
 }
 
 function formatArticleDate(value: string) {
@@ -31,8 +32,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return article ? { title: article.title, description: article.summary } : { title: '기사를 찾을 수 없습니다' }
 }
 
-export default async function BbsArticlePage({ params }: Props) {
+export default async function BbsArticlePage({ params, searchParams }: Props) {
   const { id } = await params
+  const query = await searchParams
+  const listParams = new URLSearchParams()
+  if (query.category) listParams.set('category', query.category)
+  if (query.reporter) listParams.set('reporter', Array.isArray(query.reporter) ? query.reporter.join(',') : query.reporter)
+  if (query.day) listParams.set('day', query.day)
+  if (query.order === 'oldest') listParams.set('order', 'oldest')
+  const listQuery = listParams.toString()
   const article = await getPublishedBbsArticle(id)
   if (!article) notFound()
   const engagement = await getBbsArticleEngagement(article.id)
@@ -46,7 +54,7 @@ export default async function BbsArticlePage({ params }: Props) {
     <div className="bbs-theme min-h-[calc(100vh-3.5rem)] bg-[var(--bbs-page)] px-0 py-0 text-[var(--bbs-text)] md:px-4 md:py-8">
         <article className="mx-auto max-w-3xl overflow-hidden bg-[var(--bbs-surface)] md:rounded-3xl md:border md:border-[var(--bbs-border)] md:shadow-xl">
         <header className="flex items-center gap-3 border-b border-[var(--bbs-border)] px-4 py-4 sm:px-6">
-          <Link href="/bbs" aria-label="BBS 기사 목록으로 돌아가기" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-[#d7432d]">
+          <Link href={`/bbs${listQuery ? `?${listQuery}` : ''}`} aria-label="BBS 기사 목록으로 돌아가기" className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-[#d7432d]">
             <ArrowLeft size={21} />
           </Link>
           <BbsLogo compact />

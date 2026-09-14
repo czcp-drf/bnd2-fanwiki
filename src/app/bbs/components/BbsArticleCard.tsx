@@ -16,9 +16,9 @@ function formatArticleTime(value: string) {
   return `${month}월 ${day}일`
 }
 
-export default function BbsArticleCard({ article }: { article: BbsArticle }) {
+export default function BbsArticleCard({ article, listQuery = '' }: { article: BbsArticle; listQuery?: string }) {
   return (
-    <Link href={`/bbs/article/${article.id}`} className="group flex cursor-pointer overflow-hidden rounded-2xl border border-[var(--bbs-border)] bg-[var(--bbs-card)] shadow-[0_3px_12px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#e14b32]/30 hover:shadow-[0_8px_22px_rgba(0,0,0,0.1)] sm:block">
+    <Link href={`/bbs/article/${article.id}${listQuery ? `?${listQuery}` : ''}`} className="group flex cursor-pointer overflow-hidden rounded-2xl border border-[var(--bbs-border)] bg-[var(--bbs-card)] shadow-[0_3px_12px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#e14b32]/30 hover:shadow-[0_8px_22px_rgba(0,0,0,0.1)] sm:block">
       <BbsArticleVisual article={article} compact />
       <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3.5">
         <div className="min-w-0 flex-1">
