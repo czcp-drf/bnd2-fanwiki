@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, MessageCircle, Pencil, Plus, ThumbsDown, ThumbsUp, Trash2, Upload, X } from 'lucide-react'
+import { Check, ChevronDown, MessageCircle, Pencil, Plus, ThumbsDown, ThumbsUp, Trash2, Upload } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -233,9 +233,12 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
 
   return (
     <section className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div><h2 className="text-sm font-bold text-white">{isEdit ? '기사 수정' : '새 기사 등록'}</h2><p className="mt-1 text-xs text-zinc-500">승인일시는 한국 시간 기준으로 입력합니다.</p></div>
-        <button type="button" onClick={onDone} className="cursor-pointer rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200" aria-label="기사 작성 취소"><X size={16} /></button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button type="button" onClick={onDone} disabled={isPending || uploading} className="cursor-pointer rounded-lg bg-zinc-800 px-3 py-2 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40">취소</button>
+          <button type="button" onClick={save} disabled={isPending || uploading} className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-zinc-950 transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"><Check size={13} />{isPending ? '저장 중...' : isEdit ? '수정 저장' : '기사 등록'}</button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

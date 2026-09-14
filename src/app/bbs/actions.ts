@@ -5,9 +5,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
 import { getBbsArticleComments, getBbsArticleEngagement, type BbsArticleReaction } from '@/lib/bbs/engagement'
 import { getBbsReactionMode } from '@/lib/bbs/reaction-mode'
+import { getPublishedBbsArticlesPage, type BbsSortOrder } from '@/lib/bbs/data'
+import type { BbsDayKey } from '@/lib/bbs/days'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const BBS_REACTION_RATE_LIMIT_SECONDS = 30
+
+export async function getBbsArticlesPageAction(category: string | undefined, reporterIds: string[], page: number, day?: BbsDayKey, sortOrder: BbsSortOrder = 'latest') {
+  return getPublishedBbsArticlesPage(category, reporterIds.length ? reporterIds : undefined, page, 12, day, sortOrder)
+}
 
 export async function getBbsArticleEngagementAction(articleId: string) {
   return getBbsArticleEngagement(articleId)

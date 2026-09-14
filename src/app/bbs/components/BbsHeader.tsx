@@ -3,26 +3,35 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, Filter, LockKeyhole, X } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, Filter, X } from 'lucide-react'
 import type { BbsCategory } from '@/lib/bbs/articles'
 import type { BbsReporterOption } from '@/lib/bbs/data'
+import type { BbsSortOrder } from '@/lib/bbs/data'
+import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
 import { useRedPill } from '@/lib/context/RedPillContext'
 import BbsLogo from './BbsLogo'
 
 type Props = {
   activeCategory: BbsCategory
   activeReporterIds: string[]
+  activeDay?: BbsDayKey
+  activeSort: BbsSortOrder
   reporters: BbsReporterOption[]
 }
 
-export default function BbsHeader({ activeCategory, activeReporterIds, reporters }: Props) {
+export default function BbsHeader({ activeCategory, activeReporterIds, activeDay, activeSort, reporters }: Props) {
   const router = useRouter()
   const { isRedPill } = useRedPill()
   const filterButtonRef = useRef<HTMLButtonElement>(null)
+  const dayButtonRef = useRef<HTMLButtonElement>(null)
+  const dayMenuRef = useRef<HTMLDivElement>(null)
   const [filterOpen, setFilterOpen] = useState(false)
   const [reporterMenuOpen, setReporterMenuOpen] = useState(false)
+  const [dayMenuOpen, setDayMenuOpen] = useState(false)
   const [selectedReporterIds, setSelectedReporterIds] = useState(activeReporterIds)
+  const [selectedSort, setSelectedSort] = useState<BbsSortOrder>(activeSort)
   const [filterPosition, setFilterPosition] = useState<{ left: number; top: number; width: number } | null>(null)
+  const [dayMenuPosition, setDayMenuPosition] = useState<{ left: number; top: number } | null>(null)
 
   const positionFilterPanel = useCallback(() => {
     const button = filterButtonRef.current
@@ -44,14 +53,46 @@ export default function BbsHeader({ activeCategory, activeReporterIds, reporters
     }
   }, [filterOpen, positionFilterPanel])
 
+  const positionDayMenu = useCallback(() => {
+    const button = dayButtonRef.current
+    if (!button) return
+    const menuWidth = Math.min(256, Math.max(0, window.innerWidth - 32))
+    const left = Math.min(Math.max(16, button.getBoundingClientRect().left), Math.max(16, window.innerWidth - menuWidth - 16))
+    setDayMenuPosition({ left, top: button.getBoundingClientRect().bottom + 12 })
+  }, [])
+
+  useEffect(() => {
+    if (!dayMenuOpen) return
+    const frame = window.requestAnimationFrame(positionDayMenu)
+    window.addEventListener('resize', positionDayMenu)
+    window.addEventListener('scroll', positionDayMenu, true)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener('resize', positionDayMenu)
+      window.removeEventListener('scroll', positionDayMenu, true)
+    }
+  }, [dayMenuOpen, positionDayMenu])
+
+  useEffect(() => {
+    if (!dayMenuOpen) return
+    function handleOutsidePointerDown(event: PointerEvent) {
+      const target = event.target as Node
+      if (!dayMenuRef.current?.contains(target) && !dayButtonRef.current?.contains(target)) setDayMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', handleOutsidePointerDown)
+    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown)
+  }, [dayMenuOpen])
+
   function displayReporterName(reporter: BbsReporterOption) {
     return isRedPill && reporter.streamerName ? reporter.streamerName : reporter.name
   }
 
-  function applyReporterFilter(nextReporterIds = selectedReporterIds) {
+  function applyReporterFilter(nextReporterIds = selectedReporterIds, nextSortOrder = selectedSort) {
     const params = new URLSearchParams()
     if (activeCategory !== '전체') params.set('category', activeCategory)
     if (nextReporterIds.length) params.set('reporter', nextReporterIds.join(','))
+    if (activeDay) params.set('day', activeDay)
+    if (nextSortOrder === 'oldest') params.set('order', 'oldest')
     const query = params.toString()
     router.push(`/bbs${query ? `?${query}` : ''}`, { scroll: false })
     setFilterOpen(false)
@@ -69,22 +110,40 @@ export default function BbsHeader({ activeCategory, activeReporterIds, reporters
             aria-label="기사 필터"
             aria-expanded={filterOpen}
             ref={filterButtonRef}
-            onClick={() => { setSelectedReporterIds(activeReporterIds); setReporterMenuOpen(false); setFilterPosition(null); setFilterOpen((open) => !open) }}
-            className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeReporterIds.length ? 'bg-[#e14b32]/15 text-[#e14b32]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
+            onClick={() => { setDayMenuOpen(false); setSelectedReporterIds(activeReporterIds); setSelectedSort(activeSort); setReporterMenuOpen(false); setFilterPosition(null); setFilterOpen((open) => !open) }}
+            className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeReporterIds.length || activeSort === 'oldest' ? 'bg-[#e14b32]/15 text-[#e14b32]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
           >
             <Filter size={17} />
           </button>
           <button
             type="button"
-            aria-label="알림 기능 준비 중"
-            title="알림 기능 준비 중"
-            disabled
-            className="flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-full bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] opacity-50"
+            aria-label="기사 일차 선택"
+            aria-expanded={dayMenuOpen}
+            ref={dayButtonRef}
+            onClick={() => { setFilterOpen(false); setDayMenuPosition(null); setDayMenuOpen((open) => !open) }}
+            className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeDay ? 'bg-[#e14b32]/15 text-[#e14b32]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
           >
-            <LockKeyhole size={16} />
+            <CalendarDays size={16} />
           </button>
         </div>
       </div>
+
+      {dayMenuOpen && dayMenuPosition && (
+        <div ref={dayMenuRef} className="fixed z-40 w-64 rounded-2xl border border-[var(--bbs-border)] bg-[var(--bbs-card)] p-3 shadow-xl" style={dayMenuPosition}>
+          <p className="mb-2 px-1 text-xs font-bold text-[var(--bbs-text)]">기사 일차 선택</p>
+          <div className="grid grid-cols-5 gap-1.5">
+            <Link href={`/bbs?${new URLSearchParams({ ...(activeCategory !== '전체' ? { category: activeCategory } : {}), ...(activeReporterIds.length ? { reporter: activeReporterIds.join(',') } : {}), ...(activeSort === 'oldest' ? { order: 'oldest' } : {}) }).toString()}`} onClick={() => setDayMenuOpen(false)} className={`flex h-9 cursor-pointer items-center justify-center rounded-lg text-[11px] font-semibold ${!activeDay ? 'bg-[#e14b32] text-white' : 'text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-hover)] hover:text-[var(--bbs-text)]'}`}>전체</Link>
+          {BBS_DAYS.map((day) => {
+            const params = new URLSearchParams()
+            params.set('day', day.key)
+            if (activeCategory !== '전체') params.set('category', activeCategory)
+            if (activeReporterIds.length) params.set('reporter', activeReporterIds.join(','))
+            if (activeSort === 'oldest') params.set('order', 'oldest')
+            return <Link key={day.key} href={`/bbs?${params.toString()}`} title={`${day.label} · ${day.range} (앞뒤 2시간 포함)`} onClick={() => setDayMenuOpen(false)} className={`flex h-9 cursor-pointer items-center justify-center rounded-lg text-sm font-semibold ${activeDay === day.key ? 'bg-[#e14b32] text-white' : 'text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-hover)] hover:text-[var(--bbs-text)]'}`}>{day.label.replace('일차', '')}</Link>
+          })}
+          </div>
+        </div>
+      )}
 
       {filterOpen && filterPosition && (
         <div className="fixed z-40 rounded-2xl border border-[var(--bbs-border)] bg-[var(--bbs-card)] p-4 shadow-xl" style={filterPosition} role="dialog" aria-label="기사 필터">
@@ -106,8 +165,16 @@ export default function BbsHeader({ activeCategory, activeReporterIds, reporters
               </div>
             )}
           </div>
+          <div className="mt-3 text-xs text-[var(--bbs-subtle-text)]">
+            <span>정렬</span>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+              {([['latest', '최신순'], ['oldest', '오래된순']] as const).map(([value, label]) => (
+                <button key={value} type="button" onClick={() => setSelectedSort(value)} className={`cursor-pointer rounded-lg border px-3 py-2 text-sm transition-colors ${selectedSort === value ? 'border-[#e14b32] bg-[#e14b32]/12 font-semibold text-[#e14b32]' : 'border-[var(--bbs-border)] bg-[var(--bbs-muted)] text-[var(--bbs-text)] hover:border-[#e14b32]/60'}`}>{label}</button>
+              ))}
+            </div>
+          </div>
           <div className="mt-3 flex justify-end gap-2">
-            <button type="button" onClick={() => { setSelectedReporterIds([]); applyReporterFilter([]) }} className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-hover)] hover:text-[var(--bbs-text)]">초기화</button>
+            <button type="button" onClick={() => { setSelectedReporterIds([]); setSelectedSort('latest'); applyReporterFilter([], 'latest') }} className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-hover)] hover:text-[var(--bbs-text)]">초기화</button>
             <button type="button" onClick={() => applyReporterFilter()} className="flex cursor-pointer items-center gap-1 rounded-lg bg-[#e14b32] px-3 py-2 text-xs font-bold text-white hover:bg-[#c93b27]"><Check size={13} /> 적용</button>
           </div>
         </div>
