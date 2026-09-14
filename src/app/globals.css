@@ -270,6 +270,7 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .bg-zinc-900\/90 { background-color: color-mix(in srgb, var(--wiki-surface) 90%, transparent); }
 .wiki-theme .bg-zinc-900\/95 { background-color: color-mix(in srgb, var(--wiki-surface) 95%, transparent); }
 .wiki-theme .bg-zinc-900\/50 { background-color: color-mix(in srgb, var(--wiki-surface) 50%, transparent); }
+.wiki-theme .bg-zinc-800\/50 { background-color: color-mix(in srgb, var(--wiki-raised) 50%, transparent); }
 .wiki-theme .bg-zinc-800\/70 { background-color: color-mix(in srgb, var(--wiki-raised) 70%, transparent); }
 
 .wiki-theme .border-zinc-800,
@@ -277,6 +278,9 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .border-zinc-700 { border-color: var(--wiki-border-strong); }
 .wiki-theme .border-zinc-600 { border-color: var(--wiki-muted); }
 .wiki-theme .border-zinc-800\/50 { border-color: color-mix(in srgb, var(--wiki-border) 50%, transparent); }
+.wiki-theme .border-zinc-700\/50 { border-color: color-mix(in srgb, var(--wiki-border-strong) 50%, transparent); }
+
+.wiki-theme .ring-zinc-950 { --tw-ring-color: var(--wiki-page); }
 
 .wiki-theme .text-white { color: var(--wiki-text); }
 .wiki-theme .text-zinc-200 { color: var(--wiki-text-secondary); }

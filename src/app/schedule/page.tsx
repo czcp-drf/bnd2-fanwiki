@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
 import { cn } from '@/lib/utils'
+import ScheduleTimeline, { type ScheduleEvent } from './ScheduleTimeline'
+
+export const revalidate = 60
+
+const KST_TIME_ZONE = 'Asia/Seoul'
 
 export const metadata: Metadata = {
   title: '일정',
@@ -8,9 +13,10 @@ export const metadata: Metadata = {
 
 // 날짜 상수
 const OPERATION_START = new Date('2026-09-14T00:00:00+09:00')
-const OPERATION_END = new Date('2026-10-04T23:59:59+09:00')
+// 10월 4일 23:59 KST까지 운영하고 10월 5일 00:00 KST에 종료
+const OPERATION_END = new Date('2026-10-05T00:00:00+09:00')
 
-const preEvents = [
+const preEvents: ScheduleEvent[] = [
   {
     date: '2026-09-11',
     label: '9월 11일',
@@ -22,7 +28,7 @@ const preEvents = [
     date: '2026-09-12',
     label: '9월 12일',
     title: '공무직 우선 접속',
-    desc: '공무직 스트리머 사전 입장 — 교통 정리 / 사전 오픈 20:00',
+    desc: '공무직 스트리머 사전 입장 — 교통 정리 / 사전 오픈 20:00 KST',
     phase: 'pre',
   },
   {
@@ -47,10 +53,8 @@ function getServerStatus(now: Date): {
   dot: string
   detail: string
 } {
-  const nowKST = now
-
   // 오늘 날짜 비교를 위해 YYYY-MM-DD 문자열로
-  const todayStr = nowKST.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' })
+  const todayStr = now.toLocaleDateString('sv-SE', { timeZone: KST_TIME_ZONE })
 
   if (todayStr < '2026-09-11') {
     return {
@@ -73,7 +77,7 @@ function getServerStatus(now: Date): {
       label: '공무직 우선 접속',
       color: 'text-amber-400',
       dot: 'bg-amber-400',
-      detail: '오늘은 공무직 스트리머 우선 접속일입니다. 사전 오픈 20:00',
+      detail: '오늘은 공무직 스트리머 우선 접속일입니다. 사전 오픈 20:00 KST',
     }
   }
   if (todayStr === '2026-09-13') {
@@ -84,42 +88,58 @@ function getServerStatus(now: Date): {
       detail: '오늘은 전체 유저 베타 접속일입니다.',
     }
   }
-  if (todayStr > '2026-10-04') {
+  if (now.getTime() >= OPERATION_END.getTime()) {
     return {
-      label: '운영 종료',
+      label: '서버 종료',
       color: 'text-zinc-500',
       dot: 'bg-zinc-600',
       detail: '봉누도2 서버 운영이 종료되었습니다.',
     }
   }
-  // 운영 기간 내
-  const dayOfWeek = nowKST.toLocaleDateString('en-US', { timeZone: 'Asia/Seoul', weekday: 'long' })
-  if (dayOfWeek === 'Friday') {
+  const timeParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: KST_TIME_ZONE,
+    hour: 'numeric',
+    hour12: false,
+  }).formatToParts(now)
+  const hour = Number(timeParts.find((part) => part.type === 'hour')?.value ?? 0)
+
+  // 00:00~03:00은 전날 저녁 운영의 연장으로 판단합니다.
+  const operationDate = new Date(`${todayStr}T12:00:00+09:00`)
+  if (hour < 3) operationDate.setUTCDate(operationDate.getUTCDate() - 1)
+  const operationDayOfWeek = operationDate.toLocaleDateString('en-US', {
+    timeZone: KST_TIME_ZONE,
+    weekday: 'long',
+  })
+
+  // 운영 기간 내: 평일 18:00~03:00만 서버가 열립니다.
+  if (operationDayOfWeek === 'Friday') {
     return {
-      label: '휴일',
+      label: '휴식 중',
       color: 'text-zinc-400',
       dot: 'bg-zinc-600',
-      detail: '오늘은 서버 휴일(금요일)입니다.',
+      detail: '금요일은 서버 정기 휴일입니다.',
     }
   }
+
+  if (hour >= 3 && hour < 18) {
+    return {
+      label: '휴식 중',
+      color: 'text-zinc-400',
+      dot: 'bg-zinc-600',
+      detail: '서버는 KST 18:00에 다시 운영됩니다.',
+    }
+  }
+
   return {
     label: '운영 중',
     color: 'text-emerald-400',
     dot: 'bg-emerald-400 animate-pulse',
-    detail: '서버가 오후 6시 ~ 오전 3시에 운영됩니다.',
+    detail: '서버가 KST 오후 6시 ~ 오전 3시에 운영됩니다.',
   }
 }
 
 function buildCalendar() {
   // 9/14 ~ 10/4, 일요일 시작 달력
-  const weeks: (null | { dateStr: string; day: number; month: number; isFriday: boolean; isInRange: boolean })[][] = []
-
-  // 달력은 9월과 10월 두 달
-  const months = [
-    { year: 2026, month: 9, start: 14, end: 30 },
-    { year: 2026, month: 10, start: 1, end: 4 },
-  ]
-
   // 9월 달력 (9/14 ~ 9/30)
   const sepDays: { dateStr: string; day: number; month: number; isFriday: boolean; isInRange: boolean }[] = []
   for (let d = 1; d <= 30; d++) {
@@ -231,13 +251,15 @@ export default function SchedulePage() {
   // 운영 일수 계산 (금요일 제외)
   let operationDays = 0
   const cur = new Date(OPERATION_START)
-  while (cur <= OPERATION_END) {
-    if (cur.getDay() !== 5) operationDays++
-    cur.setDate(cur.getDate() + 1)
+  while (cur < OPERATION_END) {
+    const dayOfWeek = cur.toLocaleDateString('en-US', { timeZone: KST_TIME_ZONE, weekday: 'short' })
+    if (dayOfWeek !== 'Fri') operationDays++
+    cur.setUTCDate(cur.getUTCDate() + 1)
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 space-y-10">
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-6xl space-y-10">
       {/* 헤더 */}
       <div className="space-y-1">
         <h1 className="text-2xl font-black text-white">일정</h1>
@@ -254,7 +276,7 @@ export default function SchedulePage() {
         {todayStr >= '2026-09-14' && todayStr <= '2026-10-04' && (
           <div className="hidden sm:block text-right">
             <p className="text-xs text-zinc-600">운영 시간</p>
-            <p className="text-sm font-semibold text-zinc-300">오후 6시 ~ 오전 3시</p>
+            <p className="text-sm font-semibold text-zinc-300">KST 18:00 ~ 03:00</p>
           </div>
         )}
         {todayStr < '2026-09-14' && daysUntilOpen > 0 && (
@@ -269,69 +291,8 @@ export default function SchedulePage() {
         {/* 좌: 사전 일정 타임라인 */}
         <div className="space-y-6">
           <div>
-            <h2 className="text-base font-bold text-white mb-4">사전 일정</h2>
-            <ol className="relative border-l border-zinc-800 space-y-0">
-              {preEvents.map((ev, i) => {
-                const isPast = todayStr > ev.date
-                const isToday = todayStr === ev.date
-                const dotColor =
-                  ev.phase === 'open'
-                    ? 'bg-amber-400 ring-amber-400/30'
-                    : ev.phase === 'beta'
-                    ? 'bg-blue-400 ring-blue-400/30'
-                    : isToday
-                    ? 'bg-amber-400 ring-amber-400/30'
-                    : 'bg-zinc-600 ring-zinc-600/30'
-
-                return (
-                  <li key={ev.date} className="pl-6 pb-8 last:pb-0 relative">
-                    <span
-                      className={cn(
-                        'absolute -left-[7px] top-1 h-3.5 w-3.5 rounded-full ring-4 ring-zinc-950',
-                        dotColor
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        'rounded-xl border p-4 transition-colors',
-                        isPast && !isToday
-                          ? 'border-zinc-800/50 bg-zinc-900/50 opacity-50'
-                          : isToday
-                          ? 'border-amber-400/30 bg-amber-400/5'
-                          : ev.phase === 'open'
-                          ? 'border-amber-400/20 bg-zinc-900'
-                          : 'border-zinc-800 bg-zinc-900'
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-2 flex-wrap">
-                        <div>
-                          <p className="text-xs text-zinc-500 mb-0.5">{ev.label}</p>
-                          <p
-                            className={cn(
-                              'font-bold',
-                              ev.phase === 'open' || isToday ? 'text-amber-400' : 'text-white'
-                            )}
-                          >
-                            {ev.title}
-                          </p>
-                          <p className="text-sm text-zinc-500 mt-1">{ev.desc}</p>
-                        </div>
-                        {isToday && (
-                          <span className="shrink-0 rounded-full bg-amber-400/15 border border-amber-400/30 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
-                            오늘
-                          </span>
-                        )}
-                        {isPast && !isToday && (
-                          <span className="shrink-0 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] text-zinc-600">
-                            완료
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                )
-              })}
-            </ol>
+            <h2 className="mb-4 text-base font-bold text-white">사전 일정</h2>
+            <ScheduleTimeline events={preEvents} todayStr={todayStr} />
           </div>
 
           {/* 운영 기간 요약 */}
@@ -344,11 +305,11 @@ export default function SchedulePage() {
               </div>
               <div className="rounded-lg bg-zinc-800/50 p-3">
                 <p className="text-xs text-zinc-500 mb-1">종료</p>
-                <p className="text-sm font-bold text-white">10월 4일</p>
+                <p className="text-sm font-bold text-white">10월 4일 23:59</p>
               </div>
               <div className="rounded-lg bg-zinc-800/50 p-3">
                 <p className="text-xs text-zinc-500 mb-1">운영 시간</p>
-                <p className="text-sm font-bold text-white">18:00 ~ 03:00</p>
+                <p className="text-sm font-bold text-white">KST 18:00 ~ 03:00</p>
               </div>
               <div className="rounded-lg bg-zinc-800/50 p-3">
                 <p className="text-xs text-zinc-500 mb-1">총 운영일</p>
@@ -396,6 +357,7 @@ export default function SchedulePage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

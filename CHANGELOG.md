@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- 일정 페이지 운영 상태·타임라인 보완: 일정 표시와 서버 상태를 KST 기준으로 통일하고, 평일 18:00~03:00 운영·금요일 휴식·운영 시간 외 휴식·10월 5일 00:00 서버 종료 상태를 반영했습니다. 지난 일정은 겹친 카드로 접어 표시하고 클릭 시 펼칠 수 있으며, 전체 유저 베타 접속 핀은 회색으로 통일했습니다. `npm run build`, `npx tsc --noEmit`, 일정 파일 ESLint, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
 - 홈 빠른 탐색 카드 추가 (`main`): 상단의 최근 사건·BBS 최신 기사와 중복되던 통합 업데이트 피드를 제거하고, 사건 아카이브·BBS 기사·주요 장소 지도·인물 둘러보기로 이동하는 반응형 빠른 탐색 카드 4개를 배치했습니다. TypeScript·홈 페이지 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - Bongstagram 공개 노출 임시 중단 (`main`): 홈 화면의 소셜피드 섹션·게시글 수 통계·관련 데이터 조회를 제거하고 전역 헤더의 Bongstagram 메뉴를 숨겼습니다. `/bongstagram` 및 하위 공개 경로는 Proxy에서 404로 차단하며, 관리자 `/admin/bongstagram` 경로는 유지합니다. `npx tsc --noEmit`, 관련 ESLint, `npm run build`, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
