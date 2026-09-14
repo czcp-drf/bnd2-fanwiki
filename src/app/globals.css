@@ -267,11 +267,13 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .bg-zinc-800 { background-color: var(--wiki-raised); }
 .wiki-theme .bg-zinc-700 { background-color: var(--wiki-strong); }
 .wiki-theme .bg-zinc-600 { background-color: var(--wiki-border-strong); }
+.wiki-theme .bg-zinc-900\/50 { background-color: color-mix(in srgb, var(--wiki-surface) 50%, transparent); }
 
 .wiki-theme .border-zinc-800,
 .wiki-theme .border-zinc-800\/60 { border-color: var(--wiki-border); }
 .wiki-theme .border-zinc-700 { border-color: var(--wiki-border-strong); }
 .wiki-theme .border-zinc-600 { border-color: var(--wiki-muted); }
+.wiki-theme .border-zinc-800\/50 { border-color: color-mix(in srgb, var(--wiki-border) 50%, transparent); }
 
 .wiki-theme .text-white { color: var(--wiki-text); }
 .wiki-theme .text-zinc-200 { color: var(--wiki-text-secondary); }
@@ -279,6 +281,7 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .text-zinc-400 { color: var(--wiki-muted); }
 .wiki-theme .text-zinc-500 { color: var(--wiki-subtle); }
 .wiki-theme .text-zinc-600 { color: var(--wiki-faint); }
+.wiki-theme .text-zinc-700 { color: var(--wiki-faint); }
 
 .wiki-theme .hover\:bg-zinc-800\/50:hover,
 .wiki-theme .hover\:bg-zinc-800\/40:hover { background-color: var(--wiki-hover); }

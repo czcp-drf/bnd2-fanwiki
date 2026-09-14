@@ -16,12 +16,25 @@ const publicPaths: Record<WikiCacheScope, string[]> = {
   reports: ['/report'],
 }
 
+const adminPaths: Record<WikiCacheScope, string[]> = {
+  characters: ['/admin/characters'],
+  streamers: ['/admin/streamers'],
+  organizations: ['/admin/organizations', '/admin/organizations/[id]'],
+  events: ['/admin/events', '/admin/events/[id]/edit'],
+  map: ['/admin/map'],
+  relationships: ['/admin/relationships'],
+  reports: ['/admin/reports', '/admin/blocked-ips'],
+}
+
 export async function refreshWikiCache(scope: WikiCacheScope): Promise<{ success?: true; error?: string }> {
   await requireAdmin()
   if (!scopes.has(scope)) return { error: '알 수 없는 캐시 영역입니다.' }
 
   updateTag(WIKI_CACHE_TAGS[scope])
   for (const path of publicPaths[scope]) {
+    revalidatePath(path, path.includes('[') ? 'page' : undefined)
+  }
+  for (const path of adminPaths[scope]) {
     revalidatePath(path, path.includes('[') ? 'page' : undefined)
   }
   return { success: true }

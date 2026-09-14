@@ -227,13 +227,14 @@ export default async function CharacterDetailPage({ params }: Props) {
     })
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
-      {/* 뒤로가기 */}
-      <BackButton />
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-4xl space-y-8">
+        {/* 뒤로가기 */}
+        <BackButton />
 
       {/* 프로필 헤더 */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
-        <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 px-6 py-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
+          <div className="bg-[linear-gradient(to_right,var(--wiki-raised),var(--wiki-surface))] px-6 py-8 flex flex-col gap-4 sm:flex-row sm:items-center">
           {character.avatar_url ? (
             <AppImage
               src={character.avatar_url}
@@ -322,11 +323,11 @@ export default async function CharacterDetailPage({ params }: Props) {
             </p>
           </div>
         )}
-      </div>
+        </div>
 
       {/* 거점 미니맵 */}
-      {mapOrg && mapOrg.hq_x !== null && mapOrg.hq_y !== null && (
-        <section className="space-y-3">
+        {mapOrg && mapOrg.hq_x !== null && mapOrg.hq_y !== null && (
+          <section className="space-y-3">
           <h2 className="flex items-center gap-2 text-base font-bold text-white">
             <MapPin size={15} className="text-zinc-500" />
             위치
@@ -343,10 +344,10 @@ export default async function CharacterDetailPage({ params }: Props) {
             biz_y: mapOrg.biz_y,
             biz_label: mapOrg.biz_label,
           }} />
-        </section>
-      )}
+          </section>
+        )}
 
-      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="grid gap-8 lg:grid-cols-2">
         {/* 소속 조직 */}
         <section className="space-y-4">
           <h2 className="text-base font-bold text-white">소속 조직</h2>
@@ -449,10 +450,10 @@ export default async function CharacterDetailPage({ params }: Props) {
             </div>
           )}
         </section>
-      </div>
+        </div>
 
       {/* 참여 사건 */}
-      <section className="space-y-4">
+        <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-base font-bold text-white">
           <Swords size={15} className="text-zinc-500" />
           참여 사건
@@ -501,7 +502,8 @@ export default async function CharacterDetailPage({ params }: Props) {
             })}
           </div>
         )}
-      </section>
+        </section>
+      </div>
     </div>
   )
 }

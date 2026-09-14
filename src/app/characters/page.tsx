@@ -53,21 +53,23 @@ export default async function CharactersPage() {
   ])
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
-      {/* 헤더 */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-black text-white">캐릭터 위키</h1>
-        <p className="text-sm text-zinc-500">
-          봉누도2 서버에 등장하는 RP 캐릭터 정보입니다.
-        </p>
-      </div>
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-6xl space-y-8">
+        {/* 헤더 */}
+        <div className="space-y-1">
+          <h1 className="text-2xl font-black text-white">캐릭터 위키</h1>
+          <p className="text-sm text-zinc-500">
+            봉누도2 서버에 등장하는 RP 캐릭터 정보입니다.
+          </p>
+        </div>
 
-      <Suspense>
-        <CharactersClientSection
-          allCharacters={allCharacters}
-          organizations={organizations}
-        />
-      </Suspense>
+        <Suspense>
+          <CharactersClientSection
+            allCharacters={allCharacters}
+            organizations={organizations}
+          />
+        </Suspense>
+      </div>
     </div>
   )
 }

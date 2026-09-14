@@ -4,7 +4,6 @@ import { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Search, X, ExternalLink } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import Select, { type SelectOption } from '@/components/ui/Select'
 import AppImage from '@/components/ui/AppImage'
 import { useRedPill } from '@/lib/context/RedPillContext'
@@ -187,7 +186,6 @@ export default function CharactersClientSection({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => {
-            const primaryMember = c.organization_members.find((m) => m.is_primary)
             const allOrgs = c.organization_members.map((m) => m.organizations).filter(Boolean)
 
             return (

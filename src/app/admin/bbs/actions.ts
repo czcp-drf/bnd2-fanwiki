@@ -155,6 +155,7 @@ function revalidateBbs(articleId?: string) {
 
 export async function refreshBbsCache(): Promise<ActionResult> {
   await requireAdmin()
+  revalidatePath('/admin/bbs')
   revalidatePath('/bbs')
   revalidatePath('/api/bbs/latest')
   updateTag(BBS_ARTICLES_TAG)
