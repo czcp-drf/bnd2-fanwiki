@@ -95,7 +95,7 @@ function formatDate(value: string | null) {
   return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hourCycle: 'h23' }).format(new Date(value))
 }
 
-function MarkdownEditor({ value, onChange, disabled }: { value: string; onChange: (value: string) => void; disabled: boolean }) {
+function MarkdownEditor({ value, onChange, disabled, media }: { value: string; onChange: (value: string) => void; disabled: boolean; media: MediaDraft[] }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   function replaceSelection(replacement: string, selectionStart: number, selectionEnd: number) {
@@ -144,11 +144,26 @@ function MarkdownEditor({ value, onChange, disabled }: { value: string; onChange
     replaceSelection(`${marks[0]}${inner}${marks[1]}`, start + marks[0].length, start + marks[0].length + inner.length)
   }
 
+  function insertImage(imageUrl: string, index: number) {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart
+    const insertion = `\n\n![첨부 이미지 ${index + 1}](${imageUrl})\n\n`
+    const nextValue = `${value.slice(0, start)}${insertion}${value.slice(textarea.selectionEnd)}`
+    onChange(nextValue)
+    requestAnimationFrame(() => {
+      textarea.focus()
+      const cursor = start + insertion.length
+      textarea.setSelectionRange(cursor, cursor)
+    })
+  }
+
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950 focus-within:border-amber-400/60">
       <div className="flex flex-wrap items-center gap-1 border-b border-zinc-800 bg-zinc-900 px-2 py-1.5">
         {markdownTools.map((tool) => <button key={tool.action} type="button" title={tool.title} onMouseDown={(event) => event.preventDefault()} onClick={() => applyTool(tool.action)} disabled={disabled} className="cursor-pointer rounded px-2 py-1 text-[11px] font-semibold text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40">{tool.label}</button>)}
       </div>
+      {media.length > 0 && <div className="flex flex-wrap items-center gap-1.5 border-b border-zinc-800 bg-zinc-900/60 px-2 py-1.5"><span className="mr-1 text-[11px] text-zinc-600">본문에 이미지 삽입</span>{media.map((item, index) => <button key={`${item.imageUrl}-${index}`} type="button" title={`첨부 이미지 ${index + 1} 삽입`} onMouseDown={(event) => event.preventDefault()} onClick={() => insertImage(item.imageUrl, index)} disabled={disabled} className="cursor-pointer rounded border border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 hover:border-amber-400/60 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-40">이미지 {index + 1}</button>)}</div>}
       <textarea ref={textareaRef} value={value} maxLength={50000} onChange={(event) => onChange(event.target.value)} rows={14} className="block w-full resize-y border-0 bg-transparent px-3 py-3 text-sm leading-7 text-zinc-200 placeholder:text-zinc-600 focus:outline-none" placeholder="기사 본문을 입력해 주세요. 선택한 텍스트에 서식을 적용할 수 있습니다." disabled={disabled} />
       <p className="border-t border-zinc-800 px-3 py-2 text-[11px] text-zinc-600">Markdown 형식으로 저장되며 제목 3(가장 큼)·굵게·기울임·취소선·점 목록·번호 목록을 지원합니다.</p>
       {value.trim() && <div className="border-t border-zinc-800 px-3 py-4"><p className="mb-2 text-[11px] font-semibold text-zinc-600">미리보기</p><BbsArticleContent content={value} /></div>}
@@ -228,7 +243,7 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
         <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">담당기자 (언론 조직 소속) *</span><Select value={reporterId} onChange={setReporterId} options={reporterOptions} placeholder="담당기자 선택" searchable searchPlaceholder="기자 캐릭터 검색" fullWidth disabled={isPending || uploading} /></label>
         <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">승인일시 (KST) {isPublished && '*'}</span><input type="datetime-local" value={approvedAt} onChange={(event) => setApprovedAt(event.target.value)} className={`${inputClass} [color-scheme:dark]`} disabled={isPending || uploading} /></label>
         <label className="flex items-end gap-2 pb-2 text-sm text-zinc-400"><input type="checkbox" checked={isPublished} onChange={(event) => setIsPublished(event.target.checked)} className="accent-amber-400" disabled={isPending || uploading} /> 공개 기사로 표시</label>
-        <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-zinc-500">본문</span><MarkdownEditor value={content} onChange={setContent} disabled={isPending || uploading} /><span className="block text-right text-[11px] text-zinc-600">{content.length}/50000</span></label>
+        <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-zinc-500">본문</span><MarkdownEditor value={content} onChange={setContent} media={media} disabled={isPending || uploading} /><span className="block text-right text-[11px] text-zinc-600">{content.length}/50000</span></label>
       </div>
 
       <div className="space-y-2">

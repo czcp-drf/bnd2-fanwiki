@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react'
+import type { ImgHTMLAttributes, ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import AppImage from '@/components/ui/AppImage'
 
 const markdownComponents = {
   h1: ({ children }: { children?: ReactNode }) => <h1 className="mt-8 text-2xl font-black leading-tight tracking-tight first:mt-0 sm:text-3xl">{children}</h1>,
@@ -14,6 +15,7 @@ const markdownComponents = {
   em: ({ children }: { children?: ReactNode }) => <em className="italic">{children}</em>,
   del: ({ children }: { children?: ReactNode }) => <del className="text-[var(--bbs-subtle-text)]">{children}</del>,
   a: ({ children, href }: { children?: ReactNode; href?: string }) => <a href={href} className="text-[#d7432d] underline underline-offset-2" target="_blank" rel="noreferrer">{children}</a>,
+  img: ({ src, alt }: ImgHTMLAttributes<HTMLImageElement>) => typeof src === 'string' ? <AppImage src={src} alt={alt ?? ''} width={1200} height={900} sizes="(max-width: 768px) 100vw, 768px" className="h-auto max-w-full rounded-lg object-contain" /> : null,
 }
 
 export default function BbsArticleContent({ content, className = '' }: { content: string; className?: string }) {
