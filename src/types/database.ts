@@ -102,7 +102,7 @@ export type Database = {
           title: string
           summary: string | null
           content: string | null
-          type: 'war' | 'crime' | 'political' | 'social' | 'accident' | 'other'
+          type: 'war' | 'crime' | 'political' | 'social' | 'accident' | 'highlight' | 'other'
           thumbnail_url: string | null
           occurred_at: string | null
           is_published: boolean

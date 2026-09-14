@@ -63,6 +63,7 @@ const eventTypeLabel: Record<string, string> = {
   political: '정치',
   social: '사회',
   accident: '사고',
+  highlight: '하이라이트',
   other: '기타',
 }
 
@@ -72,6 +73,7 @@ const eventTypeColor: Record<string, string> = {
   political: 'text-blue-400 bg-blue-400/10',
   social: 'text-green-400 bg-green-400/10',
   accident: 'text-yellow-400 bg-yellow-400/10',
+  highlight: 'text-fuchsia-400 bg-fuchsia-400/10',
   other: 'text-zinc-400 bg-zinc-400/10',
 }
 

@@ -6,6 +6,8 @@
 
 - 이미지 캐시 및 BBS 본문 이미지 삽입 (`main`): Next Image 최적화 결과의 최소 캐시 기간을 24시간에서 30일로 확대했습니다. BBS 관리자 본문 편집기에서 첨부 이미지별 삽입 버튼을 제공해 커서 위치에 이미지를 배치할 수 있도록 했고, 공개 본문에서도 최적화된 이미지로 렌더링합니다. 원본 fallback은 컴포넌트당 1회로 유지하며 BBS 첨부 이미지 재사용·Storage 정리 흐름을 검토했습니다. TypeScript·관련 ESLint·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
+- 사건 아카이브 하이라이트 유형 추가 (`feat/event-highlight`): 재미있는 클립을 사건과 구분할 수 있도록 `하이라이트` 탭·라벨·색상을 추가하고, 관리자 사건 등록·수정 및 목록 표시와 홈·검색·연대표 유형 표시를 연결했습니다. `042_event_highlight_type.sql`을 작성했으며 TypeScript·관련 ESLint·`git diff --check`를 통과했습니다. 대상 브랜치는 `feat/event-highlight`, 원격은 `deploy/feat/event-highlight`입니다.
+
 - 목록 이미지 원본 표시 복구 (`main`): Supabase 변환 썸네일 적용으로 이미지가 과도하게 잘리던 문제를 해결하기 위해 홈·사건·BBS 목록은 원본 이미지 URL을 사용하도록 되돌렸습니다. BBS 새 업로드 파일에는 1년 Storage 캐시 헤더를 유지하고, 모바일 BBS 카드 이미지는 세로 중앙 정렬을 적용했습니다. TypeScript·관련 ESLint·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - 제보 전체 필터 수정 (`main`): 기본 상태를 `대기중`으로 유지하면서 `전체` 선택 시 모든 상태의 제보가 표시되도록 상태 파라미터를 명시적으로 구분했습니다. 유형 필터와 함께 선택하는 경우도 유지했으며, TypeScript·관련 ESLint·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.

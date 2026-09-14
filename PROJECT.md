@@ -291,6 +291,7 @@ src/
 | `039_map_location_external_wiki_links.sql` | 주요 장소 위키 링크를 외부 URL로 전환하고 조직 거점 위키 링크 컬럼 추가         |
 | `040_ingame_ingest_source.sql` | Bongstagram·BBS 인게임 수집 대비 source·external_id 컬럼과 중복 방지 제약 추가 |
 | `041_bbs_article_reaction_rate_limit.sql` | 기사별 IP 해시 기준 좋아요·싫어요 30초 요청 제한 |
+| `042_event_highlight_type.sql` | 사건 아카이브에 하이라이트 유형 추가 |
 
 
 ---

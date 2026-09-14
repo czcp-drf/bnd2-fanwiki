@@ -9,7 +9,7 @@ import { formatKstDateTime } from '@/lib/date/kst'
 
 const typeLabel: Record<string, string> = {
   war: '전쟁/항쟁', crime: '범죄', political: '정치',
-  social: '사회', accident: '사고', other: '기타',
+  social: '사회', accident: '사고', highlight: '하이라이트', other: '기타',
 }
 
 type Event = {
