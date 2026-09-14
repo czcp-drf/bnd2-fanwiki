@@ -213,6 +213,7 @@ src/
 - Chzzk URL `https://chzzk.naver.com/clips/{id}` → embed `https://chzzk.naver.com/embed/clip/{id}`
 - YouTube `watch?v=`, `youtu.be/`, `shorts/` → `https://www.youtube.com/embed/{id}`
 - 모든 클립 iframe을 최초 렌더 시 미리 로드, `visibility: hidden/visible`로 전환 — 클립 전환 시 딜레이 없음
+- 빨간약 OFF로 진입하면 iframe 위에 불투명한 주의 오버레이와 `클립 보기` 버튼을 표시하고, 빨간약 ON이면 즉시 공개
 - YouTube 백그라운드 iframe은 `autoplay` 없이 프리로드 (동시 재생 방지)
 - 플레이리스트: 좌우 버튼 내비게이션 (끝 도달 시 버튼 `opacity-0`), `scrollBy(clientWidth)` 단위 이동
 - 툴팁: `overflow-x: scroll` 클리핑 우회를 위해 `getBoundingClientRect` + `fixed` 포지션으로 렌더링
