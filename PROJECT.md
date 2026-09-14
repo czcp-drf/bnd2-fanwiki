@@ -24,15 +24,17 @@ GTA RP 서버 "봉누도2"의 팬 위키 사이트.
 
 ## 기술 스택
 
-| 항목 | 선택 |
-|---|---|
-| 프레임워크 | Next.js 15+ (App Router) |
-| 언어 | TypeScript |
-| 스타일 | Tailwind CSS v4 |
-| DB / Auth | Supabase (PostgreSQL) |
-| 지도 | react-leaflet (GTA V 커스텀 CRS) |
-| 아이콘 | lucide-react |
-| 배포 | Vercel — `https://bnd2-fanwiki.vercel.app/` |
+
+| 항목        | 선택                                          |
+| --------- | ------------------------------------------- |
+| 프레임워크     | Next.js 15+ (App Router)                    |
+| 언어        | TypeScript                                  |
+| 스타일       | Tailwind CSS v4                             |
+| DB / Auth | Supabase (PostgreSQL)                       |
+| 지도        | react-leaflet (GTA V 커스텀 CRS)               |
+| 아이콘       | lucide-react                                |
+| 배포        | Vercel — `https://bnd2-fanwiki.vercel.app/` |
+
 
 ---
 
@@ -156,6 +158,7 @@ src/
 ## 핵심 개념
 
 ### 빨간약 (RedPill) 토글
+
 - `RedPillContext` — 전역 boolean 상태, localStorage 유지
 - **OFF (기본)**: 스트리머 정보 숨김, 캐릭터 정보만 표시
 - **ON**: 스트리머 이름/이미지 공개
@@ -164,6 +167,7 @@ src/
 - 헤더의 빨간약/파란약 토글 버튼으로 전환 (compact 모드는 모바일 Sheet 내)
 
 ### 라이브 상태
+
 - 트래픽 관리를 위해 현재 임시 중단: `src/lib/live/config.ts`의 `LIVE_ENABLED = false`
 - 홈 라이브 섹션과 메뉴 항목은 LIVE_ENABLED 에 따라 조건부 렌더링
 - `/live`는 LIVE_ENABLED=false 시 안내 메시지만 표시
@@ -175,6 +179,7 @@ src/
 - 채널 ID 형식: 32자 소문자 hex
 
 ### 어드민 인증
+
 - 쿠키 기반 토큰 인증 (`ADMIN_PASSWORD`, `ADMIN_TOKEN` 환경변수)
 - `requireAdmin()` — 쿠키 검증 후 미인증 시 `/admin/login` 리다이렉트
 - `src/proxy.ts` — 미들웨어 파일 (`middleware.ts` 아님, 이 Next.js 버전의 컨벤션)
@@ -183,6 +188,7 @@ src/
 - AdminLayout에 auth 체크 넣으면 `/admin/login`에서 무한 리다이렉트 발생 — 하지 말 것
 
 ### 지도 시스템
+
 - **타일맵**: Atlas / 위성(Satellite) 두 가지 스타일 전환 가능 (`MapBaseLayers.tsx`)
 - 기본 스타일: Atlas (`#0FA8D2` 배경), 위성 스타일: `#153E6A` 배경
 - **GTA V 커스텀 CRS**: `L.CRS.Simple` 기반, `src/lib/map/constants.ts`의 `GTA_CRS_CONFIG` 파라미터 사용
@@ -203,6 +209,7 @@ src/
 - `/map?org=<ID>`로 이동하면 해당 핀 자동 선택·확대
 
 ### 클립 플레이어 (`ClipPlayer.tsx`)
+
 - Chzzk URL `https://chzzk.naver.com/clips/{id}` → embed `https://chzzk.naver.com/embed/clip/{id}`
 - YouTube `watch?v=`, `youtu.be/`, `shorts/` → `https://www.youtube.com/embed/{id}`
 - 모든 클립 iframe을 최초 렌더 시 미리 로드, `visibility: hidden/visible`로 전환 — 클립 전환 시 딜레이 없음
@@ -211,6 +218,7 @@ src/
 - 툴팁: `overflow-x: scroll` 클리핑 우회를 위해 `getBoundingClientRect` + `fixed` 포지션으로 렌더링
 
 ### 타일 Storage
+
 - Supabase Storage 공개 버킷: `map-tiles`
 - 경로: `mapStyles/styleAtlas/{z}/{x}/{y}.jpg` / `mapStyles/styleSatelite/{z}/{x}/{y}.jpg`
 - `NEXT_PUBLIC_MAP_TILE_BASE` = Supabase 프로젝트 URL + `/storage/v1/object/public/map-tiles`
@@ -221,65 +229,74 @@ src/
   - 업로드 결과: 이미지 4,101개 완료 (원본 `satellite.png` 약 68MB는 Storage 크기 제한으로 제외)
 
 ### ISR (Incremental Static Regeneration)
-| 페이지 | revalidate |
-|---|---|
-| `/` | 60s |
-| `/live`, `/streamers`, `/streamers/[id]` | 60s |
-| `/characters`, `/characters/[id]` | 300s |
-| `/organizations`, `/organizations/[id]` | 300s |
-| `/events`, `/events/[id]`, `/events/timeline` | 300s |
-| `/map` | 300s |
+
+
+| 페이지                                           | revalidate |
+| --------------------------------------------- | ---------- |
+| `/`                                           | 60s        |
+| `/live`, `/streamers`, `/streamers/[id]`      | 60s        |
+| `/characters`, `/characters/[id]`             | 300s       |
+| `/organizations`, `/organizations/[id]`       | 300s       |
+| `/events`, `/events/[id]`, `/events/timeline` | 300s       |
+| `/map`                                        | 300s       |
+
 
 ---
 
 ## DB 주요 테이블
 
-| 테이블 | 설명 |
-|---|---|
-| `streamers` | 스트리머 (chzzk_channel_id, display_name, profile_image_url, is_active) |
-| `characters` | RP 캐릭터 (name, alias[], job, status, avatar_url) |
-| `organization_members` | 캐릭터↔조직 N:M (role, is_primary, joined_at, left_at, sort_order) |
-| `organizations` | 조직 (category, color, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label, gang_id, is_active, is_disbanded) |
-| `map_locations` | 주요 장소 핀 (name, label, description, color, x, y) |
-| `events` | 사건 아카이브 (type, occurred_at, is_published) |
-| `event_participants` | 사건↔캐릭터 N:M (role, sort_order) |
-| `event_clips` | 사건 클립 (clip_url, label, streamer_id, sort_order) |
-| `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/colleague/neutral) |
-| `reports` | 제보 (type, status: pending/reviewing/applied/rejected, ip_hash) |
-| `bongstagram_profiles` | 기존 `characters`와 1:1로 연결되는 Bongstagram 표시 닉네임 |
-| `bongstagram_posts` | Bongstagram 게시물·스토리 본체 (character_id, post_type, content, posted_at, story_expires_at) |
-| `bongstagram_post_media` | 게시물 미디어 (image/video URL, Storage 경로, sort_order) |
-| `blocked_ips` | 차단 IP 해시 목록 (ip_hash, reason) |
+
+| 테이블                       | 설명                                                                                                    |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `streamers`               | 스트리머 (chzzk_channel_id, display_name, profile_image_url, is_active)                                   |
+| `characters`              | RP 캐릭터 (name, alias[], job, status, avatar_url)                                                       |
+| `organization_members`    | 캐릭터↔조직 N:M (role, is_primary, joined_at, left_at, sort_order)                                         |
+| `organizations`           | 조직 (category, color, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label, gang_id, is_active, is_disbanded) |
+| `map_locations`           | 주요 장소 핀 (name, label, description, color, x, y)                                                       |
+| `events`                  | 사건 아카이브 (type, occurred_at, is_published)                                                             |
+| `event_participants`      | 사건↔캐릭터 N:M (role, sort_order)                                                                         |
+| `event_clips`             | 사건 클립 (clip_url, label, streamer_id, sort_order)                                                      |
+| `character_relationships` | 캐릭터 관계 (type: friend/enemy/rival/family/romantic/ally/mentor/colleague/neutral)                       |
+| `reports`                 | 제보 (type, status: pending/reviewing/applied/rejected, ip_hash)                                        |
+| `bongstagram_profiles`    | 기존 `characters`와 1:1로 연결되는 Bongstagram 표시 닉네임                                                         |
+| `bongstagram_posts`       | Bongstagram 게시물·스토리 본체 (character_id, post_type, content, posted_at, story_expires_at)                |
+| `bongstagram_post_media`  | 게시물 미디어 (image/video URL, Storage 경로, sort_order)                                                     |
+| `blocked_ips`             | 차단 IP 해시 목록 (ip_hash, reason)                                                                         |
+
 
 ### 마이그레이션 파일 (supabase/migrations/)
-| 파일 | 내용 |
-|---|---|
-| 001~009 | 초기 스키마, 조직 카테고리, 연락처, 해산, 원자적 저장, IP 신고·차단 |
-| `010_org_hq.sql` | organizations 테이블에 hq_x, hq_y, hq_label 컬럼 추가 |
-| `011_map_locations.sql` | map_locations 테이블 생성 (RLS 포함) |
-| `013_org_business_location.sql` | organizations 테이블에 biz_x, biz_y, biz_label 컬럼 추가 |
-| `014_member_sort_order.sql` | organization_members 테이블에 sort_order 컬럼 추가 |
-| `015_event_sort_orders.sql` | event_participants 테이블에 sort_order 컬럼 추가 |
-| `016_relationship_add_colleague.sql` | character_relationships CHECK 제약에 'colleague' 추가 |
-| `017_atomic_creation.sql` | 캐릭터·스트리머와 연결 데이터 원자적 생성 RPC 추가 |
-| `018_bonstagram_profiles.sql` | 기존 캐릭터와 1:1 연결되는 Bongstagram 프로필 테이블 생성 |
-| `019_rename_bongstagram.sql` | 적용된 018의 테이블·제약조건·트리거·RLS 정책명을 Bongstagram으로 변경 |
-| `020_bongstagram_posts.sql` | Bongstagram 기본 게시물 테이블 생성 (RLS 포함) |
-| `021_bongstagram_media.sql` | 게시물·스토리 타입과 이미지·동영상 다중 미디어 테이블 추가, 기존 image_url 이관 |
-| `022_bongstagram_storage.sql` | Bongstagram 직접 업로드용 Storage 버킷과 미디어 storage_path 추가 |
-| `023_bongstagram_interactions.sql` | 게시물별 IP 제한 좋아요와 관리자 전용 댓글 테이블 추가 |
-| `024_bongstagram_comment_replies.sql` | 댓글 작성 시간 관리와 1단계 답글용 parent_comment_id 추가 |
-| `025_bongstagram_comment_author.sql` | 댓글 작성자 캐릭터 연결과 기존 프로필명 기반 데이터 보정 |
-| `036_hash_report_ips.sql` | 제보·차단 목록에 서버 비밀키 기반 IP 해시 컬럼 추가 |
-| `037_drop_legacy_blocked_ip.sql` | 기존 차단 데이터 확인 후 blocked_ips의 원본 ip 컬럼 제거 |
-| `038_map_location_wiki_path.sql` | 주요 장소 핀에 선택형 위키 링크 컬럼 추가 |
-| `039_map_location_external_wiki_links.sql` | 주요 장소 위키 링크를 외부 URL로 전환하고 조직 거점 위키 링크 컬럼 추가 |
+
+
+| 파일                                         | 내용                                                  |
+| ------------------------------------------ | --------------------------------------------------- |
+| 001~009                                    | 초기 스키마, 조직 카테고리, 연락처, 해산, 원자적 저장, IP 신고·차단          |
+| `010_org_hq.sql`                           | organizations 테이블에 hq_x, hq_y, hq_label 컬럼 추가       |
+| `011_map_locations.sql`                    | map_locations 테이블 생성 (RLS 포함)                       |
+| `013_org_business_location.sql`            | organizations 테이블에 biz_x, biz_y, biz_label 컬럼 추가    |
+| `014_member_sort_order.sql`                | organization_members 테이블에 sort_order 컬럼 추가          |
+| `015_event_sort_orders.sql`                | event_participants 테이블에 sort_order 컬럼 추가            |
+| `016_relationship_add_colleague.sql`       | character_relationships CHECK 제약에 'colleague' 추가    |
+| `017_atomic_creation.sql`                  | 캐릭터·스트리머와 연결 데이터 원자적 생성 RPC 추가                      |
+| `018_bonstagram_profiles.sql`              | 기존 캐릭터와 1:1 연결되는 Bongstagram 프로필 테이블 생성             |
+| `019_rename_bongstagram.sql`               | 적용된 018의 테이블·제약조건·트리거·RLS 정책명을 Bongstagram으로 변경     |
+| `020_bongstagram_posts.sql`                | Bongstagram 기본 게시물 테이블 생성 (RLS 포함)                  |
+| `021_bongstagram_media.sql`                | 게시물·스토리 타입과 이미지·동영상 다중 미디어 테이블 추가, 기존 image_url 이관  |
+| `022_bongstagram_storage.sql`              | Bongstagram 직접 업로드용 Storage 버킷과 미디어 storage_path 추가 |
+| `023_bongstagram_interactions.sql`         | 게시물별 IP 제한 좋아요와 관리자 전용 댓글 테이블 추가                    |
+| `024_bongstagram_comment_replies.sql`      | 댓글 작성 시간 관리와 1단계 답글용 parent_comment_id 추가           |
+| `025_bongstagram_comment_author.sql`       | 댓글 작성자 캐릭터 연결과 기존 프로필명 기반 데이터 보정                    |
+| `036_hash_report_ips.sql`                  | 제보·차단 목록에 서버 비밀키 기반 IP 해시 컬럼 추가                     |
+| `037_drop_legacy_blocked_ip.sql`           | 기존 차단 데이터 확인 후 blocked_ips의 원본 ip 컬럼 제거             |
+| `038_map_location_wiki_path.sql`           | 주요 장소 핀에 선택형 위키 링크 컬럼 추가                            |
+| `039_map_location_external_wiki_links.sql` | 주요 장소 위키 링크를 외부 URL로 전환하고 조직 거점 위키 링크 컬럼 추가         |
+
 
 ---
 
 ## 구현 완료 기능
 
 ### 공개 페이지
+
 - [x] 홈 — 통계, 최근 사건, 빠른 링크 (라이브 섹션은 LIVE_ENABLED 조건부)
 - [x] `/live` — 온라인/오프라인 실시간 분류, 조직 필터 (현재 임시 중단 안내)
 - [x] `/streamers` — 목록 (라이브 확인 없이 디렉토리 형태)
@@ -296,6 +313,7 @@ src/
 - [x] `/schedule`, `/guide`, `/report` — 일정, 가이드, 제보 폼 (지도 핀 위치 첨부 기능 포함)
 
 ### 어드민 (`/admin/*`)
+
 - [x] 대시보드 — 통계, 미정 캐릭터·미처리 제보 바로가기
 - [x] 캐릭터/조직/사건/관계 CRUD (캐릭터 RP명 인라인 수정, 조직 불법 사업체 gang_id 연결)
 - [x] 사건 인라인 삭제 (2단계 확인)
@@ -310,6 +328,7 @@ src/
 - [x] 스트리머 추가 시 '미정' 캐릭터 자동 생성·연결
 
 ### Bongstagram (임시 브랜치 작업 중)
+
 - [x] `/bongstagram` Instagram 스타일 모바일 피드 레이아웃과 Bongstagram 프로필 안내 UI
 - [x] 글로벌 네비게이션의 다크/라이트 테마 토글과 브라우저 저장
 - [x] `bongstagram_profiles` 1:1 계정 테이블·프로필 이름 제약 마이그레이션 작성 (`018_bonstagram_profiles.sql`, `019_rename_bongstagram.sql`)
@@ -317,7 +336,7 @@ src/
 - [x] 관리자 캐릭터 선택 드롭다운 텍스트 검색, 조직 필터, Bongstagram 연결 상태 3단계 필터와 미연결 캐릭터 행의 프로필 수정
 - [x] Bongstagram 게시물·스토리 등록·수정·삭제 관리자 화면과 공개 피드 연결 (이미지·동영상 여러 개, `/admin/bongstagram/posts`)
 - [x] 관리자 게시물 작성 시 Supabase Storage 직접 업로드 (이미지 10MB·동영상 100MB, 일회성 업로드 URL, 파일 삭제 시 Storage 정리)
-- [ ] 게시물 상세 페이지
+- [x] 게시물 상세 페이지
 - [x] 피드 좋아요 — IP 해시 기준 게시물별 1회 등록·취소
 - [x] 좋아요 요청 속도 제한 — IP 해시 기준 게시물·스토리 통합 1초 제한 (`028_bongstagram_like_rate_limit.sql`)
 - [x] 좋아요 비상 전환 — `BONGSTAGRAM_LIKES_MODE=server`(기본) 또는 `local`로 게시물·스토리 좋아요 저장 방식을 전환하며, local 모드에서는 서버 쓰기·방문자별 DB 조회·주기 집계를 중단하고 브라우저 localStorage만 사용
@@ -331,6 +350,7 @@ src/
 - [ ] 릴스 기능 — 범위에서 제외
 
 ### BBS (Bongnudo Broadcasting System)
+
 - [x] 반응형 BBS 메인·기사 상세 화면 (`/bbs`, `/bbs/article/[id]`) — 모바일 하단 카테고리 고정, 데스크톱 가로 카테고리 메뉴
 - [x] 기존 글로벌 라이트·다크 테마 토글 연동 — BBS에서도 헤더 토글을 활성화하고 Bongstagram과 테마 상태를 공유
 - [x] 라이브 방송 기능 제외 — BBS는 인게임 기사 시스템으로만 구성
@@ -351,18 +371,20 @@ src/
 
 ## 환경변수
 
-| 변수 | 용도 |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 서비스 롤 key (어드민, 업로드 스크립트) |
-| `BONGSTAGRAM_SERVER_FINAL_DATE` | 서버 마지막 종료일 (`YYYY-MM-DD`, 해당일 오전 3시에 스토리 전체 종료) |
-| `BONGSTAGRAM_LIKES_MODE` | 좋아요 저장 모드 (`server` 기본값, `local`은 브라우저 localStorage만 사용) |
-| `BBS_REACTIONS_MODE` | BBS 좋아요·싫어요 저장 모드 (`local` 기본값, `server` 설정 시 IP 해시 DB 저장) |
-| `IP_HASH_SECRET` | 제보·좋아요·차단에 공통 사용할 서버 전용 IP 해시 비밀키 (미설정 시 기존 해시 비밀키 또는 서비스 롤 키 사용) |
-| `ADMIN_PASSWORD` | 어드민 로그인 비밀번호 |
-| `ADMIN_TOKEN` | 어드민 쿠키 검증 토큰 |
-| `NEXT_PUBLIC_MAP_TILE_BASE` | 지도 타일 CDN 베이스 URL (Supabase Storage, 미설정 시 public/ 직접 서빙) |
+
+| 변수                              | 용도                                                                |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase 프로젝트 URL                                                 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key                                                 |
+| `SUPABASE_SERVICE_ROLE_KEY`     | 서버 전용 서비스 롤 key (어드민, 업로드 스크립트)                                   |
+| `BONGSTAGRAM_SERVER_FINAL_DATE` | 서버 마지막 종료일 (`YYYY-MM-DD`, 해당일 오전 3시에 스토리 전체 종료)                   |
+| `BONGSTAGRAM_LIKES_MODE`        | 좋아요 저장 모드 (`server` 기본값, `local`은 브라우저 localStorage만 사용)          |
+| `BBS_REACTIONS_MODE`            | BBS 좋아요·싫어요 저장 모드 (`local` 기본값, `server` 설정 시 IP 해시 DB 저장)        |
+| `IP_HASH_SECRET`                | 제보·좋아요·차단에 공통 사용할 서버 전용 IP 해시 비밀키 (미설정 시 기존 해시 비밀키 또는 서비스 롤 키 사용) |
+| `ADMIN_PASSWORD`                | 어드민 로그인 비밀번호                                                      |
+| `ADMIN_TOKEN`                   | 어드민 쿠키 검증 토큰                                                      |
+| `NEXT_PUBLIC_MAP_TILE_BASE`     | 지도 타일 CDN 베이스 URL (Supabase Storage, 미설정 시 public/ 직접 서빙)         |
+
 
 ---
 
@@ -382,178 +404,19 @@ src/
 ## 알려진 패턴 / 주의사항
 
 ### Supabase 중첩 쿼리 한계
+
 - `streamers → characters → organization_members → organizations` 등 **4단계 이상 중첩 쿼리**는 Supabase PostgREST에서 하위 데이터를 빈 배열로 반환하는 버그가 있음
 - 해결책: 중간 테이블(예: `organization_members`)을 **별도 쿼리**로 분리하고 character_id로 매핑
 - 적용 사례: `streamers/page.tsx`, `streamers/[id]/page.tsx`
 
 ---
 
-## 최근 작업 기록
-
-- 지도 외부 위키 링크·사건 KST 일시·포커스 쿼리 보완 (`main`, 커밋 및 원격 푸시 완료): 주요 장소와 조직 거점 핀 카드에 선택형 외부 위키 바로가기를 추가하고, 관리자 지도에서 링크를 등록·수정·삭제할 수 있도록 했습니다. 조직 거점 카드에는 조직 상세 보기와 위키 바로가기를 별도 버튼으로 표시하며, 링크는 `http://`·`https://` URL만 허용합니다. 사건 상세에서 전체 지도로 이동할 때만 사건 위치 핀이 표시되고, 조직·사건 포커스 쿼리는 일반 이동 중 유지되며 지도 새로고침 시 기본 지도 URL로 정리됩니다. 사건 발생일시 입력·저장과 사건 목록·상세·타임라인·검색·연관 목록을 KST(`Asia/Seoul`) 기준으로 통일했습니다. 주요 장소 필터 라이트모드 색상과 지도 위키 버튼 색상도 보완했습니다. `038_map_location_wiki_path.sql`은 사용자가 운영 DB 적용을 완료했으며, `039_map_location_external_wiki_links.sql`은 외부 링크 전환과 조직 거점 컬럼 추가 migration으로 작성했습니다. `npx tsc --noEmit`, 관련 파일 ESLint, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
-
-- 사건 페이지 테마 지원 (`5278ec8`, `main`): 사건 목록·상세·연대표와 사건 필터·타임라인·클립·참여 인물 UI를 전역 라이트/다크 테마에 맞게 표시하도록 `wiki-theme` 색상 토큰을 추가했습니다. 사건 상세 지도의 레이아웃은 유지하면서 지도 주변 페이지 UI도 동일한 테마를 사용합니다. `npm run build`, `npx tsc --noEmit`, 관련 파일 ESLint, `git diff --check`를 통과했으며 `deploy/main` 푸시 완료를 확인했습니다.
-
-- 사건 상세 지도·클립 전환 보완 (`87ce75c`, `main`): Leaflet 지도를 독립 stacking context로 격리해 사건 상세 지도가 전역 헤더 위로 표시되지 않도록 수정했습니다. 클립 플레이어는 모든 임베드 iframe을 미리 로드하고 활성 클립만 표시하며, 클립 전환 시 이전 iframe을 일시정지·재설정해 전환 지연과 동시 재생을 함께 방지합니다. YouTube 임베드에는 `enablejsapi`를 적용했습니다. `npm run build`, `npx tsc --noEmit`, 변경 파일 ESLint, `git diff --check`를 통과했으며 `deploy/main` 푸시 완료를 확인했습니다.
-
-- 사이트명 및 전역 설명 변경 (`8e1c324`, `main`): 사용자·관리자 헤더와 메타데이터의 사이트명을 `봉누도 따라가기`로 통일하고, 기본·Open Graph·Twitter 설명도 `봉누도 따라가기`로 맞췄습니다. 제보 페이지와 홈 화면 표기도 새 사이트명에 맞춰 수정했습니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했으며 `deploy/main` 푸시 완료를 확인했습니다.
-
-- 사건 아카이브 클립 전환 및 시점명 빨간약 표시 (`b3f34ad`, `main`): 클립 플레이어에서 활성 iframe만 렌더링해 다른 클립을 선택하면 이전 클립 재생이 자동 중지되도록 수정했습니다. 플레이어·클립 목록·툴팁의 시점명을 빨간약 OFF에서는 캐릭터명, ON에서는 스트리머명으로 표시합니다. `npm run build`, `npx tsc --noEmit`, 변경 파일 ESLint, `git diff --check`를 통과했으며 `deploy/main` 푸시 완료를 확인했습니다.
-
-- 관리자별 공용 위키 캐시 수동 갱신 (`f5ad81a`, `main`): BBS와 Bongstagram을 제외한 캐릭터·스트리머·조직·사건·관계·지도·제보 영역에 24시간 캐시와 영역별 태그를 적용하고, 관련 관리자 페이지에 개별 캐시 갱신 버튼을 추가했습니다. 관리자 변경 액션은 공용 태그를 즉시 무효화하며, 수동 갱신 시 관련 공개 경로도 함께 재검증합니다. `npm run build`, `npx tsc --noEmit`, 변경 파일 ESLint, `git diff --check`를 통과했으며 `deploy/main` 푸시 완료를 확인했습니다.
-
-- 테마 전환 트랜지션 제거 (`6c47756`, `main`): 테마 변경 시 전환·애니메이션·가상 요소의 스타일 보간을 차단하고, 토글 클릭 시 테마 속성을 동기 적용하도록 보강했습니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 `deploy/main` 푸시 완료를 확인했습니다.
-
-- 사건 상세 좌표 표시 (`c0ffc10`, `main`): 좌표 정보가 있는 사건 상세 페이지에 읽기 전용 GTA 지도와 X·Y 좌표를 표시하도록 했습니다. 기존 관리자용 좌표 선택 지도는 읽기 전용 모드를 지원하도록 확장했으며 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. `deploy/main` 푸시 완료를 확인했습니다.
-
-- 홈 화면 개편 및 모바일 메뉴 레이어 수정 (`5577875`, `main`): `봉누도 따라가기` 컨셉에 맞춰 최근 사건·BBS 최신 기사·Bongstagram 최신 게시물을 홈의 핵심 영역으로 재배치하고 기존 위키 메뉴를 탐색 영역으로 정리했습니다. 홈·헤더 라이트/다크 테마 전환, 모바일 메뉴의 토글 제거, 지도보다 앞서는 Sheet 레이어, 소개 문구 개행을 반영했으며 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. `deploy/main` 푸시 완료를 확인했습니다.
-
-- `feat/bss` → `main` 병합 및 브랜치 정리 (`ccd2024`, `main`): BBS 공개·관리자 기능, 24시간 콘텐츠 캐시와 관리자 수동 갱신, 봉스타그램 캐시 정책 및 관리자 수동 갱신, 신규 기사 승인일시 자동 입력을 `--ff-only`로 `main`에 병합했습니다. 병합 전 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며, `deploy/main` 푸시와 `feat/bss` 로컬·원격 브랜치 삭제를 완료했습니다.
-
-- BBS 신규 기사 승인일시 자동 입력 (`dfc4b34`, `feat/bss`): 새 기사 등록 폼을 열 때 현재 한국 시간(KST)을 승인일시 입력값으로 자동 설정하고, 기존 기사 수정 시에는 저장된 승인일시를 유지하도록 했습니다. hydration 불일치를 피하는 초기화 처리를 포함했으며 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다. 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
-
-- Bongstagram 관리자 수동 캐시 갱신 (`a18859d`, `feat/bss`): 프로필 관리와 게시물·스토리 관리 화면에 캐시 갱신 버튼을 추가했습니다. 관리자 인증 후 게시물·스토리·프로필·댓글·반응 관련 태그를 즉시 만료하고 관리자 화면을 새로고침하도록 연결했습니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
-
-- BBS·Bongstagram 콘텐츠 캐시 정책 확대 (`1d13b30`, `feat/bss`): 장기 보관되는 기사·게시물·스토리·프로필·댓글 개수 데이터를 24시간 캐시로 조정하고, 좋아요·싫어요 집계는 60초 캐시로 유지했습니다. BBS 최신 기사 API도 24시간 캐시와 관리자 경로 무효화 대상으로 포함했으며, BBS·Bongstagram 관리자 변경 액션은 `updateTag`로 관련 캐시를 즉시 만료합니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
-
-- BBS 기사 캐시 및 관리자 수동 갱신 (`a3bd83f`, `feat/bss`): 공개 기사 목록·상세·담당기자 목록·최신 기사 데이터를 1시간 캐시로 전환하고, 관리자 기사 변경 시 `updateTag`로 즉시 캐시를 만료하도록 수정했습니다. `/admin/bbs`에 관리자 인증을 거치는 기사 캐시 갱신 버튼을 추가했으며 댓글·좋아요·싫어요 조회는 실시간으로 유지했습니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
-
-- Bongstagram 모바일 영상 음소거 버튼 표시 보완 (`3d665fb`, `feat/bss`): 모바일 환경에서는 hover가 없어도 음소거 버튼이 항상 보이도록 조정하고, PC에서는 기존처럼 hover·focus 시 표시되도록 유지했습니다. 영상 위 레이어 순서를 보완했으며 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다. 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
-
-- BBS 어드민 반응 집계·필터 추가 (`feat/bss`, 커밋 및 원격 푸시): 어드민 기사 목록에서 기사별 좋아요·싫어요 수를 확인할 수 있도록 반응 데이터를 집계해 표시했습니다. 좋아요 있음·싫어요 있음·반응 없음 필터와 좋아요·싫어요 수 기준 오름차순·내림차순 정렬을 추가했으며, 현재 `BBS_REACTIONS_MODE=local`에서는 새 반응이 DB에 저장되지 않아 서버에 저장된 반응만 집계됩니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치 `feat/bss`, 원격 `deploy/feat/bss`로 푸시합니다.
-
-- BBS 기자 빨간약 표시 및 필터 위치 보완 (`feat/bss`, 커밋 및 원격 푸시): PC 기자 필터 패널을 필터 버튼의 좌측 끝 기준으로 배치하고, 화면 폭이 부족하면 뷰포트 안쪽으로 자동 이동하도록 수정했습니다. 기자 필터 목록과 기사 카드·상세페이지의 담당기자명을 빨간약 상태에 따라 캐릭터명 또는 스트리머명으로 표시하도록 연결했으며, `streamer_id`를 직접 조회해 스트리머명이 누락되지 않도록 데이터 매핑과 캐시 키를 보완했습니다. BBS 댓글에도 캐릭터·스트리머 이름과 이미지를 빨간약 상태에 따라 표시합니다. 어드민 댓글 수정·삭제와 작성 시간(KST) 수정 기능도 추가했습니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치 `feat/bss`, 원격 `deploy/feat/bss`로 푸시합니다.
-
-- BBS 어드민 댓글 작성·기사 필터 및 이미지 확대 보완 (`feat/bss`, 커밋 및 원격 푸시): 기사 목록에서 기사별 댓글을 펼쳐 DB에 등록된 캐릭터를 검색·선택해 댓글을 작성할 수 있도록 연결하고, 선택한 캐릭터 ID와 현재 이름을 저장하도록 했습니다. 기사 관리에 담당기자 필터와 승인일시 최신순·오래된순·제목순 정렬을 추가했으며, 새 기사 등록 폼에도 상단 닫기와 하단 취소를 제공했습니다. 기사 상세 대표 이미지와 추가 이미지의 확대 모달을 `body` 포털로 표시해 대표 이미지가 뒤 미디어 아래에 깔리지 않도록 수정했습니다. ESLint·TypeScript·`git diff --check`를 통과했으며 대상 브랜치 `feat/bss`, 원격 `deploy/feat/bss`로 푸시합니다.
-
-- BBS 메인 필터·레이아웃 및 이미지 안정화 (`feat/bss`, 커밋 및 원격 푸시): 활성 언론 조직에 소속된 모든 기자를 다중 선택해 기사 목록을 필터링하도록 연결하고, 카테고리·기자 조건을 유지하는 12개 단위 페이지네이션을 추가했습니다. 모바일·PC BBS 영역과 기사 목록의 스크롤 UI는 숨기면서 동작은 유지하고, 하단 카테고리 네비게이션은 화면에 고정했습니다. 모바일 BBS 헤더도 상단에 고정했으며 전역 헤더의 실제 높이를 `3.5rem`으로 맞춰 내용이 적을 때 발생하던 불필요한 세로 스크롤을 보정했습니다. 정보·기타 카테고리 아이콘을 메가폰·달력으로 변경하고, 알림 기능은 준비 중 잠금 상태로 전환했습니다. 어드민 기사 폼에서는 요약 입력을 제거했으며 기존 요약 데이터는 수정 시 보존합니다. BBS 이미지 수정 시 기존 Storage 객체가 삭제되던 경로 비교 오류를 수정하고, 이미지 최적화 요청 실패 시 원본 URL로 재시도하도록 보완했습니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치 `feat/bss`, 원격 `deploy/feat/bss`로 푸시합니다.
-
-- BBS 공개 기사·상세페이지 및 반응 UI (`feat/bss`): 공개 기사 목록과 상세페이지를 `bbs_articles`·`bbs_article_media` 실데이터와 연결하고, 승인일시 기준 기사 카드와 `16:9` 대표 이미지 영역을 적용했습니다. 기사 상세 상단은 제목·담당기자·승인일시만 표시하며, 하단에는 우측 정렬 좋아요·싫어요·댓글·공유 버튼을 배치했습니다. 좋아요·싫어요는 `BBS_REACTIONS_MODE`가 `local`이면 브라우저별로만 저장하고 Supabase 반응 테이블을 조회·변경하지 않으며, 댓글 수·관리자 등록 댓글은 계속 조회합니다. 공유 버튼은 기사 URL을 클립보드에 복사하고 toast를 표시합니다. BBS 리본 아이콘은 좌측 상단·우측 하단 접힘과 대칭 명암, `NEWS` 라벨을 반영했으며 메인·상세 헤더에서 동일한 크기와 Geist Sans 폰트를 사용합니다. Bongstagram도 local 좋아요 모드에서 좋아요 수 조회까지 건너뛰도록 보완했습니다. `BBS_REACTIONS_MODE`의 기본값은 `local`이며 `server`로 전환하면 기존 IP 해시 반응 저장을 사용할 수 있습니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했고, `feat/bss`에서 원격 `deploy/feat/bss` 푸시 완료를 확인했습니다.
-
-- Bongstagram 빈 화면 세로 스크롤 수정 (`feat/bss`, 커밋 대기): 전역 헤더 아래 페이지가 `min-h-screen`으로 다시 전체 뷰포트 높이를 차지하던 구조를 헤더 제외 높이 기준으로 조정했습니다. 검색·프로필·내 프로필·게시물 상세·해시태그·로딩 화면에 동일한 레이아웃 기준을 적용해 콘텐츠가 없을 때 불필요한 세로 스크롤이 생기지 않도록 했습니다. 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다.
-
-- 이미지 전송 최적화 기반 (`feat/bss`, 커밋 대기): Supabase Storage 이미지에만 Vercel `next/image` 최적화와 24시간 이상 캐시를 적용하도록 `AppImage`와 `next.config.ts`를 정리했습니다. 외부 이미지와 동영상은 기존 직접 전달을 유지하며, 이미지 URL의 `fill`·크기 속성 충돌 없이 반응형 `sizes`를 사용합니다. 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했습니다.
-
-- BBS 반응형 초기 화면 및 테마 정리 (`feat/bss`): `public/bbs`의 모바일 참고 화면을 기준으로 BBS 메인·기사 상세 라우트를 추가했습니다. 모바일에서는 기사 카드·하단 고정 카테고리 메뉴를 사용하고, 데스크톱에서는 중앙 콘텐츠와 가로 카테고리 메뉴로 확장합니다. BBS는 기존 글로벌 Bongstagram 라이트·다크 테마 토글과 상태를 공유하며, 라이브 방송 기능은 인게임 시스템 범위에서 제외했습니다. 두 서비스의 다크모드 페이지 배경은 BBS 기준 색상 `#101216`으로 통일했습니다. Bongstagram 스토리 뷰어의 다크모드 외부 배경 오버레이 불투명도는 `72%`로 조정했습니다. 기사는 이후 Supabase·어드민 기능을 연결할 수 있도록 별도 데이터 타입과 샘플 데이터로 분리했습니다. 글로벌 헤더에 BBS 링크와 not-found 복귀 경로를 추가했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며 `feat/bss` 커밋·원격 푸시를 완료했습니다.
-
-- BBS 기사 스키마 적용 (`feat/bss`, migration 030 운영 DB 적용 완료): 초기 migration에서 생성된 기사 테이블은 이후 035에서 `bbs_articles`로 변경되었습니다.  제목, 안정적인 카테고리 키(`info`, `incident`, `economy`, `column`, `other`), 요약·본문, 대표 이미지 URL, KST 기준 승인일시, 공개 여부를 저장하도록 했습니다. 담당기자는 `characters.id` 외래키로 연결해 기사 조회 시 DB의 현재 캐릭터명을 사용하도록 설계했으며, 공개 읽기는 `is_published = true`인 기사만 허용합니다. 공개 처리 시 승인일시가 필수이고, 미승인 기사는 승인일시를 비워둘 수 있습니다. 사용자가 `030_bss_articles.sql`의 운영 DB 적용을 완료했습니다.
-- BBS 기사 첨부 이미지 스키마 (`feat/bss`, migration 031 운영 DB 적용 완료): 초기 migration에서 생성된 첨부 이미지 테이블은 이후 035에서 `bbs_article_media`로 변경되었습니다.  기사당 첨부 이미지를 최대 5장까지 저장하고 `sort_order` 0~4로 순서를 관리하도록 했습니다. 대표이미지는 `bbs_articles.thumbnail_url`로 유지하며, 공개 기사에 연결된 이미지 파일만 공개 조회할 수 있습니다. 사용자가 `031_bss_article_media.sql`의 운영 DB 적용을 완료했습니다.
-
-- BBS 기사 승인일시 및 상호작용 스키마 (`feat/bss`, migration 032·033 운영 DB 적용 완료): 이미 적용된 030을 직접 수정하지 않고 `032_bss_article_approval.sql`에서 `published_at`을 `approved_at`으로 변경하도록 분리했습니다. 미승인 기사는 승인일시를 비워둘 수 있고 공개 처리 시 승인일시가 필요합니다. `033_bss_article_interactions.sql`에는 기사별 좋아요·싫어요와 IP 해시 중복 제한, 관리자 관리형 댓글 및 공개 조회 정책을 추가했습니다. 사용자가 `032`, `033` migration의 운영 DB 적용을 완료했습니다.
-
-- BBS 브랜드·경로·내부 식별자 통일 (`feat/bss`): 사용자에게 보이는 표기와 공개·관리자 경로를 BBS 기준(`/bbs`, `/admin/bbs`)으로 변경했습니다. 기존 DB 테이블·인덱스·FK·PK·unique 제약조건·트리거와 Storage 버킷 전환은 035 migration으로 완료했습니다.
-
-- BBS DB 식별자 rename 적용 (`feat/bss`): 적용된 `bbs_articles`, `bbs_article_media`, `bbs_article_reactions`, `bbs_article_comments`를 `bbs_*`로 변경하고 자동 생성 FK·PK·unique 제약조건명까지 정리하는 `035_rename_bss_tables_to_bbs.sql`을 적용했습니다. 기존 `bss-media`가 비어 있는지 확인한 뒤 `bbs-media`를 생성했으며, Supabase Storage 보호 정책상 구버킷 삭제는 SQL이 아닌 Storage API 또는 대시보드에서 처리해야 합니다. 구버킷에 파일이 있으면 데이터 손실을 막기 위해 migration이 중단됩니다.
-
-- BBS 명칭 전면 통일 (`feat/bss`, 원격 `deploy/feat/bss` 푸시 완료): 활성 라우트·내부 모듈·컴포넌트·스타일·참고 자산을 `bbs`/`Bbs` 기준으로 통일하고 폐기된 `/bss`, `/admin/bss` 호환 라우트를 제거했습니다. migration 이력 파일명은 Supabase 적용 이력 보존을 위해 유지했습니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다.
-
-- BBS 기사 본문 서식 편집 (`feat/bss`): 어드민 기사 작성·수정 화면에 본문·제목 1~3(인게임 기준 제목 3이 최대)·굵게·기울임·취소선·점 목록·번호 목록 도구와 미리보기를 추가하고, 공개 상세 화면에서 Markdown 서식을 렌더링하도록 했습니다. 첨부 이미지 중 하나를 대표 이미지로 선택할 수 있어 동일 파일 재업로드를 줄였습니다. 기존 `content` 텍스트 컬럼을 사용하므로 추가 migration은 필요하지 않습니다.
-
-- BBS 기사 관리 보완 (`feat/bss`, 원격 `deploy/feat/bss` 푸시): 담당기자는 활성 언론 조직(`organizations.type = 'journalist'`)의 현재 멤버만 선택하도록 제한했습니다. BBS 브랜딩 표기를 화면·관리자 메뉴·문서에 통일했고, 기사 본문 서식 도구와 Markdown 렌더링을 추가했습니다. 첨부 이미지 중 대표 이미지 선택을 지원하며, 기사 등록 중 수정 화면으로 전환할 때 입력 중인 내용이 사라진다는 경고 모달을 표시하고 확인 시 선택한 기사 정보를 새 폼으로 불러옵니다. `remark-gfm`을 추가했으며 ESLint·TypeScript·프로덕션 빌드를 통과했습니다.
-
-- `feat/bonstagram` main 병합 완료: 좋아요 1초 제한, 제보 30초 제한과 클라이언트 제보 버튼 카운트다운, 공개 제보 참고 링크 URL 검증을 포함한 최신 기능을 `main`에 fast-forward 병합했습니다. 사용자가 migration 028·029의 Supabase 적용을 완료했으며, TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`이며 문서 갱신 후 원격 푸시를 진행합니다.
-
-- Bongstagram 관리자 화면 탭 전환 추가 (`54f9227`, `feat/bonstagram`): 게시물 관리 페이지 상단에 `게시물 관리`·`댓글 관리` 탭을 추가해 두 관리 영역을 한 번에 하나씩 표시하도록 구성했습니다. 서버에서 조회한 데이터와 기존 관리 기능은 유지하면서 긴 댓글 목록이 게시물 등록·목록 확인 영역을 밀어내지 않도록 화면을 분리했습니다. 기본 탭은 게시물 관리이며 탭 버튼에 tab 역할과 선택 상태를 적용했습니다. 변경 파일 검증을 통과했으며 원격 `deploy/feat/bonstagram`에 푸시 완료를 확인했습니다.
-
-- Bongstagram 관리자 댓글 목록 개선 (`54f9227`, `feat/bonstagram`): 댓글 관리 목록을 접고 펼칠 수 있도록 했으며, 검색·게시물 필터 결과를 20개 단위로 페이지네이션합니다. 검색이나 필터를 변경하면 1페이지로 초기화하고, 삭제 후 마지막 페이지가 비어도 유효한 페이지 범위로 표시합니다. 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했으며 원격 `deploy/feat/bonstagram`에 푸시 완료를 확인했습니다.
-
-- Bongstagram 기존 댓글 작성자 연결 정리 (`54f9227`, `feat/bonstagram`): 관리자 댓글 관리에 기존 댓글의 `author_character_id`와 Bongstagram 프로필명을 자동 대조하는 기능을 추가했습니다. 프로필명이 하나의 프로필과 일치하는 댓글만 캐릭터 ID·최신 프로필명으로 연결하고, 중복·불일치 댓글은 자동 변경하지 않으며 댓글 수정 화면에서 직접 프로필을 선택할 수 있도록 유지합니다. 자동 연결 전 미연결 개수와 처리 후 잔여 개수를 관리자 화면에서 확인할 수 있습니다. 변경 파일 ESLint·TypeScript 검사·`git diff --check`를 통과했으며 원격 `deploy/feat/bonstagram`에 푸시 완료를 확인했습니다.
-
-- Bongstagram 댓글·미디어·스토리 UI 보완 (`1ef5ec8`, `feat/bonstagram`): 관리자 댓글·답글 등록 및 수정에서 임의 작성자명 입력을 제거하고 등록된 Bongstagram 프로필을 선택하도록 변경했습니다. 서버에서도 선택한 캐릭터의 Bongstagram 프로필을 확인해 표시명을 저장하며, 공개 댓글의 프로필 이미지와 이름은 해당 프로필로 이동하고 빨간약 상태에 따라 스트리머명·이미지를 전환합니다. 홈 네비게이션을 홈 화면에서 다시 누르면 피드 최상단으로 이동하도록 추가했으며, 기존 댓글도 프로필명으로 연결 가능한 경우 프로필 링크를 제공합니다. 피드와 게시물 상세의 다중 미디어에는 현재 순번·전체 개수 인디케이터를 미디어 아래 중앙에 표시하고, 게시물 시간은 댓글과 동일하게 `1분 미만 방금 전`·`N분 전`·`N시간 전`·`N월 M일` 순서로 표시합니다. 스토리 레일은 클릭 시 열람되면서 실제 드래그에서만 포인터 캡처가 동작하도록 보완했습니다. 변경 파일 ESLint·TypeScript 검사·`git diff --check`·프로덕션 빌드를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram`에 푸시 완료를 확인했습니다.
-
-- Bongstagram 해시태그 탐색 추가 (`feat/bonstagram`): 피드와 게시물 상세 본문의 해시태그를 클릭 가능한 링크로 연결하고, `/bongstagram/hashtag/[태그]`에서 동일 태그가 포함된 게시물을 최신순 3열 그리드로 표시합니다. 이미지·동영상 게시물 그리드를 공용 컴포넌트로 통합했으며, 태그 비교는 대소문자를 구분하지 않습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Bongstagram 스토리 공개·프로필 보정 (`feat/bonstagram`): 공개 스토리 뷰어에서는 좋아요 개수를 숨기고 좋아요 상태만 표시하도록 정리했으며, 좋아요 개수는 어드민 게시물 관리에서만 확인할 수 있도록 유지했습니다. 프로필 스토리는 24시간 이내 스토리만 현재 스토리 뷰어에 연결하고, 해당 스토리가 있으면 프로필 이미지에 메인 스토리 레일과 같은 그라데이션 테두리와 기본 아바타 배경을 표시합니다. 24시간 이상 지난 스토리 시간은 KST 기준 `N월 N일`로 표시합니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Bongstagram 스토리 좋아요·어드민 정렬·시간대 통일 (`feat/bonstagram`): migration 026으로 스토리별 IP 해시 좋아요 테이블을 추가하고, 좋아요 등록·취소·개수 집계와 스토리당 IP 1회 제한을 구현했습니다. 좋아요한 스토리 ID는 브라우저 localStorage에도 저장하며 조회 기록과 DM·메시지 기능은 추가하지 않았습니다. 홈 및 프로필 보관함 스토리 뷰어에 좋아요 상태·개수를 연결하고, 어드민 게시물 관리에서 게시글·스토리 좋아요 수를 표시하며 좋아요 많은 순·적은 순 필터 정렬을 지원합니다. 게시물·스토리·댓글의 표시 시간과 관리자 입력 시간을 Asia/Seoul(KST) 기준으로 통일하고 새 게시물 입력 기본값도 KST로 설정했습니다. 사용자가 `026_bongstagram_story_likes.sql` 운영 DB 적용을 완료했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Bongstagram 프로필 스토리 보관함 연결 (`feat/bonstagram`): 프로필의 날짜별 스토리 보관함 썸네일을 스토리 뷰어와 연결해 선택한 스토리부터 5초 자동 진행·좌우 이동·스와이프를 사용할 수 있도록 했습니다. 뷰어 재사용을 위해 스토리 미디어·슬라이드 타입과 뷰어를 공개 컴포넌트로 정리했으며, 팔로우 버튼 아래에 있던 단일 스토리 하이라이트 영역은 제거했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `feat/bonstagram`이며 원격 `deploy/feat/bonstagram`에 커밋 후 푸시합니다.
-
-- Bongstagram 스토리·검색 UI 보정 (`feat/bonstagram`): 스토리 뷰어의 상단 프로필 이미지·이름만 프로필 링크로 유지하고 시간은 `방금`·`N분`·`N시간` 형식의 일반 텍스트로 표시했습니다. `...` 버튼을 제거하고 닫기 버튼의 포인터 커서를 추가했으며, 미디어 상단 검정 그라데이션과 하단 메시지·좋아요·DM 액션 배치를 조정했습니다. 홈 스토리 레일은 업로드 시각 기준 24시간 동안만 노출하고, 만료된 스토리는 프로필 보관함에서 계속 확인할 수 있도록 분리했습니다. 검색 결과 유저 사이 구분선을 제거하고 테마별 호버 배경을 적용했으며, 라이트 모드 호버 색상은 `#F3F3F3`로 지정했습니다. `AppImage`의 `fill` 사용 시 width·height 충돌도 수정했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Bongstagram 1단계 (`feat/bonstagram`): 기본 피드 페이지, 글로벌 메뉴, 캐릭터 1:1 프로필 타입과 마이그레이션 018을 추가했습니다. `profile_name`은 SNS에 표시되는 닉네임으로 사용하며 별도 username은 두지 않습니다. 운영 DB의 `bonstagram_profiles` 조회 성공과 등록 프로필 0개를 확인했습니다. 프로덕션 빌드는 통과했으며, 전체 린트는 기존 파일의 오류 6개·경고 8개로 실패했습니다. 이번 브랜치 커밋 후 원격 `deploy/feat/bonstagram`에 푸시합니다. Vercel 배포는 별도 확인 대상입니다.
-
-- Bongstagram UI 보정 (`feat/bonstagram`): 참고 이미지에 맞춰 모바일 SNS 레이아웃의 로고 크기·가로 비율·고딕 폰트, 작성자 팔로우 버튼, 하단 홈·검색·만들기·프로필 네비게이션을 조정했습니다. 릴스·저장·더보기 버튼은 제외했으며, 홈은 출입구가 있는 채움형 아이콘, 만들기는 둥근 사각형 안의 `+` 아이콘으로 구성했습니다. 변경 파일 린트와 `git diff --check`를 통과했습니다. 이번 수정도 `deploy/feat/bonstagram`에 푸시합니다.
-
-- Bongstagram 테마·브랜드 보정 (`feat/bonstagram`): 테마 토글을 글로벌 네비게이션의 빨간약 토글 우측으로 이동하고 Bongstagram에서만 활성화했습니다. `Bongstagram` 표기와 로고 비율을 통일했으며, 라이트·다크 호버 색상, 스토리 `+` 배지, 스토리 내부 회색 그라데이션 원을 조정했습니다. 관련 파일 린트와 프로덕션 빌드를 통과했으며 `git diff --check`를 확인했습니다. 이번 수정도 `deploy/feat/bonstagram`에 푸시합니다.
-
-- Bongstagram 명칭 통일 (`feat/bonstagram`): 공개 라우트를 `/bongstagram`으로 변경하고 기존 `/bonstagram`은 호환 리다이렉트로 유지했습니다. 코드·타입·스키마 스냅샷·테마 식별자를 `bongstagram` 기준으로 정리했으며, 이미 적용된 018을 변경하지 않고 `019_rename_bongstagram.sql`에서 테이블·제약조건·트리거·RLS 정책을 rename하도록 작성했습니다. 019는 사용자가 운영 DB에 적용 완료했고, `bongstagram_profiles` 조회 성공 및 기존 테이블명 미노출을 확인했습니다.
-
-- Bongstagram 관리자 필터 개선 (`72c5c83`): 캐릭터 선택과 조직 선택 드롭다운에 텍스트 검색을 추가하고, 조직별·무소속 캐릭터 필터와 Bongstagram 연결 상태 3단계(미연결자만·전체·연결자만) 필터를 추가했습니다. 미연결 캐릭터 행에서도 수정 버튼으로 프로필을 바로 연결할 수 있으며, 변경 파일 린트·`git diff --check`·프로덕션 빌드를 통과했습니다. `feat/bonstagram` 브랜치에 커밋합니다.
-
-- Bongstagram 게시물 기반 추가: `020_bongstagram_posts.sql`과 `021_bongstagram_media.sql` 마이그레이션, 데이터베이스 타입, 관리자 게시물·스토리 등록·수정·삭제, 공개 최신순 피드를 추가했습니다. 게시물은 기존 Bongstagram 프로필이 연결된 캐릭터만 작성할 수 있고, 이미지·동영상 여러 개와 본문·게시일을 지원합니다. 스토리는 다음 서버 종료 오전 3시까지 표시되며 프로필에 한국 시간 기준 일자별로 보관됩니다. `BONGSTAGRAM_SERVER_FINAL_DATE` 지정 시 해당일 오전 3시에 모든 스토리를 종료합니다. 사용자가 021 적용을 완료했으며 관련 린트·`git diff --check`·프로덕션 빌드를 통과했습니다. 아직 커밋하지 않은 작업입니다.
-
-- Bongstagram 관리자 메뉴 분리: 프로필 관리는 `/admin/bongstagram`, 게시물·스토리 등록 및 관리는 `/admin/bongstagram/posts`에서 별도로 접근하도록 구성했습니다. 아직 커밋하지 않은 작업입니다.
-
-- Bongstagram 직접 미디어 업로드: 관리자 화면에서 Supabase Storage 일회성 업로드 URL로 이미지·동영상을 직접 전송하고 게시물 미디어에 Storage 경로를 저장하도록 추가했습니다. 이미지 10MB·동영상 100MB 제한, 지원 MIME 형식 검증, 게시물 삭제·수정 시 이전 Storage 파일 정리를 포함합니다. `022_bongstagram_storage.sql` 적용 후 버킷·컬럼과 실제 게시글 업로드를 확인했습니다. 린트·`git diff --check`·프로덕션 빌드를 통과했으며 아직 커밋하지 않은 작업입니다.
-
-- Bongstagram 게시물 기능 커밋·푸시: 게시물·스토리 관리자 섹션, 다중 이미지·동영상, 예약 게시일, 스토리 보관·만료, Storage 직접 업로드를 `feat/bonstagram`에 커밋하고 `deploy/feat/bonstagram`으로 푸시했습니다. 운영 DB에서 migration 021·022와 실제 파일 업로드를 확인했으며, 변경 파일 린트·`git diff --check`·프로덕션 빌드를 통과했습니다. Vercel 배포 완료 여부는 별도 확인 대상입니다.
-
-- Bongstagram 캡션·헤더 보정: 게시물 본문 앞에 클릭 가능한 프로필 이름을 볼드체로 표시하고, 공백·개행 단위 해시태그를 강조했습니다. 게시글 헤더에는 프로필 이미지와 프로필 이름만 표시하고 팔로우 버튼을 우측에 유지했습니다. 변경 파일 린트와 `git diff --check`를 통과했으며 `feat/bonstagram`에 커밋·푸시합니다.
-
-- Bongstagram 미디어 UI 개선: 고정 피드 프레임과 검정 레터박스, 화면 노출 기반 영상 자동 재생·일시정지, 전체 피드 음소거 상태 공유, 커스텀 재생 버튼, 다중 미디어 좌우 버튼·모바일 스와이프·PC 드래그를 추가했습니다. 업로드 시간·좋아요·댓글 표시 영역과 하단 고정 네비게이션도 반영했습니다. 린트와 프로덕션 빌드를 통과했으며 `feat/bonstagram`에 커밋·푸시합니다.
-
-- Bongstagram 어드민 필터 추가: 게시물 관리에서 프로필·캐릭터·본문 검색, 조직·무소속, 게시글·스토리, 이미지·동영상 필터와 최신·오래된 게시일 정렬을 지원합니다. 현재 조직 소속 데이터를 기준으로 조직 필터를 구성했으며 린트·프로덕션 빌드·`git diff --check`를 통과했습니다. `feat/bonstagram`에 커밋·푸시합니다.
-
-- Bongstagram 빨간약 표시 연동: 빨간약 ON에서는 스트리머명과 스트리머 프로필 이미지를 우선 표시하고, OFF에서는 Bongstagram 프로필명과 프로필 이미지를 표시하도록 피드 헤더·본문 작성자명·스토리에 적용했습니다. 스트리머 이미지가 없으면 기존 Bongstagram 이미지 또는 캐릭터 이미지로 대체합니다. 변경 파일 린트·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며 `feat/bonstagram`에 커밋하고 `deploy/feat/bonstagram`에 푸시합니다.
-
-- Bongstagram 좋아요·댓글 추가: migration 023으로 게시물별 좋아요와 댓글 테이블을 추가했습니다. 좋아요는 원본 IP를 저장하지 않고 서버 해시와 게시물별 유니크 제약으로 IP당 1회 등록·취소를 처리하며, 댓글은 공개 조회만 제공하고 작성은 관리자 영역으로 제한했습니다. 피드에 좋아요 수·현재 IP 상태·댓글 수와 댓글 조회창을 연결했습니다. localhost에서 브라우저별 IPv4·IPv6 및 프록시 헤더 차이를 줄이도록 IP 정규화를 추가했습니다. 변경 파일 린트·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며 `feat/bonstagram`에 커밋하고 `deploy/feat/bonstagram`에 푸시합니다.
-
-- Bongstagram localhost 좋아요 보정: `127.0.0.1`, `::1`, IPv4-mapped loopback을 하나의 `localhost` 식별자로 통합해 로컬 브라우저가 IPv4·IPv6를 다르게 사용해도 게시물별 좋아요 IP 제한이 유지되도록 보완합니다. 변경 파일 린트·TypeScript 검사·프로덕션 빌드를 통과했으며 `feat/bonstagram`에 추가 커밋하고 `deploy/feat/bonstagram`에 푸시합니다.
-
-- Bongstagram 스토리·프로필 UI 개선: 스토리 클릭 시 전체 화면 이미지·동영상 뷰어를 열고, 진행 바·자동 재생·좌우 버튼·스와이프·키보드 이동·닫기를 지원합니다. 프로필 상세의 빨간약 이름·프로필 이미지 전환과 피드 헤더 프로필 이미지 링크를 추가했으며, 댓글창 제목은 라이트모드 검은색·다크모드 흰색으로 표시하고 안내 문구를 제거했습니다. 스토리 뷰어도 전체 Bongstagram 음소거 상태를 공유합니다. 변경 파일 린트·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며 `feat/bonstagram`에 커밋하고 `deploy/feat/bonstagram`에 푸시합니다.
-
-- Bongstagram 댓글 관리 확장 (`feat/bonstagram`): 관리자 게시물 목록에서 댓글 수를 펼쳐 게시물별 댓글 등록·삭제가 가능하도록 하고, 댓글 관리 섹션에 작성 시간 지정·수정과 1단계 답글 등록을 추가했습니다. `024_bongstagram_comment_replies.sql`을 통해 답글 관계를 저장하며, 사용자가 migration 024 적용을 완료했습니다. 공개 댓글창은 답글을 들여쓰기하고, 작성자 프로필·스트리머 정보와 연결해 빨간약 상태에 따라 이름과 프로필 이미지를 전환합니다. 댓글 시간 입력·저장은 브라우저 시간대와 관계없이 KST(UTC+9)를 사용합니다. 관련 린트·TypeScript 검사·`git diff --check`·프로덕션 빌드를 통과했습니다. 대상 브랜치는 `feat/bonstagram`이며 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Bongstagram 댓글 관리 마무리 (`feat/bonstagram`): 등록된 게시물 목록에서 댓글 직접 수정과 작성 시간 수정, 댓글별 작성 시간순 정렬을 추가했습니다. 댓글·답글에 `author_character_id`를 저장해 프로필명 변경에도 빨간약 이름·이미지 전환이 유지되도록 했으며, 기존 댓글은 Bongstagram 프로필명 기준으로 가능한 경우 자동 연결합니다. 사용자가 `025_bongstagram_comment_author.sql`의 운영 DB 적용을 완료했습니다. 변경 파일 린트·TypeScript 검사·`git diff --check`·프로덕션 빌드를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Bongstagram 프로필·팔로우 경험 개선 (`feat/bonstagram`): 하단 네비게이션을 공통 컴포넌트로 통합하고 검색·내 프로필 라우트를 연결했으며, 만들기 버튼은 비활성화했습니다. 팔로우는 localStorage에 저장하고 현재 피드 순서는 팔로우 클릭 직후 유지한 뒤 새로고침 시 팔로우 계정 우선·비팔로우 일부 랜덤 삽입 순서로 적용합니다. 내 프로필의 팔로잉 목록은 댓글창과 같은 모달에서 검색·해제·재팔로우를 지원하며, 다른 사람 프로필과 함께 인스타그램형 프로필 화면으로 구성했습니다. 관련 린트·TypeScript 검사·`git diff --check`·프로덕션 빌드를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Bongstagram 검색 화면 개선 (`feat/bonstagram`): 검색 네비게이션 진입 시 검색창과 게시물 3열 그리드를 표시하고, 검색창 포커스 시 최근 검색 목록·개별 삭제·전체 삭제·프로필 검색 화면으로 전환하도록 구성했습니다. 최근 검색은 브라우저 localStorage에 저장하며, 빨간약 OFF에서는 프로필명·캐릭터명만 검색하고 ON에서만 스트리머명을 검색합니다. `AppImage`의 `fill`·크기 속성 충돌을 수정하고 검색창 높이를 56px로 조정했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Bongstagram 공개 데이터 캐시 적용 (`d5d6a72`, `feat/bonstagram`): 프로필·캐릭터·스트리머 디렉터리, 피드·프로필·게시물 상세·해시태그 게시물, 댓글 조회를 `unstable_cache` 기반 60초 캐시로 통합했습니다. 관리자 프로필·게시물·댓글 변경 시 관련 캐시 태그를 무효화하며, 방문자별 IP 좋아요 상태와 좋아요 토글은 실시간으로 유지합니다. 스토리 노출 여부는 캐시된 게시물에 대해 요청 시점 기준으로 계산합니다. 변경 파일 ESLint와 프로덕션 빌드·`git diff --check`를 통과했으며, 전체 ESLint의 기존 오류는 다른 관리자·제보 화면에 남아 있습니다. `feat/bonstagram`에 커밋하고 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Supabase·좋아요 부하 검증 (`feat/bonstagram`): k6로 운영 Supabase REST API의 공개 데이터 조회와 테스트 게시물의 좋아요 등록·동일 IP 중복 등록·취소를 측정했습니다. 10 VU·10초 테스트에서 등록 269회, 중복 등록 269회(`409` 차단), 취소 269회가 모두 기대 상태 코드로 처리됐고, 기능 검증 체크는 100%, 응답 p95는 38.26ms였습니다. 중복 등록 `409`는 정상 동작이므로 k6의 전체 HTTP 실패율에서 제외해 해석해야 합니다. 테스트 전용 좋아요 행은 종료 후 0건임을 확인했습니다. 실제 사용자 대상 Preview 부하 테스트와 Vercel·Next Server Action 경유 검증은 후속 작업으로 남겨둡니다.
-
-- Preview 읽기 부하 검증 (`feat/bonstagram`): 로그인 없이 접근 가능한 Preview URL에서 `/`, `/bongstagram`, `/bongstagram/search`를 대상으로 k6 10 VU·30초 조회 테스트를 진행했습니다. 총 465건 요청이 모두 HTML 200으로 응답했고 실패율은 0%, 평균 325.76ms, 중앙값 345.63ms, p95 651.66ms, 최대 2.51초였습니다. 데이터 변경 요청은 포함하지 않았으므로 좋아요·댓글 Server Action과 Supabase 쓰기 부하는 별도 검증 대상입니다.
-
-- Supabase 캐시·조회 최적화 (`feat/bonstagram`): 홈 스토리 조회를 만료 시각이 지난 행까지 읽지 않도록 `story_expires_at` 조건을 포함한 60초 캐시 함수로 분리했습니다. 댓글 조회는 댓글별로 전체 프로필·캐릭터·스트리머를 반복 조회하지 않고 캐시된 Bongstagram 디렉터리를 재사용하며, 좋아요 수 주기 갱신도 캐시된 engagement 조회를 사용합니다. 피드 커서·활성 스토리 조회 인덱스를 담은 `027_bongstagram_query_indexes.sql`을 추가했고, 사용자가 Supabase SQL Editor에서 운영 DB 적용을 완료했습니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `feat/bonstagram`이며 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- 검색엔진 임시 차단 (`feat/bonstagram`): 루트 metadata에 `noindex`, `nofollow`, `noarchive`와 Googlebot 세부 지시를 추가해 전체 페이지가 검색 결과에 새로 색인되지 않도록 했습니다. robots.txt로 크롤링 자체를 차단하지 않아 이미 색인된 주소가 noindex 지시를 확인할 수 있도록 구성했습니다. 생성 HTML의 robots·googlebot 메타 태그를 확인했으며 대상 브랜치는 `feat/bonstagram`, 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- Bongstagram 좋아요 비상 전환 준비 (`feat/bonstagram`, 커밋 대기): `BONGSTAGRAM_LIKES_MODE` 환경변수로 서버 저장과 브라우저 localStorage 전용 모드를 전환할 수 있도록 게시물·스토리 좋아요 UI와 Server Action을 연결했습니다. local 모드에서는 좋아요 등록·취소 Server Action을 서버에서 거부하고, 사용자별 DB 좋아요 조회와 60초 집계 갱신도 건너뜁니다. server 모드는 기존 IP 해시 제한 동작을 유지합니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드·`git diff --check`를 통과했으며, 아직 커밋·푸시하지 않았습니다.
-
-- 사건 아카이브 썸네일·참여 인물 보정 (`main`): 사건 아카이브의 썸네일 없는 대형 최신 사건 카드와 일반 카드에 카테고리명을 대체 표시하고, 라이트모드 대체 영역의 배경과 텍스트 대비를 조정했습니다. 썸네일이 있는 대형 카드의 텍스트 레이어도 라이트모드에서 읽을 수 있도록 보강했으며, 사건 상세 참여 인물은 빨간약 OFF에서 캐릭터명·라벨, ON에서 스트리머명·라벨과 스트리머 프로필 이미지를 표시합니다. 사건 상세 썸네일 없는 대체 영역은 추가하지 않았습니다. `npx eslint`, `npx tsc --noEmit`, `git diff --check`를 통과했으며 대상 브랜치 `main`, 원격 `deploy/main` 푸시 완료를 확인합니다.
-
-- 전역 테마 초기화·홈·로딩 화면 보정 (`main`): 새로고침 전에 저장된 라이트모드가 즉시 반영되도록 문서 head에서 테마를 초기화하고 hydration 속성 차이를 처리했습니다. 홈의 `위키 둘러보기` 영역을 제거하고 통계를 사건·BBS 공개 기사·봉스타그램 게시글 수로 변경했으며, `봉누도 따라가기` 배지의 대비를 높였습니다. 전역 및 봉스타그램 로딩 스켈레톤을 테마 변수 기반으로 변경해 라이트모드에서도 올바른 배경과 색상을 표시합니다. ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치 `main`, 원격 `deploy/main` 푸시 완료를 확인합니다.
-
-- 봉스타그램 검색 그리드 누락 방어 (`main`): 검색·해시태그 그리드 변환 과정에서 미디어가 없는 게시글을 조용히 제외하지 않고 빈 타일로 표시하도록 보완했습니다. 현재 관리자 게시글 등록은 미디어 첨부를 필수로 하므로 일반 데이터에서는 발생하지 않지만, 조회 데이터가 일부 누락되는 상황에서도 게시글 순서와 무한 스크롤을 유지합니다. ESLint·TypeScript·`git diff --check`를 통과했으며 대상 브랜치 `main`, 원격 `deploy/main` 푸시 완료를 확인합니다.
-
-- Bongstagram 어드민 좋아요 집계 보정 (`feat/bonstagram`): 어드민 게시물 관리 페이지에 `dynamic = 'force-dynamic'`을 지정해 빌드 시 정적 HTML에 고정되던 좋아요 수를 요청 시점의 Supabase 데이터로 표시하도록 수정했습니다. 사용자가 server 모드에서 DB 좋아요 생성을 확인했고 local 모드에서는 DB 쓰기가 발생하지 않음을 확인했습니다. 변경 파일 ESLint·TypeScript 검사·프로덕션 빌드를 통과했으며 `git diff --check`도 통과했습니다. 대상 브랜치는 `feat/bonstagram`, 원격은 `deploy/feat/bonstagram`입니다.
-
-- Bongstagram 공개 입력·요청 제한 보완 (`feat/bonstagram`): 게시물·스토리 좋아요는 IP 해시 기준 1초 간격으로 서버에서 제한하고, 공개 제보는 IP 해시 기준 30초 간격으로 제한합니다. 제보 성공 후에는 브라우저 localStorage와 카운트다운으로 제출 버튼을 비활성화하며 서버가 최종 검증합니다. 공개 제보 참고 링크는 `http`·`https` URL만 저장·관리자 화면에 표시해 안전하지 않은 스킴의 링크 실행 경로를 차단했습니다. 좋아요 제한은 `028_bongstagram_like_rate_limit.sql`, 제보 제한은 `029_report_rate_limit.sql`을 Supabase SQL Editor에서 적용합니다. 변경 파일 ESLint(기존 `react-hooks/set-state-in-effect` 규칙 위반 제외)·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `feat/bonstagram`, 원격 대상은 `deploy/feat/bonstagram`입니다.
-
-- Bongstagram 조회 페이지네이션·스토리 레일 개선 (`feat/bonstagram`): 메인 피드는 최초 12개, 검색·해시태그 게시물 그리드는 최초 24개를 cursor 기반으로 조회하고 하단 접근 시 다음 페이지를 무한 스크롤로 추가합니다. `posted_at`과 `id`를 함께 cursor로 사용해 정렬 경계의 중복·누락을 줄였으며, 기존 전체 게시물 일괄 그리드 컴포넌트를 제거했습니다. 홈 스토리 레일에는 모바일 스와이프와 PC 드래그를 유지하고 좌우 이동 버튼은 제거했으며 텍스트 선택도 방지했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치 `feat/bonstagram`에 커밋하고 원격 `deploy/feat/bonstagram`으로 푸시합니다.
-
-- Bongstagram 게시물 상세·프로필 UI 개선 (`feat/bonstagram`): `/bongstagram/post/[postId]` 게시물 상세 페이지를 추가해 피드와 동일한 작성자·팔로우·미디어 캐러셀·좋아요·댓글·본문·업로드 시간 UI를 제공합니다. 검색·프로필 게시물 그리드에서 상세 페이지로 연결하고, 상세·다른 유저 프로필의 뒤로가기는 직전 페이지로 이동하도록 했습니다. 프로필 헤더 제목을 중앙 정렬하고 우측 Bongstagram 문구를 제거했으며, 다른 유저 프로필의 팔로우 버튼을 설명 아래 전체 너비로 확장했습니다. 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며, 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- 레거시 Bonstagram 경로 폐기 (`feat/bonstagram`): 글로벌 헤더를 `/bongstagram`으로 통일하고 호환용 `/bonstagram` 라우트와 오타 테마 localStorage 키를 제거했습니다. 이미 운영 DB에 적용된 018·019 마이그레이션은 초기화 재현과 이름 변경 이력에 필요해 보존합니다. 변경 후 애플리케이션 코드의 레거시 경로 참조가 사라졌는지 확인하고, 변경 파일 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치 `feat/bonstagram`과 원격 `deploy/feat/bonstagram` 푸시 완료를 확인했습니다.
-
-- 사용자 전달 사항 반영: 마이그레이션 017 적용 완료 및 운영진과 논의한 ‘봉누도 따라가기’ 개발 의향을 기록했습니다. 공식 위키 준비 소식은 사용자 전달 기준이며, 새 콘텐츠 기능은 아직 기획·구현 미확정입니다.
-
-- 3차 main 통합 완료: `8cd77e8`을 `41347a8`로 병합하고 `deploy/main`에 푸시했습니다. 마이그레이션 017은 사용자 확인으로 운영 DB 적용 완료입니다. 에이전트가 운영 DB를 재검증한 것은 아니며 Vercel 배포 완료는 별도 확인 대상입니다.
-
-- 사용자 요청으로 3차까지 main 통합을 진행하며 **4차 이후 점검 수정은 재개 요청 전까지 중단**합니다. 3차 검증은 회귀 테스트 7개·변경 파일 린트·빌드 통과. 마이그레이션 017은 사용자 확인으로 적용 완료했습니다.
-
-- 3차 점검 수정 (`fix/project-audit`): 캐릭터+소속 생성은 `create_character_with_membership`, 스트리머+미정 캐릭터 생성은 `create_streamer_with_character` RPC로 처리합니다. 각 함수의 두 INSERT는 단일 트랜잭션이며 오류를 삼키지 않아 후속 INSERT 실패 시 전체 롤백됩니다. `017_atomic_creation.sql`은 함수 추가·실행 권한 제한만 수행하고 기존 행을 변경하지 않습니다. 운영 DB 적용은 사용자가 완료했다고 확인했습니다.
-- **3차 배포 순서**: Supabase SQL Editor에서 `supabase/migrations/017_atomic_creation.sql` 적용 → 코드 배포. 기존 생성 코드는 새 함수 추가 후에도 동작합니다. 새 코드에서 함수가 없으면 DB 업데이트(017) 안내를 표시하며 이전 다단계 INSERT로 되돌아가지 않습니다. 실행 권한은 `service_role`만 허용합니다.
-- 3차 검증: 테스트용 개발 의존성 `@electric-sql/pglite`로 격리된 PostgreSQL에서 정상 생성, 없는 조직·스트리머 참조, 중복 채널, 두 번째 INSERT 강제 실패 시 롤백, 함수 실행 권한을 검증합니다. `node --experimental-strip-types --test tests/*.test.mjs`로 재현 가능. 운영 DB 쓰기 없음. 이전에 생긴 불완전한 데이터의 자동 정리는 포함하지 않습니다.
-
-- 2차 수정 main 통합: `fix/project-audit`의 `e956dff`를 병합 대상으로 반영했습니다. 지도·스트리머 저장 실패 처리, 입력 유지·로딩 해제, 제보 좌표 추가 오류 처리 포함. 회귀 테스트 5개와 변경 파일 린트·프로덕션 빌드 통과. 생성 트랜잭션은 3차에서 진행합니다. 원격 푸시·배포 결과는 각각 확인하며, 이 기록은 병합 커밋에 포함합니다.
-
-- 2차 점검 수정 (`fix/project-audit`): 지도·스트리머 DB 저장 실패와 대상 없음 오류를 화면에 표시하고 입력·선택을 유지합니다. 공통 `useAdminMutation` 훅으로 비동기 예외와 중복 실행을 처리하며 로딩을 해제합니다. 스트리머 추가 폼을 클라이언트 컴포넌트로 분리하고 제보 좌표의 장소 추가에도 동일한 오류 처리를 적용했습니다. 생성 부분 성공은 명시적으로 안내하며 원자성 보장은 3차 대상입니다. `node --experimental-strip-types --test tests/*.test.mjs` 5개 통과, 변경 파일 린트·프로덕션 빌드 통과. 실제 DB 변경 없음.
-
-- 조직 관리 삭제 버튼 표시 개선: 일반 목록·편집 모드 모두 텍스트 삭제 버튼 표시, 삭제 확인/취소 유지, 관리 열 확장 및 좁은 화면 가로 스크롤 지원. 삭제 실패 메시지와 로딩 해제 처리 추가. 변경 파일 린트·TypeScript 검사 통과; 실제 조직 삭제는 수행하지 않았습니다. `20986da`를 `ad2bc89`로 main에 병합하고 `deploy/main` 푸시 완료.
+## 작업 기록 확인 가이드
+
+- 현재 프로젝트 구조·기능·스키마·환경변수·주의사항은 이 문서에서 확인합니다.
+- 과거 작업의 상세 변경 내용, 검증 결과, migration 상태, 커밋·브랜치·푸시 기록은 [CHANGELOG.md](./CHANGELOG.md)에서 확인합니다.
+- 작업을 시작할 때는 이 문서의 관련 기능 설명을 먼저 확인하고, 기존 변경의 배경이나 반영 상태가 필요하면 `CHANGELOG.md`의 최신 관련 기록을 확인합니다.
+- 커밋·푸시 또는 `main` 병합 시에는 이 문서에 현재 상태를 간결하게 갱신하고, 상세 작업 기록은 `CHANGELOG.md`에 남깁니다.
 
 ### 커밋·브랜치 규칙
 
@@ -562,46 +425,3 @@ src/
 - 커밋·푸시와 `main` 병합은 사용자 요청에 따라 진행합니다. 병합 전 원격 변경을 확인하고 강제 푸시는 사용하지 않습니다.
 - 커밋·푸시 또는 main 병합 시 이 문서에 변경 내용·검증 결과·대상 브랜치·확인된 반영 상태를 함께 갱신합니다. 기록은 해당 작업 커밋 또는 병합에 포함하며, 문서 자체의 커밋 해시를 기록하려고 반복 커밋하지 않습니다.
 - 푸시와 Vercel 배포 완료는 구분합니다. 확인하지 않은 푸시·배포 결과는 완료로 기록하지 않습니다.
-- 1차 멤버 분리 기능은 사용자 동작 확인을 완료했으며, 공개·관리자 화면의 용어를 ‘탈퇴’로 통일했습니다.
-
-- 전체 점검 후 1차 수정: 조직 상세는 `left_at` 기준으로 현재/이전 멤버를 구분합니다. 현재 소속 중 활동·비활동 멤버를 합산하고, 이전 멤버는 별도 섹션과 탈퇴 배지를 표시합니다. 분류 함수: `src/lib/data/organization-members.ts`. 회귀 테스트: `node --experimental-strip-types --test tests/organization-members.test.mjs` (2개 통과), 변경 파일 린트·빌드 통과. `fix/project-audit` 브랜치의 1차 수정입니다.
-
-- 2026-09-12 전체 점검: [PROJECT_AUDIT.md](./PROJECT_AUDIT.md). 빌드 성공, 린트 오류 6개·경고 8개, 기존 테스트 8/10 성공. 발견한 기능 문제·검증 한계·수정 우선순위는 점검 문서 참조. 이번 점검에서는 애플리케이션 코드나 DB를 수정하지 않았습니다.
-
-- 제보 IP 해시 전환 (`main`): 제보 등록·차단 확인·관리자 차단을 원본 IP 대신 기존 좋아요·제보 레이트리밋과 동일한 서버 비밀키 기반 SHA-256 해시로 통일했습니다. 관리자 제보·차단 목록에는 해시 일부만 표시하고 차단 해제는 행 ID로 처리합니다. `036_hash_report_ips.sql`로 해시 컬럼을 추가하고, 기존 차단 데이터가 없음을 확인한 뒤 `037_drop_legacy_blocked_ip.sql`로 `blocked_ips.ip` 원본 컬럼을 제거할 수 있도록 했습니다. 기존 제보의 원본 IP 백필이 필요한 경우에만 `npm run migrate:report-ip-hashes`를 실행합니다. 관련 ESLint·TypeScript·프로덕션 빌드·스크립트 구문 검사·`git diff --check`를 통과했으며, 대상 브랜치는 `main`입니다. 커밋 후 원격 푸시 상태를 확인합니다.
-
-- 스트리머 디렉터리 정리 (`main`): 스트리머 목록에서 Chzzk 라이브 상태 API 호출, 온라인·오프라인 분류, 상태 새로고침 UI를 제거하고 등록된 스트리머와 치지직 채널 링크 중심으로 단순화했습니다. 홈의 라이브 바로가기와 헤더 라이브 메뉴도 제거했으며, 스트리머 목록·상세 페이지에 라이트·다크 테마 스타일을 적용하고 카드 호버 테두리와 프로필 링을 테마와 무관하게 `#00FFA3`으로 통일했습니다. ESLint·TypeScript·`git diff --check`를 통과했으며, 대상 브랜치는 `main`이고 커밋 후 원격 푸시 완료를 확인합니다.
-
-- 캐릭터 테마 및 관리자 캐시 갱신 보완 (`main`): 캐릭터 목록·상세 페이지에 라이트·다크 테마를 적용하고 상세 프로필 헤더 그라데이션, 카드·필터·보조 색상을 테마 변수에 맞췄습니다. 어드민 공용 캐시 리로드 시 해당 공개 경로와 관리자 목록 경로를 함께 무효화하고, BBS 기사 캐시 갱신에도 `/admin/bbs`를 포함해 갱신 직후 목록이 다시 조회되도록 수정했습니다. ESLint·TypeScript·`git diff --check`를 통과했으며, 대상 브랜치는 `main`이고 원격 푸시 완료를 확인합니다.
-
-- 조직 테마 및 지도 포커스 보완 (`main`): 조직 목록·상세 페이지를 라이트·다크 테마에 맞추고, 조직·캐릭터 상세 미니맵을 자체 stacking context와 읽기 전용 상호작용으로 고정해 헤더 위 표시와 패닝을 막았습니다. 사건 상세 지도의 전체 지도 이동 버튼은 좌표를 전달하고 전체 지도에서 해당 위치를 중심으로 `사건 위치` 핀을 표시하도록 연결했습니다. ESLint·TypeScript·`git diff --check`를 통과했으며, 대상 브랜치는 `main`이고 원격 푸시 완료를 확인합니다.
-
-아래 표의 커밋은 `deploy/main`에 반영·푸시 완료했습니다. 1차 멤버 수정은 사용자 동작 확인 후 `d47ade2`로 병합했습니다. 나머지 점검 항목은 [PROJECT_AUDIT.md](./PROJECT_AUDIT.md)를 기준으로 순차 진행합니다. 배포 완료 여부는 Vercel에서 별도로 확인합니다.
-
-| 커밋 | 작업 내용 |
-|---|---|
-| `ad2bc89` | 조직 삭제 버튼 표시·오류 처리 개선 main 병합 |
-| `20986da` | 조직 관리 삭제 버튼 상시 표시, 관리 열 확장, 삭제 실패 처리 |
-| `d47ade2` | 1차 점검 수정 main 병합 (현재/이전 멤버 분리 및 탈퇴 표기) |
-| `33c6d13` | 공개·관리자 화면 용어를 탈퇴로 통일, 커밋 규칙 문서화 |
-| `82c0a1b` | 탈퇴 멤버 분리·현재 인원 집계 수정, 회귀 테스트 및 전체 점검 문서 |
-| `22bc774` | 스트리머 카드 우상단 조직 뱃지 제거 |
-| `11df7c9` | 스트리머 목록: 캐릭터 소속 조직 쿼리 분리 (4단계 중첩 버그 수정) |
-| `f4bf847` | 스트리머 목록: 빨간약 ON 시 제목 스트리머명 유지 |
-| `8ffe00b` | 스트리머 상세: 캐릭터 소속 조직 쿼리 분리 (4단계 중첩 버그 수정) |
-| `ed581bc` | 캐릭터 목록: 조직 뱃지 옆에 직책 인라인 표시 |
-| `70b8fa5` | 캐릭터 목록/상세/조직 멤버카드: 직업이 '가이드'인 캐릭터에 teal 뱃지 표시 |
-| `a218279` | 어드민: 캐릭터 추가 기능 + 스트리머 추가 시 '미정' 캐릭터 자동 생성 |
-| `423454e` | 어드민 멤버 관리: 정렬 상태에서 드래그 순서 변경 가능 |
-| `8e6385f` | 어드민 멤버 관리: 칼럼 헤더 정렬 기능 추가 |
-| `31ac7d0` | 조직 상세 멤버카드: 직업 대신 소속 조직명 표시 |
-| `0f89db4` | 전체 상세 페이지 뒤로가기 버튼 → router.back() 통일 (BackButton 컴포넌트) |
-| `69fb30c` | 캐릭터 카드: 빨간약 ON 시 스트리머 프로필·치지직 바로가기 (우상단 absolute 배치) |
-| `dfee92a` | 인물 관계 타입 '동료(colleague)' 추가 + 마이그레이션 016 |
-| `aa35cf6` | feat/clip-embed 머지: 클립 임베드 플레이어 + 사건 편집 순서 조정 |
-| `ec4eefa` | 조직 멤버 순서 직접 설정 (sort_order 컬럼, 어드민 드래그 앤 드롭 UI) |
-| `0221fd9` | Vercel Analytics + Speed Insights 연동 |
-| `afdec1b` | 캐릭터 상세 페이지: 소속 조직 거점 미니맵 추가 |
-| `1ac8b6b` | 어드민 조직 멤버 일괄 편집 — 다중 추가·인라인 편집·일괄 탈퇴·복귀 |
-| `3f4ec2d` | 지도: gang_id 연결된 불법 사업체 org 좌표를 갱단 biz 마커로 자동 표시 |
-| `5172f30` | 조직 불법 사업체 위치 기능 추가 (biz_x/biz_y/biz_label 컬럼, 어드민 편집) |
