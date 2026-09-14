@@ -14,6 +14,7 @@ import AppImage from '@/components/ui/AppImage'
 import BackButton from '@/components/ui/BackButton'
 import ClipPlayer from '@/components/events/ClipPlayer'
 import EventLocationMap from './EventLocationMap'
+import { formatKstDateTime } from '@/lib/date/kst'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -136,10 +137,7 @@ export default async function EventDetailPage({ params }: Props) {
           {event.occurred_at && (
             <span className="flex items-center gap-1 text-xs text-zinc-500">
               <Calendar size={11} />
-              {new Date(event.occurred_at).toLocaleString('ko-KR', {
-                year: 'numeric', month: 'long', day: 'numeric',
-                hour: '2-digit', minute: '2-digit', hour12: false,
-              })}
+              {formatKstDateTime(event.occurred_at)}
             </span>
           )}
         </div>

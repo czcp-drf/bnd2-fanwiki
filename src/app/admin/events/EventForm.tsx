@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { MapPin, X } from 'lucide-react'
 import { createEvent, updateEvent, deleteEvent } from './actions'
+import { kstDateTimeLocalToIso } from '@/lib/date/kst'
 
 const MapPinPicker = dynamic(() => import('@/components/report/MapPinPicker'), { ssr: false })
 
@@ -65,7 +66,7 @@ export default function EventForm({ initial }: { initial?: EventData }) {
       summary: summary.trim() || null,
       content: content.trim() || null,
       type,
-      occurred_at: occurredAt || null,
+      occurred_at: kstDateTimeLocalToIso(occurredAt),
       thumbnail_url: thumbnailUrl.trim() || null,
       is_published: isPublished,
       location_x: locationX,

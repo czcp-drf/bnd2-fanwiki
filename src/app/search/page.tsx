@@ -8,6 +8,7 @@ import { StreamerReveal } from '@/components/ui/StreamerMask'
 import type { Organization, Streamer } from '@/types/database'
 import { typeLabel as eventTypeLabel, typeColor as eventTypeColor } from '@/lib/events'
 import AppImage from '@/components/ui/AppImage'
+import { formatKstDate } from '@/lib/date/kst'
 
 export const metadata: Metadata = { title: '검색' }
 
@@ -436,9 +437,7 @@ export default async function SearchPage({ searchParams }: Props) {
                   )}
                   {e.occurred_at && (
                     <span className="ml-auto text-xs text-zinc-600 whitespace-nowrap">
-                      {new Date(e.occurred_at).toLocaleDateString('ko-KR', {
-                        year: 'numeric', month: 'long', day: 'numeric',
-                      })}
+                      {formatKstDate(e.occurred_at)}
                     </span>
                   )}
                 </div>

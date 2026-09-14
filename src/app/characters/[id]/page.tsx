@@ -12,6 +12,7 @@ import { typeLabel, typeColor } from '@/lib/events'
 import AppImage from '@/components/ui/AppImage'
 import OrgMiniMapWrapper from '@/app/organizations/[id]/OrgMiniMapWrapper'
 import BackButton from '@/components/ui/BackButton'
+import { formatKstDate } from '@/lib/date/kst'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -485,9 +486,7 @@ export default async function CharacterDetailPage({ params }: Props) {
                     )}
                     {e.occurred_at && (
                       <span className="ml-auto text-xs text-zinc-600 whitespace-nowrap">
-                        {new Date(e.occurred_at).toLocaleDateString('ko-KR', {
-                          year: 'numeric', month: 'long', day: 'numeric',
-                        })}
+                        {formatKstDate(e.occurred_at)}
                       </span>
                     )}
                   </div>

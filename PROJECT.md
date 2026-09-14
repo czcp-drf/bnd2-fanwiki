@@ -272,6 +272,8 @@ src/
 | `025_bongstagram_comment_author.sql` | 댓글 작성자 캐릭터 연결과 기존 프로필명 기반 데이터 보정 |
 | `036_hash_report_ips.sql` | 제보·차단 목록에 서버 비밀키 기반 IP 해시 컬럼 추가 |
 | `037_drop_legacy_blocked_ip.sql` | 기존 차단 데이터 확인 후 blocked_ips의 원본 ip 컬럼 제거 |
+| `038_map_location_wiki_path.sql` | 주요 장소 핀에 선택형 위키 링크 컬럼 추가 |
+| `039_map_location_external_wiki_links.sql` | 주요 장소 위키 링크를 외부 URL로 전환하고 조직 거점 위키 링크 컬럼 추가 |
 
 ---
 
@@ -387,6 +389,8 @@ src/
 ---
 
 ## 최근 작업 기록
+
+- 지도 외부 위키 링크·사건 KST 일시·포커스 쿼리 보완 (`main`, 커밋 및 원격 푸시 완료): 주요 장소와 조직 거점 핀 카드에 선택형 외부 위키 바로가기를 추가하고, 관리자 지도에서 링크를 등록·수정·삭제할 수 있도록 했습니다. 조직 거점 카드에는 조직 상세 보기와 위키 바로가기를 별도 버튼으로 표시하며, 링크는 `http://`·`https://` URL만 허용합니다. 사건 상세에서 전체 지도로 이동할 때만 사건 위치 핀이 표시되고, 조직·사건 포커스 쿼리는 일반 이동 중 유지되며 지도 새로고침 시 기본 지도 URL로 정리됩니다. 사건 발생일시 입력·저장과 사건 목록·상세·타임라인·검색·연관 목록을 KST(`Asia/Seoul`) 기준으로 통일했습니다. 주요 장소 필터 라이트모드 색상과 지도 위키 버튼 색상도 보완했습니다. `038_map_location_wiki_path.sql`은 사용자가 운영 DB 적용을 완료했으며, `039_map_location_external_wiki_links.sql`은 외부 링크 전환과 조직 거점 컬럼 추가 migration으로 작성했습니다. `npx tsc --noEmit`, 관련 파일 ESLint, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - 사건 페이지 테마 지원 (`5278ec8`, `main`): 사건 목록·상세·연대표와 사건 필터·타임라인·클립·참여 인물 UI를 전역 라이트/다크 테마에 맞게 표시하도록 `wiki-theme` 색상 토큰을 추가했습니다. 사건 상세 지도의 레이아웃은 유지하면서 지도 주변 페이지 UI도 동일한 테마를 사용합니다. `npm run build`, `npx tsc --noEmit`, 관련 파일 ESLint, `git diff --check`를 통과했으며 `deploy/main` 푸시 완료를 확인했습니다.
 

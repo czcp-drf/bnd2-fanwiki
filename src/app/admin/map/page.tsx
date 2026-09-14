@@ -14,7 +14,7 @@ async function getAllOrgs(): Promise<AdminOrg[]> {
   const [{ data: orgs }, { data: linkedBizOrgs }] = await Promise.all([
     supabase
       .from('organizations')
-      .select('id, name, color, category, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label')
+    .select('id, name, color, category, hq_x, hq_y, hq_label, hq_wiki_path, biz_x, biz_y, biz_label')
       .eq('is_active', true)
       .eq('is_disbanded', false)
       .is('gang_id', null)
@@ -44,7 +44,7 @@ async function getAllLocations(): Promise<AdminLocation[]> {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('map_locations')
-    .select('id, name, label, color, x, y')
+    .select('id, name, label, color, x, y, wiki_path')
     .order('name')
   return (data ?? []) as AdminLocation[]
 }

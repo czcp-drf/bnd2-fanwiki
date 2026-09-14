@@ -14,6 +14,7 @@ import AppImage from '@/components/ui/AppImage'
 import { groupOrganizationMembers } from '@/lib/data/organization-members'
 import BackButton from '@/components/ui/BackButton'
 import OrgMiniMapWrapper from './OrgMiniMapWrapper'
+import { formatKstDate } from '@/lib/date/kst'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -408,9 +409,7 @@ export default async function OrganizationDetailPage({ params }: Props) {
                   )}
                   {e.occurred_at && (
                     <span className="ml-auto text-xs text-zinc-600 whitespace-nowrap">
-                      {new Date(e.occurred_at).toLocaleDateString('ko-KR', {
-                        year: 'numeric', month: 'long', day: 'numeric',
-                      })}
+                      {formatKstDate(e.occurred_at)}
                     </span>
                   )}
                 </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from '@/lib/map/constants'
 import type { OrgMarker, LocationMarker } from './LeafletMap'
@@ -12,13 +12,33 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
 })
 
 const CATEGORIES = ['city_hall', 'public_service', 'gang', 'business', 'illegal'] as const
+const MAP_FOCUS_NAVIGATION_KEY = 'wiki-map-focus-navigation'
 
 export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locations: LocationMarker[] }) {
   const searchParams = useSearchParams()
-  const focusOrgId = searchParams.get('org')
+  const [ignoreQueryOnReload, setIgnoreQueryOnReload] = useState(false)
+  const queryHandlingRef = useRef(false)
+
+  useEffect(() => {
+    if (queryHandlingRef.current) return
+    queryHandlingRef.current = true
+
+    const cameFromFocusLink = window.sessionStorage.getItem(MAP_FOCUS_NAVIGATION_KEY) === '1'
+    if (cameFromFocusLink) {
+      window.sessionStorage.removeItem(MAP_FOCUS_NAVIGATION_KEY)
+      return
+    }
+    if (window.location.search) {
+      window.setTimeout(() => setIgnoreQueryOnReload(true), 0)
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.hash}`)
+    }
+  }, [])
+
+  const focusOrgId = ignoreQueryOnReload ? null : searchParams.get('org')
+  const isEventFocus = !ignoreQueryOnReload && searchParams.get('focus') === 'event'
   const focusX = Number(searchParams.get('focus_x'))
   const focusY = Number(searchParams.get('focus_y'))
-  const focusCoordinates = Number.isFinite(focusX) && Number.isFinite(focusY)
+  const focusCoordinates = isEventFocus && Number.isFinite(focusX) && Number.isFinite(focusY)
     ? { x: focusX, y: focusY }
     : null
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -89,9 +109,9 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
                   setShowLocations((v) => !v)
                   setActiveLocationLabel(null)
                 }}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer border ${
+                className={`map-location-filter rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer border ${
                   showLocations
-                    ? 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400'
+                    ? 'map-location-filter-on border-yellow-500/40 bg-yellow-500/10 text-yellow-400'
                     : 'border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
                 }`}
               >
@@ -101,9 +121,9 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
                 <div className={`flex flex-wrap gap-1.5 pl-0.5 transition-opacity ${showLocations ? '' : 'invisible'}`}>
                   <button
                     onClick={() => setActiveLocationLabel(null)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                    className={`map-location-filter-chip rounded-full px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                       activeLocationLabel === null
-                        ? 'bg-yellow-500/20 text-yellow-300'
+                        ? 'map-location-filter-active bg-yellow-500/20 text-yellow-300'
                         : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
@@ -113,9 +133,9 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
                     <button
                       key={label}
                       onClick={() => setActiveLocationLabel(activeLocationLabel === label ? null : label)}
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                      className={`map-location-filter-chip rounded-full px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                         activeLocationLabel === label
-                          ? 'bg-yellow-500/20 text-yellow-300'
+                          ? 'map-location-filter-active bg-yellow-500/20 text-yellow-300'
                           : 'text-zinc-500 hover:text-zinc-300'
                       }`}
                     >

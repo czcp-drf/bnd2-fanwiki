@@ -17,6 +17,7 @@ export type AdminOrg = {
   hq_x: number | null
   hq_y: number | null
   hq_label: string | null
+  hq_wiki_path: string | null
   biz_x: number | null
   biz_y: number | null
   biz_label: string | null
@@ -29,6 +30,7 @@ export type AdminLocation = {
   color: string
   x: number | null
   y: number | null
+  wiki_path: string | null
 }
 
 type PendingCoords = { lat: number; lng: number }

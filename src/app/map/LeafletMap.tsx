@@ -22,6 +22,7 @@ export type OrgMarker = {
   hq_x: number
   hq_y: number
   hq_label: string | null
+  hq_wiki_path: string | null
   biz_x: number | null
   biz_y: number | null
   biz_label: string | null
@@ -37,6 +38,7 @@ export type LocationMarker = {
   color: string
   x: number
   y: number
+  wiki_path: string | null
 }
 
 function createGtaCRS() {
@@ -276,9 +278,19 @@ export default function LeafletMap({
                 <div className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-800/70 px-3 py-2 text-xs text-zinc-300"><MapPin size={14} className="shrink-0 text-amber-400" />{org.hq_label || '조직 거점'}</div>
                 {org.description && <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-zinc-400">{org.description}</p>}
                 <Link href={`/organizations/${org.id}`}
-                  className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2.5 text-xs font-semibold text-amber-400 hover:bg-amber-400/20 transition-colors">
+                  className="map-org-detail-link mt-4 flex items-center justify-center gap-2 rounded-xl border border-sky-400/25 bg-sky-400/10 px-4 py-2.5 text-xs font-semibold text-sky-400 transition-colors hover:bg-sky-400/20">
                   조직 상세 보기 <ArrowUpRight size={14} />
                 </Link>
+                {org.hq_wiki_path && (
+                  <Link
+                    href={org.hq_wiki_path}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="map-wiki-link mt-2 flex items-center justify-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2.5 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-400/20"
+                  >
+                    위키 바로가기 <ArrowUpRight size={14} />
+                  </Link>
+                )}
               </>
             )
           })()}
@@ -319,6 +331,16 @@ export default function LeafletMap({
                   </span>
                 )}
                 {loc.description && <p className="text-xs text-zinc-500 ml-5 mt-1">{loc.description}</p>}
+                {loc.wiki_path && (
+                  <Link
+                    href={loc.wiki_path}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="map-wiki-link mt-4 flex items-center justify-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2.5 text-xs font-semibold text-amber-400 transition-colors hover:bg-amber-400/20"
+                  >
+                    위키 바로가기 <ArrowUpRight size={14} />
+                  </Link>
+                )}
               </>
             )
           })()}

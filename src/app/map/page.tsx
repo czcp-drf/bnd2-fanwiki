@@ -17,7 +17,7 @@ async function getOrgsWithHq(): Promise<OrgMarker[]> {
     // 거점이 있는 모든 조직 (gang_id 있는 불법 org 제외 — 아래에서 부모 갱단의 biz로 표시)
     supabase
       .from('organizations')
-      .select('id, name, color, category, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label, description, logo_url')
+      .select('id, name, color, category, hq_x, hq_y, hq_label, hq_wiki_path, biz_x, biz_y, biz_label, description, logo_url')
       .eq('is_active', true)
       .eq('is_disbanded', false)
       .not('hq_x', 'is', null)
@@ -52,7 +52,7 @@ async function getLocations(): Promise<LocationMarker[]> {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('map_locations')
-    .select('id, name, label, description, color, x, y')
+    .select('id, name, label, description, color, x, y, wiki_path')
     .not('x', 'is', null)
     .not('y', 'is', null)
     .order('name')
@@ -70,5 +70,11 @@ const getLocationsCached = unstable_cache(getLocations, ['wiki-map-locations'], 
 
 export default async function MapPage() {
   const [orgs, locations] = await Promise.all([getOrgsWithHqCached(), getLocationsCached()])
-  return <Suspense fallback={<div className="p-10 text-zinc-400">지도를 불러오는 중입니다.</div>}><MapView orgs={orgs} locations={locations} /></Suspense>
+  return (
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)]">
+      <Suspense fallback={<div className="p-10 text-zinc-400">지도를 불러오는 중입니다.</div>}>
+        <MapView orgs={orgs} locations={locations} />
+      </Suspense>
+    </div>
+  )
 }

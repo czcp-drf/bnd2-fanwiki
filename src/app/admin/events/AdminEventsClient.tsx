@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Search, X, Pencil } from 'lucide-react'
 import EventDeleteButton from './EventDeleteButton'
 import TogglePublishButton from './TogglePublishButton'
+import { formatKstDateTime } from '@/lib/date/kst'
 
 const typeLabel: Record<string, string> = {
   war: '전쟁/항쟁', crime: '범죄', political: '정치',
@@ -80,12 +81,7 @@ export default function AdminEventsClient({ events }: { events: Event[] }) {
                   <td className="px-4 py-3 text-sm font-medium text-white">{e.title}</td>
                   <td className="px-4 py-3 text-xs text-zinc-500">{typeLabel[e.type] ?? e.type}</td>
                   <td className="px-4 py-3 text-xs text-zinc-500">
-                    {e.occurred_at
-                      ? new Date(e.occurred_at).toLocaleString('ko-KR', {
-                          year: 'numeric', month: '2-digit', day: '2-digit',
-                          hour: '2-digit', minute: '2-digit', hour12: false,
-                        })
-                      : '—'}
+                    {e.occurred_at ? formatKstDateTime(e.occurred_at) : '—'}
                   </td>
                   <td className="px-4 py-3">
                     <TogglePublishButton id={e.id} isPublished={e.is_published} />

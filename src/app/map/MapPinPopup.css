@@ -27,6 +27,12 @@
   border-right: 1px solid #3f3f46;
 }
 
+html[data-bongstagram-theme="light"] .wiki-theme .map-pin-popup .leaflet-popup-tip {
+  background: #ffffff;
+  border-bottom-color: #d4d4d8;
+  border-right-color: #d4d4d8;
+}
+
 .map-pin-popup .leaflet-popup-content a {
   color: #fbbf24;
 }

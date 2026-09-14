@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Calendar, AlignLeft, GalleryHorizontal } from 'lucide-react'
 import { typeLabel, typeColor } from '@/lib/events'
 import { cn } from '@/lib/utils'
+import { formatKstDateTime, formatKstMonthDay, getKstDateKey } from '@/lib/date/kst'
 
 export type TimelineEvent = {
   id: string
@@ -38,9 +39,8 @@ export default function TimelineView({ events }: { events: TimelineEvent[] }) {
     const undated: TimelineEvent[] = []
     for (const e of events) {
       if (!e.occurred_at) { undated.push(e); continue }
-      const d = new Date(e.occurred_at)
-      // YYYY-MM-DD 키로 일 단위 그룹핑
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      // KST 기준 YYYY-MM-DD 키로 일 단위 그룹핑
+      const key = getKstDateKey(e.occurred_at)
       if (!grouped[key]) grouped[key] = []
       grouped[key].push(e)
     }
@@ -94,9 +94,7 @@ export default function TimelineView({ events }: { events: TimelineEvent[] }) {
 // YYYY-MM-DD → "2025년 3월 5일" 변환
 function formatPeriod(key: string): string {
   const [y, m, d] = key.split('-')
-  return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString('ko-KR', {
-    year: 'numeric', month: 'long', day: 'numeric',
-  })
+  return `${y}년 ${Number(m)}월 ${Number(d)}일`
 }
 
 // ── 세로 모드 ─────────────────────────────────────────────
@@ -156,10 +154,7 @@ function VerticalCard({ event: e }: { event: TimelineEvent }) {
             {e.occurred_at && (
               <span className="flex items-center gap-1 text-xs text-zinc-500">
                 <Calendar size={10} />
-                {new Date(e.occurred_at).toLocaleString('ko-KR', {
-                  month: 'long', day: 'numeric',
-                  hour: '2-digit', minute: '2-digit', hour12: false,
-                })}
+                {formatKstDateTime(e.occurred_at)}
               </span>
             )}
           </div>
@@ -322,7 +317,7 @@ function HorizontalTimeline({
 function HorizontalCard({ event: e, isBelow }: { event: TimelineEvent; isBelow: boolean }) {
   const participants = e.event_participants.filter(p => p.characters)
   const dateStr = e.occurred_at
-    ? new Date(e.occurred_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
+    ? formatKstMonthDay(e.occurred_at)
     : '—'
 
   const card = (

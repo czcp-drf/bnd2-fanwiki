@@ -268,7 +268,9 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .bg-zinc-700 { background-color: var(--wiki-strong); }
 .wiki-theme .bg-zinc-600 { background-color: var(--wiki-border-strong); }
 .wiki-theme .bg-zinc-900\/90 { background-color: color-mix(in srgb, var(--wiki-surface) 90%, transparent); }
+.wiki-theme .bg-zinc-900\/95 { background-color: color-mix(in srgb, var(--wiki-surface) 95%, transparent); }
 .wiki-theme .bg-zinc-900\/50 { background-color: color-mix(in srgb, var(--wiki-surface) 50%, transparent); }
+.wiki-theme .bg-zinc-800\/70 { background-color: color-mix(in srgb, var(--wiki-raised) 70%, transparent); }
 
 .wiki-theme .border-zinc-800,
 .wiki-theme .border-zinc-800\/60 { border-color: var(--wiki-border); }
@@ -299,6 +301,40 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .events-featured-card .hover\:text-amber-400:hover { color: #fbbf24; }
 .wiki-theme .events-thumbnail-fallback { background-color: #27272a; }
 html[data-bongstagram-theme="light"] .wiki-theme .events-thumbnail-fallback { background-color: #e4e4e7; }
+
+html[data-bongstagram-theme="light"] .wiki-theme .map-location-filter-on {
+  border-color: #ca8a04;
+  background-color: #fef3c7;
+  color: #92400e;
+}
+html[data-bongstagram-theme="light"] .wiki-theme .map-location-filter-chip {
+  color: #a16207;
+}
+html[data-bongstagram-theme="light"] .wiki-theme .map-location-filter-chip.map-location-filter-active {
+  background-color: #fde68a;
+  color: #854d0e;
+}
+html[data-bongstagram-theme="light"] .wiki-theme .map-location-filter-chip:hover {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+html[data-bongstagram-theme="light"] .wiki-theme .map-org-detail-link {
+  border-color: #bfdbfe;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+html[data-bongstagram-theme="light"] .wiki-theme .map-org-detail-link:hover {
+  background-color: #dbeafe;
+}
+html[data-bongstagram-theme="light"] .wiki-theme .map-wiki-link {
+  border-color: #fde68a;
+  background-color: #fffbeb;
+  color: #b45309;
+}
+html[data-bongstagram-theme="light"] .wiki-theme .map-wiki-link:hover {
+  background-color: #fef3c7;
+}
 
 html[data-bongstagram-theme="light"] .wiki-dropdown {
   border-color: #e4e4e7;

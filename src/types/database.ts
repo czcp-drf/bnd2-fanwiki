@@ -61,6 +61,7 @@ export type Database = {
           hq_x: number | null
           hq_y: number | null
           hq_label: string | null
+          hq_wiki_path: string | null
           biz_x: number | null
           biz_y: number | null
           biz_label: string | null
@@ -221,6 +222,7 @@ export type Database = {
           color: string
           x: number | null
           y: number | null
+          wiki_path: string | null
           created_at: string
         }
         Insert: Omit<Database['public']['Tables']['map_locations']['Row'], 'id' | 'created_at'>

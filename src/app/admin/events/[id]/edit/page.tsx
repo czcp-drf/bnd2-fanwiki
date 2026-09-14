@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import BackButton from '@/components/ui/BackButton'
 import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
+import { toKstDateTimeLocal } from '@/lib/date/kst'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -74,7 +75,7 @@ export default async function EditEventPage({ params }: Props) {
               summary: event.summary ?? '',
               content: event.content ?? '',
               type: event.type,
-              occurred_at: event.occurred_at ? event.occurred_at.slice(0, 16) : '',
+              occurred_at: toKstDateTimeLocal(event.occurred_at),
               thumbnail_url: event.thumbnail_url ?? '',
               is_published: event.is_published,
               location_x: event.location_x ?? null,

@@ -107,6 +107,7 @@ export default function OrgMiniMap({ org }: { org: OrgMapData }) {
       <div className="absolute bottom-3 right-3 z-[1000]">
         <Link
           href={`/map?org=${org.id}`}
+          onClick={() => window.sessionStorage.setItem('wiki-map-focus-navigation', '1')}
           className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900/90 px-3 py-2 text-xs font-medium text-amber-400 backdrop-blur hover:bg-zinc-800 transition-colors"
         >
           전체 지도에서 보기

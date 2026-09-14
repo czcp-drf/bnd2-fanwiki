@@ -67,6 +67,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
   const [orgMode, setOrgMode] = useState<'hq' | 'biz'>('hq')
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [label, setLabel] = useState('')
+  const [wikiPath, setWikiPath] = useState('')
   const [coordX, setCoordX] = useState('')
   const [coordY, setCoordY] = useState('')
 
@@ -74,7 +75,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
 
   function handleSelectOrg(org: AdminOrg) {
     if (selectedOrgId === org.id) {
-      setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setCoordX(''); setCoordY('')
+      setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setCoordX(''); setCoordY('')
     } else {
       setSelectedOrgId(org.id); setPendingCoords(null)
       syncFields(org, orgMode)
@@ -84,10 +85,12 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
   function syncFields(org: AdminOrg, mode: 'hq' | 'biz') {
     if (mode === 'hq') {
       setLabel(org.hq_label ?? '')
+      setWikiPath(org.hq_wiki_path ?? '')
       setCoordX(org.hq_x != null ? String(org.hq_x) : '')
       setCoordY(org.hq_y != null ? String(org.hq_y) : '')
     } else {
       setLabel(org.biz_label ?? '')
+      setWikiPath('')
       setCoordX(org.biz_x != null ? String(org.biz_x) : '')
       setCoordY(org.biz_y != null ? String(org.biz_y) : '')
     }
@@ -120,14 +123,20 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
   }
 
   function handleSave() {
-    if (!selectedOrgId || !pendingCoords) return
+    if (!selectedOrgId) return
     startTransition(async () => {
       if (orgMode === 'hq') {
-        await updateOrgHq(selectedOrgId, { hq_x: pendingCoords.lng, hq_y: pendingCoords.lat, hq_label: label.trim() || null })
+        const x = pendingCoords?.lng ?? parseFloat(coordX)
+        const y = pendingCoords?.lat ?? parseFloat(coordY)
+        if (Number.isNaN(x) || Number.isNaN(y)) return
+        await updateOrgHq(selectedOrgId, { hq_x: x, hq_y: y, hq_label: label.trim() || null, hq_wiki_path: wikiPath.trim() || null })
       } else {
-        await updateOrgBiz(selectedOrgId, { biz_x: pendingCoords.lng, biz_y: pendingCoords.lat, biz_label: label.trim() || null })
+        const x = pendingCoords?.lng ?? parseFloat(coordX)
+        const y = pendingCoords?.lat ?? parseFloat(coordY)
+        if (Number.isNaN(x) || Number.isNaN(y)) return
+        await updateOrgBiz(selectedOrgId, { biz_x: x, biz_y: y, biz_label: label.trim() || null })
       }
-      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setCoordX(''); setCoordY('')
+      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setCoordX(''); setCoordY('')
     })
   }
 
@@ -135,11 +144,11 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
     if (!selectedOrgId) return
     startTransition(async () => {
       if (orgMode === 'hq') {
-        await updateOrgHq(selectedOrgId, { hq_x: null, hq_y: null, hq_label: null })
+        await updateOrgHq(selectedOrgId, { hq_x: null, hq_y: null, hq_label: null, hq_wiki_path: null })
       } else {
         await updateOrgBiz(selectedOrgId, { biz_x: null, biz_y: null, biz_label: null })
       }
-      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setCoordX(''); setCoordY('')
+      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setCoordX(''); setCoordY('')
     })
   }
 
@@ -215,6 +224,11 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
             <input value={label} onChange={(e) => setLabel(e.target.value)}
               placeholder={orgMode === 'hq' ? '거점 이름 (예: Grove Street 본부)' : '사업체 이름 (예: 마약공장, 창고)'}
               className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
+            {orgMode === 'hq' && (
+              <input value={wikiPath} onChange={(e) => setWikiPath(e.target.value)}
+                placeholder="위키 링크 (선택, https://...)"
+                className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
+            )}
             <CoordInputs x={coordX} y={coordY} onX={handleCoordX} onY={handleCoordY} />
             <p className="text-[10px] text-zinc-600">지도 클릭 또는 좌표 수정으로 위치를 조정할 수 있습니다</p>
             <div className="flex gap-2">
@@ -228,7 +242,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
                   삭제
                 </button>
               )}
-              <button onClick={() => { setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setCoordX(''); setCoordY('') }}
+              <button onClick={() => { setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setCoordX(''); setCoordY('') }}
                 className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 cursor-pointer transition-colors">
                 취소
               </button>
@@ -240,7 +254,18 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
         {selectedOrgId && !pendingCoords && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] w-72 rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-sm p-3 shadow-xl space-y-2">
             <p className="text-[11px] text-zinc-500">좌표를 알고 있다면 직접 입력하세요</p>
+            {orgMode === 'hq' && (
+              <input value={wikiPath} onChange={(e) => setWikiPath(e.target.value)}
+                placeholder="위키 링크 (선택, https://...)"
+                className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
+            )}
             <CoordInputs x={coordX} y={coordY} onX={handleCoordX} onY={handleCoordY} />
+            {(orgMode === 'hq' ? selectedOrg?.hq_x : selectedOrg?.biz_x) !== null && (
+              <button onClick={handleSave} disabled={isPending}
+                className="w-full rounded bg-amber-400 py-1.5 text-[10px] font-semibold text-zinc-900 hover:bg-amber-300 disabled:opacity-50 cursor-pointer transition-colors">
+                {isPending ? '저장 중…' : '저장'}
+              </button>
+            )}
             {(orgMode === 'hq' ? selectedOrg?.hq_x : selectedOrg?.biz_x) !== null && (
               <button onClick={handleClear} disabled={isPending}
                 className="w-full rounded border border-red-500/30 py-1 text-[10px] text-red-400 hover:bg-red-500/5 disabled:opacity-50 cursor-pointer transition-colors">
@@ -264,6 +289,7 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
   const [addingNew, setAddingNew] = useState(false)
   const [newName, setNewName] = useState('')
   const [newLabel, setNewLabel] = useState('')
+  const [newWikiPath, setNewWikiPath] = useState('')
   const [newColor, setNewColor] = useState('#facc15')
   const [newDesc, setNewDesc] = useState('')
   const [newCoordX, setNewCoordX] = useState('')
@@ -279,13 +305,14 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editLabel, setEditLabel] = useState('')
+  const [editWikiPath, setEditWikiPath] = useState('')
   const [editColor, setEditColor] = useState('#facc15')
 
   const selectedLocation = locations.find((l) => l.id === selectedId)
 
   function startAddNew() {
     setAddingNew(true); setSelectedId(null); setPendingCoords(null); setEditingId(null)
-    setNewName(''); setNewLabel(''); setNewColor('#facc15'); setNewDesc('')
+    setNewName(''); setNewLabel(''); setNewWikiPath(''); setNewColor('#facc15'); setNewDesc('')
     setNewCoordX(''); setNewCoordY('')
   }
 
@@ -345,9 +372,10 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
         name: newName.trim(), label: newLabel.trim() || null,
         description: newDesc.trim() || null, color: newColor,
         x: pendingCoords.lng, y: pendingCoords.lat,
+        wiki_path: newWikiPath.trim() || null,
       })
       router.refresh(); setAddingNew(false); setPendingCoords(null)
-      setNewName(''); setNewLabel(''); setNewColor('#facc15'); setNewDesc('')
+      setNewName(''); setNewLabel(''); setNewWikiPath(''); setNewColor('#facc15'); setNewDesc('')
       setNewCoordX(''); setNewCoordY('')
     })
   }
@@ -371,20 +399,20 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
   }
 
   function startEdit(loc: AdminLocation) {
-    setEditingId(loc.id); setEditName(loc.name); setEditLabel(loc.label ?? ''); setEditColor(loc.color)
+    setEditingId(loc.id); setEditName(loc.name); setEditLabel(loc.label ?? ''); setEditWikiPath(loc.wiki_path ?? ''); setEditColor(loc.color)
     setSelectedId(null); setAddingNew(false); setPendingCoords(null)
   }
 
   function handleSaveEdit() {
     if (!editingId || !editName.trim()) return
     startTransition(async () => {
-      await updateMapLocation(editingId, { name: editName.trim(), label: editLabel.trim() || null, color: editColor })
+      await updateMapLocation(editingId, { name: editName.trim(), label: editLabel.trim() || null, wiki_path: editWikiPath.trim() || null, color: editColor })
       router.refresh(); setEditingId(null)
     })
   }
 
   const previewLocations: AdminLocation[] = addingNew && pendingCoords
-    ? [...locations, { id: '__new__', name: newName || '새 위치', label: newLabel || null, color: newColor, x: pendingCoords.lng, y: pendingCoords.lat }]
+    ? [...locations, { id: '__new__', name: newName || '새 위치', label: newLabel || null, wiki_path: newWikiPath.trim() || null, color: newColor, x: pendingCoords.lng, y: pendingCoords.lat }]
     : locations
 
   return (
@@ -404,6 +432,8 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
             <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="위치 이름 *"
               className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
             <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="라벨 (예: 광산, 청소)"
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
+            <input value={newWikiPath} onChange={(e) => setNewWikiPath(e.target.value)} placeholder="위키 경로 (선택, 예: /events/...)"
               className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
             <div className="flex items-center gap-2">
               <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)}
@@ -441,6 +471,8 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
                   <input value={editName} onChange={(e) => setEditName(e.target.value)}
                     className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none" />
                   <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="라벨"
+                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
+                  <input value={editWikiPath} onChange={(e) => setEditWikiPath(e.target.value)} placeholder="위키 경로 (선택, 예: /events/...)"
                     className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
                   <div className="flex items-center gap-2">
                     <input type="color" value={editColor} onChange={(e) => setEditColor(e.target.value)}

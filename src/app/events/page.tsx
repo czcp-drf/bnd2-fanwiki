@@ -6,6 +6,7 @@ import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import type { Metadata } from 'next'
+import { formatKstDateTime } from '@/lib/date/kst'
 import type { Event } from '@/types/database'
 import EventTypeFilter from '@/components/events/EventTypeFilter'
 import { GitCommitVertical } from 'lucide-react'
@@ -119,7 +120,7 @@ export default async function EventsPage({ searchParams }: Props) {
                   )}
                   {featured.occurred_at && (
                     <span className="text-xs text-zinc-500">
-                      {new Date(featured.occurred_at).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+                      {formatKstDateTime(featured.occurred_at)}
                     </span>
                   )}
                 </div>
@@ -177,14 +178,7 @@ function EventCard({ event: e }: { event: Event }) {
       <div className="flex flex-col gap-2 px-4 pb-4">
         {e.occurred_at && (
           <p className="text-xs text-zinc-500">
-            {new Date(e.occurred_at).toLocaleString('ko-KR', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false,
-            })}
+            {formatKstDateTime(e.occurred_at)}
           </p>
         )}
         <h3 className="font-bold text-white group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">
