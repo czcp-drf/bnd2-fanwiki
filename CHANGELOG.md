@@ -4,7 +4,7 @@
 
 ## 변경 기록
 
-- BBS 목록 TanStack Query 캐시 및 내부 스크롤 복귀 (`main`, 커밋·원격 푸시 예정): BBS 전용 QueryClient와 `useInfiniteQuery`를 적용해 필터별 목록 데이터를 브라우저 메모리에 캐시하고, 본문을 제외한 목록용 데이터만 조회하도록 했습니다. 최대 10페이지를 유지해 클라이언트 메모리 사용량을 제한하며, 기사 진입 전 BBS 내부 스크롤 위치를 저장하고 목록 복귀 시 캐시된 목록에 맞춰 한 번 복원합니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+- BBS 목록 TanStack Query 캐시 및 내부 스크롤 복귀 (`main`, `31e4c79`, 원격 푸시 완료): BBS 전용 QueryClient와 `useInfiniteQuery`를 적용해 필터별 목록 데이터를 브라우저 메모리에 캐시하고, 본문을 제외한 목록용 데이터만 조회하도록 했습니다. 최대 10페이지를 유지해 클라이언트 메모리 사용량을 제한하며, 기사 진입 전 BBS 내부 스크롤 위치를 저장하고 목록 복귀 시 캐시된 목록에 맞춰 한 번 복원합니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격 `deploy/main` 푸시를 완료했습니다.
 
 - BBS 기사 상세 연속 이동 및 대표 이미지 로딩 보완 (`main`, `f3d33af`, 원격 푸시 완료): 기사 상세 하단에 이전 기사·다음 기사 버튼을 추가하고 현재 카테고리·기자·일차·정렬 조건을 유지한 채 이동하도록 했습니다. 상세 대표 이미지에는 `loading="eager"`를 적용했습니다. 목록 스크롤 저장·복원 방식은 제거했습니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
