@@ -37,7 +37,7 @@ type ArticleRow = {
   title: string
   category: string
   summary: string | null
-  content: string
+  content?: string
   thumbnail_url: string | null
   approved_at: string | null
   is_published: boolean
@@ -80,7 +80,7 @@ function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: Repor
         categoryKey,
         title: article.title,
         summary: article.summary ?? '',
-        content: article.content,
+        content: article.content ?? '',
         author: reporterById.get(article.reporter_character_id)?.name ?? '알 수 없는 기자',
         authorStreamerName: (() => { const streamerId = reporterById.get(article.reporter_character_id)?.streamer_id; return streamerId ? streamerById.get(streamerId) ?? null : null })(),
         approvedAt: article.approved_at as string,
@@ -90,11 +90,11 @@ function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: Repor
     })
 }
 
-async function loadArticlesUncached(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }, dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest') {
+async function loadArticlesUncached(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }, dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest', includeContent = true) {
   const supabase = createPublicClient()
   let query = supabase
     .from('bbs_articles')
-    .select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id', { count: 'exact' })
+    .select(`id, title, category, summary, ${includeContent ? 'content, ' : ''}thumbnail_url, approved_at, is_published, reporter_character_id`, { count: 'exact' })
     .eq('is_published', true)
     .not('approved_at', 'is', null)
 
@@ -156,6 +156,7 @@ const getCachedBbsArticles = unstable_cache(
     pageSize: number | undefined,
     dayKey: BbsDayKey | undefined,
     sortOrder: BbsSortOrder,
+    includeContent: boolean,
   ) => loadArticlesUncached(
     categoryKey,
     articleId,
@@ -163,12 +164,13 @@ const getCachedBbsArticles = unstable_cache(
     page !== undefined && pageSize !== undefined ? { page, pageSize } : undefined,
     dayKey,
     sortOrder,
+    includeContent,
   ),
   ['bbs-public-articles'],
   { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
 )
 
-async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }, dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest') {
+async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }, dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest', includeContent = true) {
   return getCachedBbsArticles(
     categoryKey,
     articleId,
@@ -177,6 +179,7 @@ async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, re
     pagination?.pageSize,
     dayKey,
     sortOrder,
+    includeContent,
   )
 }
 
@@ -188,14 +191,14 @@ export async function getPublishedBbsArticle(id: string) {
   return (await loadArticles(undefined, id)).articles[0] ?? null
 }
 
-export async function getPublishedBbsArticlesPage(category: string | undefined, reporterIds: string[] | undefined, page: number, pageSize = 12, dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest'): Promise<BbsArticlePage> {
+export async function getPublishedBbsArticlesPage(category: string | undefined, reporterIds: string[] | undefined, page: number, pageSize = 12, dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest', includeContent = false): Promise<BbsArticlePage> {
   const safePageSize = Math.min(Math.max(pageSize, 1), 30)
   const safePage = Math.max(page, 1)
   const categoryKey = getBbsCategoryKey(category) ?? undefined
-  let result = await loadArticles(categoryKey, undefined, reporterIds, { page: safePage, pageSize: safePageSize }, dayKey, sortOrder)
+  let result = await loadArticles(categoryKey, undefined, reporterIds, { page: safePage, pageSize: safePageSize }, dayKey, sortOrder, includeContent)
   const totalPages = Math.max(1, Math.ceil(result.total / safePageSize))
   const actualPage = Math.min(safePage, totalPages)
-  if (actualPage !== safePage) result = await loadArticles(categoryKey, undefined, reporterIds, { page: actualPage, pageSize: safePageSize }, dayKey, sortOrder)
+  if (actualPage !== safePage) result = await loadArticles(categoryKey, undefined, reporterIds, { page: actualPage, pageSize: safePageSize }, dayKey, sortOrder, includeContent)
   return { articles: result.articles, page: actualPage, pageSize: safePageSize, total: result.total, totalPages }
 }
 
