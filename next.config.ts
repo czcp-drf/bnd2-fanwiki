@@ -6,6 +6,10 @@ const supabaseProtocol: 'http' | 'https' = supabaseOrigin?.protocol === 'http:' 
 
 const nextConfig: NextConfig = {
   images: {
+    // 화면에서 실제로 사용하는 폭만 유지해 같은 원본의 변형 캐시가 과도하게 늘어나지 않도록 합니다.
+    deviceSizes: [384, 640, 828, 1080, 1280],
+    imageSizes: [64, 96, 128, 160, 256, 384],
+    formats: ['image/webp'],
     remotePatterns: supabaseOrigin ? [
       {
         protocol: supabaseProtocol,
