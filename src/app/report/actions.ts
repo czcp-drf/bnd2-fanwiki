@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getClientIpHash } from '@/lib/bongstagram/like-ip'
 import { MAP_MAX_BOUNDS } from '@/lib/map/constants'
 import type { Database } from '@/types/database'
+import { sendReportDiscordNotification } from '@/lib/discord/report-webhook'
 
 async function isBlocked(ipHash: string): Promise<boolean> {
   const supabase = createAdminClient()
@@ -245,6 +246,16 @@ export async function submitReport(
   } catch {
     return { status: 'error', message: '제출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }
   }
+
+  await sendReportDiscordNotification({
+    type,
+    typeLabel: type === 'new_character' ? '새 캐릭터' : type === 'new_event' ? '새 사건' : type === 'correction' ? '수정 요청' : '기타',
+    title: title.trim(),
+    content: fullContent,
+    referenceUrl: trimmedReferenceUrl || null,
+    contact: [contact_method.trim(), contact.trim()].filter(Boolean).join(' · ') || null,
+    createdAt: new Date().toISOString(),
+  })
 
   return { status: 'success' }
 }

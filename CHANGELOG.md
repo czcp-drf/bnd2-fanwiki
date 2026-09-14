@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- 제보 Discord 알림 연동 (`main`): 제보가 정상 저장되면 전체 Webhook과 유형별 Webhook으로 템플릿 알림을 전송하도록 추가했습니다. 전체 Webhook은 모든 제보를 받고 카테고리별 Webhook은 해당 유형을 추가 수신하며, Webhook 미설정·전송 실패가 제보 저장을 막지 않도록 처리했습니다. Discord 멘션 차단과 2,000자 축약을 적용하고 관련 환경변수를 문서화했으며, TypeScript·관련 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
 - 어드민 제보 관리 보완 (`main`): 제보 카드에 유형·제목·내용·참고 링크·위치·연락처·KST 제보일시를 항목명 다음 줄에 배치한 템플릿 복사 기능을 추가하고, 제보 관리 페이지의 기본 상태 필터를 `대기중`으로 변경했습니다. TypeScript·관련 ESLint·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - BBS 공개 화면 보완 (`main`): 기사 목록 카드에 카테고리 뱃지를 추가하고, 사용자 화면의 싫어요 버튼·개수를 숨겼습니다. 서버 액션에서도 싫어요 요청을 거부하며 기존 어드민 집계 데이터는 유지합니다. TypeScript·관련 ESLint·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.

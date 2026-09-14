@@ -390,6 +390,8 @@ src/
 | `ADMIN_PASSWORD`                | 어드민 로그인 비밀번호                                                      |
 | `ADMIN_TOKEN`                   | 어드민 쿠키 검증 토큰                                                      |
 | `NEXT_PUBLIC_MAP_TILE_BASE`     | 지도 타일 CDN 베이스 URL (Supabase Storage, 미설정 시 public/ 직접 서빙)         |
+| `DISCORD_REPORT_WEBHOOK_URL`    | 모든 새 제보를 관리자 Discord 채널로 템플릿 전송하는 서버 전용 Webhook URL |
+| `DISCORD_REPORT_WEBHOOK_NEW_CHARACTER` / `NEW_EVENT` / `CORRECTION` / `OTHER` | 해당 제보 유형을 추가 전송하는 카테고리별 Discord Webhook URL |
 
 
 ---
