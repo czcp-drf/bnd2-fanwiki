@@ -6,6 +6,7 @@ import ReportStatusSelect from './ReportStatusSelect'
 import BlockIpButton from './BlockIpButton'
 import ReportCoordAction from './ReportCoordAction'
 import type { Report } from '@/types/database'
+import { formatKstDateTime } from '@/lib/date/kst'
 
 function stripCoordLine(content: string): string {
   return content.replace(/\n\n\[지도 좌표\] X: [-\d.]+, Y: [-\d.]+$/, '').trim()
@@ -84,10 +85,7 @@ export default function AdminReportsClient({ reports }: { reports: Report[] }) {
                       {typeLabel[r.type]}
                     </span>
                     <span className="text-xs text-zinc-600">
-                      {new Date(r.created_at).toLocaleDateString('ko-KR', {
-                        year: 'numeric', month: 'long', day: 'numeric',
-                        hour: '2-digit', minute: '2-digit',
-                      })}
+                      {formatKstDateTime(r.created_at)}
                     </span>
                   </div>
                   <p className="font-bold text-white">{r.title}</p>

@@ -45,7 +45,8 @@ export default async function ReportPage() {
   const { streamers, characters } = await getFormOptionsCached()
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 space-y-10">
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-2xl space-y-10">
       {/* 헤더 */}
       <div className="space-y-3">
         <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-400">
@@ -89,6 +90,7 @@ export default async function ReportPage() {
 
       {/* 폼 */}
       <ReportForm streamers={streamers} characters={characters} />
+      </div>
     </div>
   )
 }

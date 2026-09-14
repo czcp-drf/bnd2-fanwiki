@@ -285,6 +285,8 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .text-zinc-500 { color: var(--wiki-subtle); }
 .wiki-theme .text-zinc-600 { color: var(--wiki-faint); }
 .wiki-theme .text-zinc-700 { color: var(--wiki-faint); }
+.wiki-theme .placeholder\:text-zinc-600::placeholder { color: var(--wiki-faint); }
+.wiki-theme .placeholder\:text-zinc-500::placeholder { color: var(--wiki-subtle); }
 
 .wiki-theme .hover\:bg-zinc-800\/50:hover,
 .wiki-theme .hover\:bg-zinc-800\/40:hover { background-color: var(--wiki-hover); }

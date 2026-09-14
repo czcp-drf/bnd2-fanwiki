@@ -17,14 +17,11 @@ export type CharacterOption = { id: string; name: string; streamer_name: string 
 
 // ── 스트리머 드롭다운 검색 ──────────────────────────────
 
-function StreamerSelector({ streamers, resetKey }: { streamers: StreamerOption[]; resetKey: number }) {
+function StreamerSelector({ streamers }: { streamers: StreamerOption[] }) {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<StreamerOption | null>(null)
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-
-  // resetKey 변경 시 상태 초기화
-  useEffect(() => { setSelected(null); setSearch(''); setOpen(false) }, [resetKey])
 
   useEffect(() => {
     if (!open) return
@@ -93,14 +90,12 @@ function StreamerSelector({ streamers, resetKey }: { streamers: StreamerOption[]
 
 // ── 캐릭터 복수 선택 ────────────────────────────────────
 
-function CharacterMultiSelect({ characters, resetKey }: { characters: CharacterOption[]; resetKey: number }) {
+function CharacterMultiSelect({ characters }: { characters: CharacterOption[] }) {
   const { isRedPill } = useRedPill()
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<CharacterOption[]>([])
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => { setSelected([]); setSearch(''); setOpen(false) }, [resetKey])
 
   useEffect(() => {
     if (!open) return
@@ -185,10 +180,8 @@ function CharacterMultiSelect({ characters, resetKey }: { characters: CharacterO
 
 // ── 클립 URL 다중 입력 ──────────────────────────────────
 
-function ClipUrlsInput({ resetKey }: { resetKey: number }) {
+function ClipUrlsInput() {
   const [clips, setClips] = useState([''])
-
-  useEffect(() => { setClips(['']) }, [resetKey])
 
   return (
     <div className="space-y-2">
@@ -247,13 +240,36 @@ export default function ReportForm({
   streamers: StreamerOption[]
   characters: CharacterOption[]
 }) {
-  const [state, action, isPending] = useActionState(submitReport, initialState)
   const formRef = useRef<HTMLFormElement>(null)
   const [selectedType, setSelectedType] = useState('')
   const [showMap, setShowMap] = useState(false)
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [resetKey, setResetKey] = useState(0)
   const [cooldownSeconds, setCooldownSeconds] = useState(0)
+
+  const [state, action, isPending] = useActionState(async (previousState: ReportFormState, formData: FormData) => {
+    const nextState = await submitReport(previousState, formData)
+
+    if (nextState.status === 'success') {
+      formRef.current?.reset()
+      setShowMap(false)
+      setMapCoords(null)
+      setResetKey((key) => key + 1)
+      // selectedType 유지 — 같은 유형으로 연속 제보 가능
+    }
+
+    if (nextState.status === 'success' || (nextState.status === 'error' && nextState.message.includes('30초'))) {
+      const nextCooldownUntil = Date.now() + REPORT_COOLDOWN_MS
+      setCooldownSeconds(Math.ceil(REPORT_COOLDOWN_MS / 1000))
+      try {
+        window.localStorage.setItem(REPORT_COOLDOWN_KEY, String(nextCooldownUntil))
+      } catch {
+        // localStorage를 사용할 수 없는 환경에서도 서버 제한은 유지한다.
+      }
+    }
+
+    return nextState
+  }, initialState)
 
   useEffect(() => {
     function syncCooldown() {
@@ -275,26 +291,6 @@ export default function ReportForm({
       window.removeEventListener('storage', syncCooldown)
     }
   }, [])
-
-  useEffect(() => {
-    if (state.status === 'success') {
-      formRef.current?.reset()
-      setShowMap(false)
-      setMapCoords(null)
-      setResetKey(k => k + 1)
-      // selectedType 유지 — 같은 유형으로 연속 제보 가능
-    }
-
-    if (state.status === 'success' || (state.status === 'error' && state.message.includes('30초'))) {
-      const nextCooldownUntil = Date.now() + REPORT_COOLDOWN_MS
-      setCooldownSeconds(Math.ceil(REPORT_COOLDOWN_MS / 1000))
-      try {
-        window.localStorage.setItem(REPORT_COOLDOWN_KEY, String(nextCooldownUntil))
-      } catch {
-        // localStorage를 사용할 수 없는 환경에서도 서버 제한은 유지한다.
-      }
-    }
-  }, [state])
 
   const isCooldown = cooldownSeconds > 0
 
@@ -377,7 +373,7 @@ export default function ReportForm({
             빨간약{' '}
             <span className="font-normal text-zinc-600">(선택)</span>
           </p>
-          <StreamerSelector streamers={streamers} resetKey={resetKey} />
+          <StreamerSelector key={`streamer-${resetKey}`} streamers={streamers} />
         </div>
       )}
 
@@ -390,7 +386,7 @@ export default function ReportForm({
                 참여 인물{' '}
                 <span className="font-normal text-zinc-600">(선택, 복수 선택 가능)</span>
               </p>
-              <CharacterMultiSelect characters={characters} resetKey={resetKey} />
+              <CharacterMultiSelect key={`characters-${resetKey}`} characters={characters} />
             </div>
           )}
           <div className="space-y-1.5">
@@ -398,7 +394,7 @@ export default function ReportForm({
               클립 링크{' '}
               <span className="font-normal text-zinc-600">(선택, 최대 5개)</span>
             </p>
-            <ClipUrlsInput resetKey={resetKey} />
+            <ClipUrlsInput key={`clips-${resetKey}`} />
           </div>
         </>
       )}

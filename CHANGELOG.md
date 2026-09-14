@@ -4,6 +4,10 @@
 
 ## 변경 기록
 
+- Bongstagram 공개 노출 임시 중단 (`main`): 홈 화면의 소셜피드 섹션·게시글 수 통계·관련 데이터 조회를 제거하고 전역 헤더의 Bongstagram 메뉴를 숨겼습니다. `/bongstagram` 및 하위 공개 경로는 Proxy에서 404로 차단하며, 관리자 `/admin/bongstagram` 경로는 유지합니다. `npx tsc --noEmit`, 관련 ESLint, `npm run build`, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
+- 제보 테마·검증 보완: `/report`에 전역 라이트·다크 테마를 적용하고, 제보 FormData 타입·추가 필드 개수·URL·좌표·최종 본문 길이를 서버에서 검증하도록 보강했습니다. 관리자 제보 시각을 KST로 통일하고 상태값 검증과 IP 차단 실패 안내를 추가했으며, 폼 초기화 방식을 정리했습니다. `npx tsc --noEmit`, 관련 ESLint, `npm run build`, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
 - `PROJECT.md` 작업 기록 분리: 현재 프로젝트 가이드와 누적 작업 기록을 분리해 `PROJECT.md`는 현재 상태·규칙 중심으로 축소하고, 기존 기록 전체를 이 파일로 이동했습니다. 문서 사용 가이드와 `CHANGELOG.md` 확인 시점을 `PROJECT.md`에 추가했습니다. `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - 지도 외부 위키 링크·사건 KST 일시·포커스 쿼리 보완 (`main`, 커밋 및 원격 푸시 완료): 주요 장소와 조직 거점 핀 카드에 선택형 외부 위키 바로가기를 추가하고, 관리자 지도에서 링크를 등록·수정·삭제할 수 있도록 했습니다. 조직 거점 카드에는 조직 상세 보기와 위키 바로가기를 별도 버튼으로 표시하며, 링크는 `http://`·`https://` URL만 허용합니다. 사건 상세에서 전체 지도로 이동할 때만 사건 위치 핀이 표시되고, 조직·사건 포커스 쿼리는 일반 이동 중 유지되며 지도 새로고침 시 기본 지도 URL로 정리됩니다. 사건 발생일시 입력·저장과 사건 목록·상세·타임라인·검색·연관 목록을 KST(`Asia/Seoul`) 기준으로 통일했습니다. 주요 장소 필터 라이트모드 색상과 지도 위키 버튼 색상도 보완했습니다. `038_map_location_wiki_path.sql`은 사용자가 운영 DB 적용을 완료했으며, `039_map_location_external_wiki_links.sql`은 외부 링크 전환과 조직 거점 컬럼 추가 migration으로 작성했습니다. `npx tsc --noEmit`, 관련 파일 ESLint, `git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.

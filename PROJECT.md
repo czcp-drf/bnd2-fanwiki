@@ -327,8 +327,9 @@ src/
 - [x] 캐릭터 추가 — 어드민 캐릭터 관리 페이지에서 스트리머 연결 없이 직접 추가 가능
 - [x] 스트리머 추가 시 '미정' 캐릭터 자동 생성·연결
 
-### Bongstagram (임시 브랜치 작업 중)
+### Bongstagram (공개 경로 임시 비활성, 관리자 관리 유지)
 
+- [x] 홈·전역 헤더에서 공개 Bongstagram 노출 제거 및 `/bongstagram`·하위 공개 경로 404 차단
 - [x] `/bongstagram` Instagram 스타일 모바일 피드 레이아웃과 Bongstagram 프로필 안내 UI
 - [x] 글로벌 네비게이션의 다크/라이트 테마 토글과 브라우저 저장
 - [x] `bongstagram_profiles` 1:1 계정 테이블·프로필 이름 제약 마이그레이션 작성 (`018_bonstagram_profiles.sql`, `019_rename_bongstagram.sql`)

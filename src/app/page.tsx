@@ -8,19 +8,15 @@ import type { Event } from '@/types/database'
 import AppImage from '@/components/ui/AppImage'
 import { BBS_ARTICLES_TAG, getPublishedBbsArticlesPage } from '@/lib/bbs/data'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
-import { getBongstagramFeedPage } from '@/lib/bongstagram/feed-data'
-import { BONGSTAGRAM_POSTS_TAG } from '@/lib/bongstagram/public-data'
-import type { BongstagramFeedPost } from '@/lib/bongstagram/types'
 
 async function getStats() {
   const supabase = createPublicClient()
-  const [{ count: eventCount }, { count: bbsArticleCount }, { count: bongstagramPostCount }] =
+  const [{ count: eventCount }, { count: bbsArticleCount }] =
     await Promise.all([
       supabase.from('events').select('*', { count: 'exact', head: true }).eq('is_published', true),
       supabase.from('bbs_articles').select('*', { count: 'exact', head: true }).eq('is_published', true),
-      supabase.from('bongstagram_posts').select('*', { count: 'exact', head: true }).eq('post_type', 'post'),
     ])
-  return { eventCount, bbsArticleCount, bongstagramPostCount }
+  return { eventCount, bbsArticleCount }
 }
 
 
@@ -37,7 +33,7 @@ async function getRecentEvents() {
 
 const getStatsCached = unstable_cache(getStats, ['wiki-home-stats'], {
   revalidate: WIKI_CACHE_REVALIDATE,
-  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, BBS_ARTICLES_TAG, BONGSTAGRAM_POSTS_TAG],
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, BBS_ARTICLES_TAG],
 })
 const getRecentEventsCached = unstable_cache(getRecentEvents, ['wiki-home-events'], {
   revalidate: WIKI_CACHE_REVALIDATE,
@@ -58,10 +54,6 @@ function formatRelativeTime(value: string) {
   const monthValue = dateParts.find((part) => part.type === 'month')?.value ?? ''
   const dayValue = dateParts.find((part) => part.type === 'day')?.value ?? ''
   return `${monthValue}월 ${dayValue}일`
-}
-
-function getBongstagramPreviewMedia(post: BongstagramFeedPost) {
-  return post.media[0]
 }
 
 const eventTypeLabel: Record<string, string> = {
@@ -87,10 +79,7 @@ export default async function HomePage() {
     getStatsCached(),
     getRecentEventsCached(),
   ])
-  const [{ articles: bbsArticles }, { posts: bongstagramPosts }] = await Promise.all([
-    getPublishedBbsArticlesPage(undefined, undefined, 1, 4),
-    getBongstagramFeedPage(undefined, 4),
-  ])
+  const { articles: bbsArticles } = await getPublishedBbsArticlesPage(undefined, undefined, 1, 4)
 
   return (
     <div className="site-theme min-h-[calc(100vh-3.5rem)] bg-[var(--site-page)] text-[var(--site-text)]">
@@ -107,12 +96,12 @@ export default async function HomePage() {
                 오늘의 봉누도 소식
               </h1>
               <p className="max-w-lg text-sm leading-6 text-[var(--site-muted)]">
-                사건 기록부터 BBS 기사와 봉스타그램까지,
+                사건 기록부터 BBS 기사까지,
                 <br />
                 봉누도2의 흐름을 한 곳에서 확인하세요.
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-4 border-t border-[var(--site-border)] pt-4 text-center sm:min-w-[18rem] sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+            <div className="grid grid-cols-2 gap-4 border-t border-[var(--site-border)] pt-4 text-center sm:min-w-[18rem] sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
               <div>
                 <p className="text-xl font-bold text-[var(--site-text)]">{stats.eventCount ?? 0}</p>
                 <p className="mt-1 text-[11px] text-[var(--site-muted)]">사건 기록</p>
@@ -120,10 +109,6 @@ export default async function HomePage() {
               <div>
                 <p className="text-xl font-bold text-[var(--site-text)]">{stats.bbsArticleCount ?? 0}</p>
                 <p className="mt-1 text-[11px] text-[var(--site-muted)]">BBS 기사 수</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-[var(--site-text)]">{stats.bongstagramPostCount ?? 0}</p>
-                <p className="mt-1 text-[11px] text-[var(--site-muted)]">봉스타그램 게시글 수</p>
               </div>
             </div>
           </div>
@@ -224,50 +209,6 @@ export default async function HomePage() {
             )}
           </section>
         </div>
-
-        {/* Bongstagram 최신 게시물 */}
-        <section className="space-y-4">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fuchsia-400">Social feed</p>
-              <h2 className="mt-1 text-xl font-bold text-[var(--site-text)]">Bongstagram 최신 게시물</h2>
-            </div>
-            <Link href="/bongstagram" className="text-sm text-[var(--site-muted)] transition-colors hover:text-fuchsia-400">
-              전체 보기 →
-            </Link>
-          </div>
-
-          {bongstagramPosts.length === 0 ? (
-            <div className="rounded-xl border border-[var(--site-border)] bg-[var(--site-card)] py-12 text-center text-sm text-[var(--site-muted)]">
-              등록된 게시물이 없습니다.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {bongstagramPosts.map((post) => {
-                const media = getBongstagramPreviewMedia(post)
-                return (
-                  <Link key={post.id} href={`/bongstagram/post/${post.id}`} className="group overflow-hidden rounded-xl border border-[var(--site-border)] bg-[var(--site-card)] transition-colors hover:border-fuchsia-400/40 hover:bg-[var(--site-card-raised)]">
-                    <div className="relative aspect-square overflow-hidden bg-black">
-                      {media?.media_type === 'video' ? (
-                        <video muted playsInline preload="metadata" src={media.media_url} className="h-full w-full object-cover" aria-label="동영상 게시물" />
-                      ) : media ? (
-                        <AppImage src={media.media_url} alt="게시물" width={360} height={360} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-zinc-500">미디어 없음</div>
-                      )}
-                    </div>
-                    <div className="space-y-1.5 p-3">
-                      <p className="truncate text-xs font-semibold text-[var(--site-text)]">
-                        <BongstagramDisplayName profileName={post.profile_name} streamerName={post.streamer_name} />
-                      </p>
-                      <p className="text-[11px] text-[var(--site-muted)]">{formatRelativeTime(post.posted_at)}</p>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </section>
 
       </div>
     </div>
