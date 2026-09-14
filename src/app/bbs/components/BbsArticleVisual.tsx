@@ -13,7 +13,7 @@ const toneStyles = {
 
 export default function BbsArticleVisual({ article, detail = false, compact = false }: { article: BbsArticle; detail?: boolean; compact?: boolean }) {
   const imageUrl = article.thumbnailUrl ?? article.media[0]?.imageUrl
-  const aspectClass = compact ? 'relative m-2.5 h-[68px] w-[86px] shrink-0 rounded-lg sm:m-0 sm:h-auto sm:w-auto sm:aspect-[16/9] sm:rounded-none' : `relative aspect-[16/9] ${detail ? 'rounded-xl' : ''}`
+  const aspectClass = compact ? 'relative m-2.5 self-center h-[68px] w-[86px] shrink-0 rounded-lg sm:m-0 sm:h-auto sm:w-auto sm:aspect-[16/9] sm:rounded-none' : `relative aspect-[16/9] ${detail ? 'rounded-xl' : ''}`
 
   return (
     <div className={`${aspectClass} isolate overflow-hidden bg-gradient-to-br ${toneStyles[article.categoryKey]}`}>

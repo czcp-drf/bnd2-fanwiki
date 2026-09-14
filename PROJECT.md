@@ -371,7 +371,7 @@ src/
 - [x] BBS 기사 DB 식별자 rename migration 운영 DB 적용 (`035_rename_bss_tables_to_bbs.sql`, 사용자 확인)
 - [x] 인게임 수집 대비 source·external_id migration 운영 DB 적용 (`040_ingame_ingest_source.sql`, 사용자 확인)
 - [x] BBS 기사 리액션 rate limit migration 운영 DB 적용 (`041_bbs_article_reaction_rate_limit.sql`, 사용자 확인)
-- [x] 이미지 전송 최적화 기반 — Supabase Storage 이미지는 Vercel `next/image` 최적화·캐시 사용, 동영상·외부 이미지는 기존 전달 방식 유지
+- [x] 이미지 전송 최적화 기반 — 목록·상세 이미지는 원본 표시를 유지하면서 Vercel `next/image` 최적화·캐시를 사용하고, 새 BBS 업로드 파일에는 1년 Storage 캐시를 적용
 
 ---
 

@@ -187,7 +187,7 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
     try {
       const result = await createBbsUploadUrl({ fileName: file.name, contentType: file.type, size: file.size })
       if (result.error || !result.path || !result.token || !result.publicUrl) throw new Error(result.error ?? '업로드 주소를 만들지 못했습니다.')
-      const { error: uploadError } = await supabase.storage.from('bbs-media').uploadToSignedUrl(result.path, result.token, file, { contentType: file.type })
+      const { error: uploadError } = await supabase.storage.from('bbs-media').uploadToSignedUrl(result.path, result.token, file, { contentType: file.type, cacheControl: '31536000' })
       if (uploadError) throw new Error('이미지 업로드에 실패했습니다.')
       if (target === 'thumbnail') setThumbnailUrl(result.publicUrl)
       else setMedia((current) => [...current, { imageUrl: result.publicUrl, storagePath: result.path }])

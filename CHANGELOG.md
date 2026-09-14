@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- 목록 이미지 원본 표시 복구 (`main`): Supabase 변환 썸네일 적용으로 이미지가 과도하게 잘리던 문제를 해결하기 위해 홈·사건·BBS 목록은 원본 이미지 URL을 사용하도록 되돌렸습니다. BBS 새 업로드 파일에는 1년 Storage 캐시 헤더를 유지하고, 모바일 BBS 카드 이미지는 세로 중앙 정렬을 적용했습니다. TypeScript·관련 ESLint·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
 - 제보 전체 필터 수정 (`main`): 기본 상태를 `대기중`으로 유지하면서 `전체` 선택 시 모든 상태의 제보가 표시되도록 상태 파라미터를 명시적으로 구분했습니다. 유형 필터와 함께 선택하는 경우도 유지했으며, TypeScript·관련 ESLint·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - 제보 Discord 알림 연동 (`main`): 제보가 정상 저장되면 전체 Webhook과 유형별 Webhook으로 템플릿 알림을 전송하도록 추가했습니다. 전체 Webhook은 모든 제보를 받고 카테고리별 Webhook은 해당 유형을 추가 수신하며, Webhook 미설정·전송 실패가 제보 저장을 막지 않도록 처리했습니다. Discord 멘션 차단과 2,000자 축약을 적용하고 관련 환경변수를 문서화했으며, TypeScript·관련 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
