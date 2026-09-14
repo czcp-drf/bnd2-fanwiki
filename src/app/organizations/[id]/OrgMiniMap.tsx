@@ -67,7 +67,7 @@ export default function OrgMiniMap({ org }: { org: OrgMapData }) {
   const hasBiz = org.biz_x !== null && org.biz_y !== null
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-zinc-800" style={{ height: 260 }}>
+    <div className="relative isolate z-0 overflow-hidden rounded-xl border border-zinc-800" style={{ height: 260 }}>
       <MapContainer
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         crs={GTA_CRS as any}
@@ -77,6 +77,12 @@ export default function OrgMiniMap({ org }: { org: OrgMapData }) {
         maxZoom={5}
         maxBounds={MAP_MAX_BOUNDS}
         maxBoundsViscosity={1}
+        scrollWheelZoom={false}
+        dragging={false}
+        doubleClickZoom={false}
+        touchZoom={false}
+        boxZoom={false}
+        keyboard={false}
         style={{ height: '100%', width: '100%', background: '#0FA8D2' }}
         zoomControl={false}
         attributionControl={false}

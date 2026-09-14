@@ -267,6 +267,7 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .bg-zinc-800 { background-color: var(--wiki-raised); }
 .wiki-theme .bg-zinc-700 { background-color: var(--wiki-strong); }
 .wiki-theme .bg-zinc-600 { background-color: var(--wiki-border-strong); }
+.wiki-theme .bg-zinc-900\/90 { background-color: color-mix(in srgb, var(--wiki-surface) 90%, transparent); }
 .wiki-theme .bg-zinc-900\/50 { background-color: color-mix(in srgb, var(--wiki-surface) 50%, transparent); }
 
 .wiki-theme .border-zinc-800,

@@ -111,6 +111,7 @@ export default function LeafletMap({
   showLocations,
   activeLocationLabel,
   focusOrgId,
+  focusCoordinates,
 }: {
   orgs: OrgMarker[]
   locations: LocationMarker[]
@@ -119,6 +120,7 @@ export default function LeafletMap({
   showLocations: boolean
   activeLocationLabel: string | null
   focusOrgId: string | null
+  focusCoordinates: { x: number; y: number } | null
 }) {
   const focusedOrg = orgs.find((org) => org.id === focusOrgId)
   const [selected, setSelected] = useState<Selected | null>(
@@ -138,8 +140,8 @@ export default function LeafletMap({
       <MapContainer
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         crs={GTA_CRS as any}
-        center={focusedOrg ? [focusedOrg.hq_y, focusedOrg.hq_x] : [0, 0]}
-        zoom={focusedOrg ? 4 : MAP_DEFAULT_ZOOM}
+        center={focusCoordinates ? [focusCoordinates.y, focusCoordinates.x] : focusedOrg ? [focusedOrg.hq_y, focusedOrg.hq_x] : [0, 0]}
+        zoom={focusCoordinates || focusedOrg ? 4 : MAP_DEFAULT_ZOOM}
         minZoom={MAP_MIN_ZOOM}
         maxZoom={MAP_MAX_ZOOM}
         maxBounds={MAP_MAX_BOUNDS}
@@ -148,6 +150,20 @@ export default function LeafletMap({
       >
         <MapBaseLayers />
         <MapClickClose onClose={() => setSelected(null)} />
+
+        {/* 사건 상세에서 전달된 위치 */}
+        {focusCoordinates && (
+          <Marker
+            position={[focusCoordinates.y, focusCoordinates.x]}
+            icon={createDropIcon('#fbbf24', true)}
+            interactive={false}
+            zIndexOffset={1000}
+          >
+            <Tooltip permanent direction="top" offset={[0, -2]}>
+              사건 위치
+            </Tooltip>
+          </Marker>
+        )}
 
         {/* 조직 거점 마커 */}
         {showOrgs && visibleOrgs.map((org) => {

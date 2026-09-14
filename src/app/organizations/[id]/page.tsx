@@ -214,8 +214,9 @@ export default async function OrganizationDetailPage({ params }: Props) {
   const disbandedBiz = businesses.filter((b) => b.is_disbanded)
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
-      <BackButton />
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-4xl space-y-8">
+        <BackButton />
 
       {/* 헤더 */}
       <div
@@ -424,6 +425,7 @@ export default async function OrganizationDetailPage({ params }: Props) {
           </div>
         )}
       </section>
+      </div>
     </div>
   )
 }

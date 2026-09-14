@@ -14,7 +14,13 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
 const CATEGORIES = ['city_hall', 'public_service', 'gang', 'business', 'illegal'] as const
 
 export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locations: LocationMarker[] }) {
-  const focusOrgId = useSearchParams().get('org')
+  const searchParams = useSearchParams()
+  const focusOrgId = searchParams.get('org')
+  const focusX = Number(searchParams.get('focus_x'))
+  const focusY = Number(searchParams.get('focus_y'))
+  const focusCoordinates = Number.isFinite(focusX) && Number.isFinite(focusY)
+    ? { x: focusX, y: focusY }
+    : null
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [showOrgs, setShowOrgs] = useState(true)
   const [showLocations, setShowLocations] = useState(true)
@@ -125,8 +131,9 @@ export default function MapView({ orgs, locations }: { orgs: OrgMarker[]; locati
 
       <div className="flex-1 overflow-hidden rounded-xl border border-zinc-800">
         <LeafletMap
-          key={focusOrgId ?? 'all'}
+          key={`${focusOrgId ?? 'all'}:${focusCoordinates ? `${focusCoordinates.x},${focusCoordinates.y}` : 'none'}`}
           focusOrgId={focusOrgId}
+          focusCoordinates={focusCoordinates}
           orgs={orgs}
           locations={locations}
           activeCategory={activeCategory}

@@ -122,13 +122,14 @@ export default async function OrganizationsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 space-y-12">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-black text-white">조직</h1>
-        <p className="text-sm text-zinc-500">봉누도2 서버에 존재하는 조직과 사업체 목록입니다.</p>
-      </div>
+    <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
+      <div className="mx-auto max-w-6xl space-y-12">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-black text-white">조직</h1>
+          <p className="text-sm text-zinc-500">봉누도2 서버에 존재하는 조직과 사업체 목록입니다.</p>
+        </div>
 
-      {categories.map(({ key, label, desc, badge, dot }) => {
+        {categories.map(({ key, label, desc, badge, dot }) => {
         const list = grouped[key] ?? []
         if (key !== 'city_hall' && key !== 'public_service' && list.length === 0) return null
 
@@ -163,7 +164,8 @@ export default async function OrganizationsPage() {
             )}
           </section>
         )
-      })}
+        })}
+      </div>
     </div>
   )
 }
