@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, CircleMarker, useMapEvents } from 'react-leafl
 import L from 'leaflet'
 import {
   MAP_TILE_URLS, MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
-  MAP_MAX_BOUNDS, GTA_CRS_CONFIG,
+  MAP_MAX_BOUNDS, MAP_TILE_BOUNDS, GTA_CRS_CONFIG,
 } from '@/lib/map/constants'
 
 function createGtaCRS() {
@@ -54,7 +54,7 @@ export default function MapPinPicker({ coords, onPick, readOnly = false }: Props
       zoomControl={!readOnly}
       style={{ height: '100%', width: '100%', background: '#0FA8D2', cursor: readOnly ? 'default' : 'crosshair' }}
     >
-      <TileLayer url={MAP_TILE_URLS.atlas} noWrap bounds={MAP_MAX_BOUNDS} />
+      <TileLayer url={MAP_TILE_URLS.atlas} noWrap bounds={MAP_TILE_BOUNDS} minZoom={MAP_MIN_ZOOM} maxZoom={MAP_MAX_ZOOM} />
       {!readOnly && onPick && <ClickHandler onPick={onPick} />}
       {coords && (
         <CircleMarker

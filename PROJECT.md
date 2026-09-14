@@ -59,7 +59,7 @@ src/
 │   ├── map/                    # 공개 거점 지도 [ISR 300s]
 │   │   ├── page.tsx            # 서버 컴포넌트 (orgs + locations 패치)
 │   │   ├── MapView.tsx         # 클라이언트 래퍼 (카테고리 필터, 위치 토글)
-│   │   ├── LeafletMap.tsx      # Leaflet 지도 본체 (SSR 제외, dynamic import, 타일 bounds 제한)
+│   │   ├── LeafletMap.tsx      # Leaflet 지도 본체 (SSR 제외, dynamic import, 타일 bounds·줌 제한)
 │   │   └── MapPinPopup.css     # 팝업 opacity 전환 제거 (꼬리표 지연 없는 닫기)
 │   ├── search/page.tsx         # 통합 검색
 │   ├── schedule/               # 방송 일정

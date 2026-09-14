@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- 지도 타일 범위·줌 제한 보정 (`main`, 커밋·푸시 진행): 실제 `map-tiles` 파일의 줌별 `x/y = 0 ~ 2^z-1` 범위에 맞춘 `MAP_TILE_BOUNDS`를 추가하고 모든 `TileLayer`에 적용했습니다. 타일 레이어에도 `minZoom=1`, `maxZoom=5`를 지정해 음수 타일 좌표와 존재하지 않는 줌 레벨 요청을 줄이도록 했습니다. 기본 지도·제보 위치 선택 지도·조직 상세 미니맵에 적용했으며, 지도 이동 범위와 핀 동작은 유지됩니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
 - 지도 타일 요청 범위 제한 (`main`, `e15ed23`, 원격 푸시 완료): 공통 `MAP_MAX_BOUNDS`를 모든 `TileLayer`에 적용해 게임맵 범위와 교차하는 타일만 요청하도록 했습니다. 기본 지도·제보 위치 선택 지도·조직 상세 미니맵에 적용했으며, 지도 표시·줌·핀 동작은 유지됩니다. 변경 파일 ESLint와 TypeScript 검사를 통과했고 `git diff --check`도 통과했습니다. 전체 ESLint는 기존 `ClipsEditor`·`ParticipantsEditor`의 effect 상태 동기화 규칙 위반으로 실패했으며 이번 변경과 무관합니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - 이미지 변형 수 제한 (`main`): Next Image가 생성하는 디바이스·소형 이미지 사이즈 후보를 실제 화면 폭에 맞는 목록으로 제한하고 출력 포맷을 WebP로 고정했습니다. 1920px 등 불필요하게 큰 변형과 브라우저별 포맷 변형을 줄이며 기존 반응형 표시와 이미지 비율은 유지합니다. TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
