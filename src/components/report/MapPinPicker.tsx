@@ -1,8 +1,9 @@
 'use client'
 
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, TileLayer, CircleMarker, useMapEvents } from 'react-leaflet'
+import { MapContainer, CircleMarker, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
+import { MapTileLayer } from '@/components/map/MapTileLayer'
 import {
   MAP_TILE_URLS, MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
   MAP_MAX_BOUNDS, MAP_TILE_BOUNDS, GTA_CRS_CONFIG,
@@ -54,7 +55,7 @@ export default function MapPinPicker({ coords, onPick, readOnly = false }: Props
       zoomControl={!readOnly}
       style={{ height: '100%', width: '100%', background: '#0FA8D2', cursor: readOnly ? 'default' : 'crosshair' }}
     >
-      <TileLayer url={MAP_TILE_URLS.atlas} noWrap bounds={MAP_TILE_BOUNDS} minZoom={MAP_MIN_ZOOM} maxZoom={MAP_MAX_ZOOM} />
+      <MapTileLayer url={MAP_TILE_URLS.atlas} noWrap bounds={MAP_TILE_BOUNDS} minZoom={MAP_MIN_ZOOM} maxZoom={MAP_MAX_ZOOM} />
       {!readOnly && onPick && <ClickHandler onPick={onPick} />}
       {coords && (
         <CircleMarker

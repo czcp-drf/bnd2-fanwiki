@@ -4,7 +4,9 @@
 
 ## 변경 기록
 
-- 지도 타일 범위·줌 제한 보정 (`main`, 커밋·푸시 진행): 실제 `map-tiles` 파일의 줌별 `x/y = 0 ~ 2^z-1` 범위에 맞춘 `MAP_TILE_BOUNDS`를 추가하고 모든 `TileLayer`에 적용했습니다. 타일 레이어에도 `minZoom=1`, `maxZoom=5`를 지정해 음수 타일 좌표와 존재하지 않는 줌 레벨 요청을 줄이도록 했습니다. 기본 지도·제보 위치 선택 지도·조직 상세 미니맵에 적용했으며, 지도 이동 범위와 핀 동작은 유지됩니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+- 지도 타일 요청 좌표 검증 및 최소 줌 상향 (`main`, 커밋·푸시 진행): Leaflet 커스텀 타일 레이어를 추가해 실제 파일이 존재하는 줌 `1~5`, `x/y = 0 ~ 2^z-1` 좌표만 요청하도록 했습니다. 최소 줌은 `1`에서 `2`로 상향해 저배율 타일 요청도 줄였습니다. 기본·위성 지도, 제보 위치 선택 지도, 조직 상세 미니맵에 적용했으며 지도 표시와 핀 동작은 유지됩니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
+- 지도 타일 범위·줌 제한 보정 (`main`, `2c468c0`, 원격 푸시 완료): 실제 `map-tiles` 파일의 줌별 `x/y = 0 ~ 2^z-1` 범위에 맞춘 `MAP_TILE_BOUNDS`를 추가하고 모든 `TileLayer`에 적용했습니다. 타일 레이어에도 `minZoom=1`, `maxZoom=5`를 지정해 음수 타일 좌표와 존재하지 않는 줌 레벨 요청을 줄이도록 했습니다. 기본 지도·제보 위치 선택 지도·조직 상세 미니맵에 적용했으며, 지도 이동 범위와 핀 동작은 유지됩니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 
 - 지도 타일 요청 범위 제한 (`main`, `e15ed23`, 원격 푸시 완료): 공통 `MAP_MAX_BOUNDS`를 모든 `TileLayer`에 적용해 게임맵 범위와 교차하는 타일만 요청하도록 했습니다. 기본 지도·제보 위치 선택 지도·조직 상세 미니맵에 적용했으며, 지도 표시·줌·핀 동작은 유지됩니다. 변경 파일 ESLint와 TypeScript 검사를 통과했고 `git diff --check`도 통과했습니다. 전체 ESLint는 기존 `ClipsEditor`·`ParticipantsEditor`의 effect 상태 동기화 규칙 위반으로 실패했으며 이번 변경과 무관합니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
 

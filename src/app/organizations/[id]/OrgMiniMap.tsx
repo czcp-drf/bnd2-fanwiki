@@ -1,11 +1,12 @@
 'use client'
 
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet'
+import { MapContainer, Marker, Tooltip } from 'react-leaflet'
 import L from 'leaflet'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { MAP_TILE_URLS, MAP_MAX_BOUNDS, MAP_TILE_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM, GTA_CRS_CONFIG, CATEGORY_COLOR } from '@/lib/map/constants'
+import { MapTileLayer } from '@/components/map/MapTileLayer'
 
 export type OrgMapData = {
   id: string
@@ -87,7 +88,7 @@ export default function OrgMiniMap({ org }: { org: OrgMapData }) {
         zoomControl={false}
         attributionControl={false}
       >
-        <TileLayer url={MAP_TILE_URLS.atlas} noWrap bounds={MAP_TILE_BOUNDS} minZoom={MAP_MIN_ZOOM} maxZoom={MAP_MAX_ZOOM} />
+        <MapTileLayer url={MAP_TILE_URLS.atlas} noWrap bounds={MAP_TILE_BOUNDS} minZoom={MAP_MIN_ZOOM} maxZoom={MAP_MAX_ZOOM} />
 
         <Marker position={[org.hq_y, org.hq_x]} icon={createDropIcon(color)}>
           <Tooltip permanent direction="top" offset={[0, -2]}>

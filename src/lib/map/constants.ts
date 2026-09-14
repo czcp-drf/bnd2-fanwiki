@@ -9,7 +9,7 @@ export const MAP_TILE_URLS = {
 }
 
 // 줌 설정 (RiceaRaul/gta-v-map-leaflet 기준)
-export const MAP_MIN_ZOOM = 1
+export const MAP_MIN_ZOOM = 2
 export const MAP_MAX_ZOOM = 5
 export const MAP_DEFAULT_ZOOM = 3
 
