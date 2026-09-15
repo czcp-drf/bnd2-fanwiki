@@ -13,7 +13,7 @@ import { getPublishedBbsArticle, getPublishedBbsArticleNeighbors, type BbsSortOr
 import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
 import { getBbsArticleEngagement } from '@/lib/bbs/engagement'
 
-export const revalidate = 60 * 60 * 24 * 30
+export const revalidate = 2592000
 
 type Props = {
   params: Promise<{ id: string }>
