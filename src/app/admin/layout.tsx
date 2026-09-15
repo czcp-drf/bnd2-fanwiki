@@ -55,8 +55,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
+      <div className="fixed inset-x-0 top-4 z-30 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur md:hidden">
+        <div className="flex h-12 items-center justify-between px-4">
+          <Link href="/admin" className="text-sm font-black text-white">관리자</Link>
+          <form action={logout}>
+            <button type="submit" aria-label="로그아웃" className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100">
+              <LogOut size={15} />
+            </button>
+          </form>
+        </div>
+        <nav className="flex gap-1 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {navItems.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100">
+              <Icon size={14} />
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </div>
+
       {/* 콘텐츠 */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pt-32 md:pt-0">
         {children}
       </main>
     </div>
