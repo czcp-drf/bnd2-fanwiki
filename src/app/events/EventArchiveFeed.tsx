@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import type { Event } from '@/types/database'
@@ -9,6 +10,7 @@ import { typeLabel, typeColor } from '@/lib/events'
 import AppImage from '@/components/ui/AppImage'
 
 type Props = { initialEvents: Event[]; type: string; initialHasMore: boolean; total: number }
+type EventPage = { events: Event[]; total: number; hasMore: boolean }
 
 export const EVENT_SCROLL_STATE_PREFIX = 'events-scroll-state:'
 
@@ -20,12 +22,26 @@ function rememberEventScrollPosition() {
 }
 
 export default function EventArchiveFeed({ initialEvents, type, initialHasMore, total }: Props) {
-  const [events, setEvents] = useState(initialEvents)
-  const [hasMore, setHasMore] = useState(initialHasMore)
-  const [loading, setLoading] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const restoreTargetRef = useRef<number | null>(null)
   const restoreAttemptsRef = useRef(0)
+
+  const query = useInfiniteQuery({
+    queryKey: ['events', type || null],
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams({ offset: String(pageParam) })
+      if (type) params.set('type', type)
+      const response = await fetch(`/api/events?${params.toString()}`)
+      if (!response.ok) throw new Error('사건 목록을 불러오지 못했습니다.')
+      return await response.json() as EventPage
+    },
+    initialPageParam: 0,
+    initialData: { pages: [{ events: initialEvents, total, hasMore: initialHasMore }], pageParams: [0] },
+    getNextPageParam: (lastPage, allPages) => lastPage.hasMore ? allPages.reduce((count, page) => count + page.events.length, 0) : undefined,
+    maxPages: 10,
+  })
+  const events = query.data.pages.flatMap((page) => page.events)
+  const hasMore = Boolean(query.hasNextPage)
 
   useEffect(() => {
     const stateKey = `${EVENT_SCROLL_STATE_PREFIX}${window.location.pathname}${window.location.search}`
@@ -40,24 +56,6 @@ export default function EventArchiveFeed({ initialEvents, type, initialHasMore, 
     }
   }, [])
 
-  const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return
-    setLoading(true)
-    try {
-      const params = new URLSearchParams({ offset: String(events.length) })
-      if (type) params.set('type', type)
-      const response = await fetch(`/api/events?${params.toString()}`)
-      if (!response.ok) throw new Error('request failed')
-      const result = await response.json() as { events: Event[]; hasMore: boolean }
-      setEvents((current) => [...current, ...result.events])
-      setHasMore(result.hasMore)
-    } catch {
-      // 다음 교차 시 재시도할 수 있도록 로딩 상태만 해제합니다.
-    } finally {
-      setLoading(false)
-    }
-  }, [events.length, hasMore, loading, type])
-
   useEffect(() => {
     const target = restoreTargetRef.current
     if (target === null) return
@@ -69,22 +67,22 @@ export default function EventArchiveFeed({ initialEvents, type, initialHasMore, 
       sessionStorage.removeItem(stateKey)
       return
     }
-    if (loading) return
+    if (query.isFetchingNextPage) return
     restoreAttemptsRef.current += 1
-    const frame = requestAnimationFrame(() => { void loadMore() })
+    const frame = requestAnimationFrame(() => { void query.fetchNextPage() })
     return () => cancelAnimationFrame(frame)
-  }, [events.length, hasMore, loading, loadMore])
+  }, [events.length, hasMore, query])
 
   useEffect(() => {
-    if (!hasMore || loading) return
+    if (!hasMore || query.isFetchingNextPage) return
     const sentinel = sentinelRef.current
     if (!sentinel) return
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting) void loadMore()
+      if (entries[0]?.isIntersecting) void query.fetchNextPage()
     }, { rootMargin: '480px' })
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [hasMore, loading, loadMore])
+  }, [hasMore, query])
 
   const visibleEvents = type ? events : events.slice(1)
   return (
@@ -98,7 +96,7 @@ export default function EventArchiveFeed({ initialEvents, type, initialHasMore, 
             {visibleEvents.map((event) => <EventCard key={event.id} event={event} />)}
           </div>
           <div ref={sentinelRef} className="flex min-h-10 items-center justify-center text-zinc-500" aria-live="polite">
-            {loading && <Loader2 size={18} className="animate-spin" aria-label="사건을 불러오는 중" />}
+            {query.isFetchingNextPage && <Loader2 size={18} className="animate-spin" aria-label="사건을 불러오는 중" />}
             {!hasMore && events.length > 0 && <span className="text-xs">모든 사건을 불러왔습니다.</span>}
           </div>
         </div>
