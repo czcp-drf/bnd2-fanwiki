@@ -19,6 +19,7 @@ const statusColor: Record<string, string> = {
 type Character = {
   id: string
   name: string
+  is_name_pending?: boolean
   avatar_url?: string | null
   job: string | null
   status: string
@@ -37,7 +38,7 @@ export type StreamerItem = {
 function StreamerCard({ streamer }: { streamer: StreamerItem }) {
   const { isRedPill } = useRedPill()
   const characters = streamer.characters ?? []
-  const activeChars = characters.filter((character) => character.status === 'active')
+  const activeChars = characters.filter((character) => character.status === 'active' && !character.is_name_pending)
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition-colors hover:border-[#00FFA3]">
@@ -128,7 +129,7 @@ export default function StreamerListWithLive({ streamers }: { streamers: Streame
     const query = search.trim().toLowerCase()
     if (isRedPill) {
       return streamer.display_name.toLowerCase().includes(query) ||
-        streamer.characters.some((character) => character.name.toLowerCase().includes(query))
+        streamer.characters.some((character) => !character.is_name_pending && character.name.toLowerCase().includes(query))
     }
     return streamer.display_name.toLowerCase().includes(query)
   }

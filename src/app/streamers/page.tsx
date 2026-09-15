@@ -15,6 +15,7 @@ type StreamerWithCharacters = Streamer & {
   characters: Array<{
     id: string
     name: string
+    is_name_pending: boolean
     job: string | null
     status: string
     organizations: OrgInfo[]
@@ -30,13 +31,13 @@ async function getStreamers(sort: string): Promise<StreamerWithCharacters[]> {
   const supabase = createPublicClient()
   const { data } = await supabase
     .from('streamers')
-    .select('*, characters ( id, name, job, status )')
+    .select('*, characters ( id, name, is_name_pending, job, status )')
     .order(
       sort === 'latest' || sort === 'oldest' ? 'created_at' : 'display_name',
       { ascending: sort === 'name' || sort === 'oldest' }
     )
 
-  const streamers = (data ?? []) as unknown as (Streamer & { characters: Array<{ id: string; name: string; job: string | null; status: string }> })[]
+  const streamers = (data ?? []) as unknown as (Streamer & { characters: Array<{ id: string; name: string; is_name_pending: boolean; job: string | null; status: string }> })[]
 
   const charIds = streamers.flatMap((s) => s.characters.map((c) => c.id))
 
