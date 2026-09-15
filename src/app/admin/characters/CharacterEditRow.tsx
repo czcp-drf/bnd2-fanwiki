@@ -31,6 +31,7 @@ type CharacterData = {
   org_id: string | null
   org_role: string | null
   org_name: string | null
+  is_name_pending: boolean
 }
 
 type Props = {
@@ -68,7 +69,7 @@ export default function CharacterEditRow({ character: c, organizations }: Props)
     setError(null)
     try {
     const result = await saveCharacter(c.id, {
-        name: name.trim() || '미정',
+        name: name.trim(),
         job: job.trim() || null,
         status,
         orgId: orgId || null,
@@ -198,7 +199,7 @@ export default function CharacterEditRow({ character: c, organizations }: Props)
             className="group/name flex items-center gap-1.5 cursor-pointer text-left"
             title="클릭하여 이름 수정"
           >
-            <span className={name === '미정' ? 'text-zinc-600' : ''}>{name}</span>
+            <span className={c.is_name_pending ? 'text-zinc-600' : ''}>{name}</span>
             <Pencil size={10} className="text-zinc-700 opacity-0 group-hover/name:opacity-100 transition-opacity" />
           </button>
         )}

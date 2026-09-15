@@ -89,6 +89,7 @@ type SearchMember = {
 type SearchCharacter = {
   id: string
   name: string
+  is_name_pending: boolean
   job: string | null
   status: string
   streamers: Pick<Streamer, 'id' | 'display_name'> | null
@@ -126,11 +127,11 @@ async function searchAll(q: string) {
   const term = `%${q}%`
 
   const [streamersRes, charactersRes, orgsRes, eventsRes] = await Promise.all([
-    supabase
+  supabase
       .from('streamers')
       .select(`
         id, display_name, profile_image_url, chzzk_channel_id, is_active,
-        characters(id, name, job, status,
+        characters(id, name, is_name_pending, job, status,
           organization_members(is_primary, organizations(id, name, color))
         )
       `)
@@ -140,11 +141,12 @@ async function searchAll(q: string) {
     supabase
       .from('characters')
       .select(`
-        id, name, job, status,
+        id, name, is_name_pending, job, status,
         streamers(id, display_name),
         organization_members(is_primary, organizations(id, name, color))
       `)
       .ilike('name', term)
+      .eq('is_name_pending', false)
       .order('name')
       .limit(10),
     (() => {
@@ -175,7 +177,7 @@ async function searchAll(q: string) {
   const charIds = [
     ...rawChars.map((c) => c.id),
     ...rawStreamers.flatMap((s) =>
-      (s.characters ?? []).filter((c) => c.status === 'active').map((c) => c.id)
+      (s.characters ?? []).filter((c) => c.status === 'active' && !c.is_name_pending).map((c) => c.id)
     ),
   ]
   const charEventMap = await buildCharEventMap([...new Set(charIds)], supabase)
@@ -198,7 +200,7 @@ async function searchAll(q: string) {
 
   // 스트리머 결과 변환
   const streamers: StreamerResult[] = rawStreamers.map((s) => {
-    const activeChar = (s.characters ?? []).find((c) => c.status === 'active') ?? null
+    const activeChar = (s.characters ?? []).find((c) => c.status === 'active' && !c.is_name_pending) ?? null
     let charData = null
     if (activeChar) {
       const members = activeChar.organization_members ?? []

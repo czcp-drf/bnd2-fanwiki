@@ -34,6 +34,7 @@ type Character = {
   org_id: string | null
   org_role: string | null
   org_name: string | null
+  is_name_pending: boolean
 }
 
 type OrgOption = { id: string; name: string; category: string | null }
@@ -171,7 +172,7 @@ export default function AdminCharactersClient({
               <input
                 value={addName}
                 onChange={(e) => setAddName(e.target.value)}
-                placeholder="RP명 (미입력 시 '미정')"
+                placeholder="RP명 (공백이면 미정 상태)"
                 className="w-40 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
               />
               <div className="w-40">

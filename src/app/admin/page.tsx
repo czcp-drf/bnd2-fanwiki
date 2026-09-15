@@ -13,7 +13,7 @@ async function getStats() {
   ] = await Promise.all([
     supabase.from('streamers').select('*', { count: 'exact', head: true }),
     supabase.from('characters').select('*', { count: 'exact', head: true }),
-    supabase.from('characters').select('*', { count: 'exact', head: true }).eq('name', '미정'),
+    supabase.from('characters').select('*', { count: 'exact', head: true }).eq('is_name_pending', true),
     supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('is_active', true),
   ])

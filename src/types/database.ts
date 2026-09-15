@@ -27,6 +27,7 @@ export type Database = {
           id: string
           streamer_id: string
           name: string
+          is_name_pending: boolean
           alias: string[] | null
           avatar_url: string | null
           job: string | null

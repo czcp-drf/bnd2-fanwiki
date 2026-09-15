@@ -14,11 +14,10 @@ export async function saveCharacter(id: string, data: {
   name: string; job: string | null; status: string; orgId: string | null; orgRole: string | null
 }) {
   const supabase = await requireAdmin()
-  if (!data.name.trim() || !['active', 'dead', 'retired', 'hiatus'].includes(data.status)) {
-    return { error: '캐릭터 이름과 상태를 확인해 주세요.' }
-  }
+  const name = data.name.trim()
+  if (!['active', 'dead', 'retired', 'hiatus'].includes(data.status)) return { error: '캐릭터 상태를 확인해 주세요.' }
   const { error } = await supabase.rpc('save_character', {
-    p_character_id: id, p_name: data.name.trim(), p_job: data.job?.trim() || null,
+    p_character_id: id, p_name: name || '미정', p_is_name_pending: !name, p_job: data.job?.trim() || null,
     p_status: data.status, p_org_id: data.orgId || null, p_role: data.orgRole?.trim() || null,
   })
   if (error) {
@@ -44,7 +43,7 @@ export async function createCharacter(data: {
     return { error: '올바른 상태를 선택해 주세요.' }
   }
   const { data: characterId, error } = await supabase.rpc('create_character_with_membership', {
-    p_name: data.name.trim() || '미정', p_streamer_id: data.streamerId || null,
+    p_name: data.name.trim() || '미정', p_is_name_pending: !data.name.trim(), p_streamer_id: data.streamerId || null,
     p_job: data.job?.trim() || null, p_status: data.status,
     p_org_id: data.orgId || null, p_role: data.orgRole?.trim() || null,
   })
@@ -57,9 +56,8 @@ export async function createCharacter(data: {
 
 export async function renameCharacter(id: string, name: string) {
   const trimmed = name.trim()
-  if (!trimmed) return { error: '이름을 입력해 주세요.' }
   const supabase = await requireAdmin()
-  const { error } = await supabase.from('characters').update({ name: trimmed }).eq('id', id)
+  const { error } = await supabase.from('characters').update({ name: trimmed || '미정', is_name_pending: !trimmed }).eq('id', id)
   if (error) return { error: '저장하지 못했습니다.' }
   invalidateAndRevalidate('/', 'layout')
   return { success: true }

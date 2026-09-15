@@ -105,10 +105,13 @@ export default function CharactersClientSection({
     }
 
     // search filter
-    const q = search.trim().toLowerCase()
-    if (q) {
-      result = result.filter((c) => {
-        if (c.name.toLowerCase().includes(q)) return true
+      const q = search.trim().toLowerCase()
+      if (q) {
+        result = result.filter((c) => {
+          // 검색어가 있을 때만 이름 미정 placeholder를 제외합니다.
+          // 실제 캐릭터명에 '미정'이 포함된 경우(예: 신미정)는 정상적으로 검색됩니다.
+          if (c.is_name_pending) return false
+          if (c.name.toLowerCase().includes(q)) return true
         if (c.alias?.some((a) => a.toLowerCase().includes(q))) return true
         if (isRedPill && c.streamers?.display_name.toLowerCase().includes(q)) return true
         return false

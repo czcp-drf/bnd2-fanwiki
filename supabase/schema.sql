@@ -17,6 +17,7 @@ create table characters (
   id             uuid primary key default gen_random_uuid(),
   streamer_id    uuid references streamers(id) on delete cascade,
   name           text not null,
+  is_name_pending boolean not null default false,
   alias          text[],
   avatar_url     text,
   job            text,
