@@ -108,8 +108,9 @@ export default function CharactersClientSection({
       const q = search.trim().toLowerCase()
       if (q) {
         result = result.filter((c) => {
-          // 이름·별명 검색에서는 미정 상태 placeholder를 제외합니다.
-          // 빨간약이 켜진 상태의 스트리머명 검색은 미정 캐릭터가 연결되어 있어도 허용합니다.
+          // 검색어가 있을 때는 빨간약 상태와 관계없이 미정 상태 placeholder를 제외합니다.
+          // 실제 이름으로 '미정'을 입력한 캐릭터는 is_name_pending이 false라서 검색됩니다.
+          if (c.is_name_pending) return false
           if (c.name.toLowerCase().includes(q)) return !c.is_name_pending
           if (c.alias?.some((a) => a.toLowerCase().includes(q))) return !c.is_name_pending
           if (isRedPill && c.streamers?.display_name.toLowerCase().includes(q)) return true
