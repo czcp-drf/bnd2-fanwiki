@@ -6,8 +6,12 @@ import { importBbsArticles, type BbsImportRow } from './actions'
 
 const categoryLabels: Record<string, string> = { info: 'info', incident: 'incident', economy: 'economy', column: 'column', etc: 'other', other: 'other' }
 
+function escapeText(value: string) {
+  return value.replace(/[\\`*_{}\[\]()#+.!|>~-]/g, '\\$&')
+}
+
 function inline(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? ''
+  if (node.nodeType === Node.TEXT_NODE) return escapeText(node.textContent ?? '')
   if (!(node instanceof HTMLElement)) return [...node.childNodes].map(inline).join('')
   const content = [...node.childNodes].map(inline).join('')
   const tag = node.tagName.toLowerCase()
@@ -15,6 +19,11 @@ function inline(node: Node): string {
   if (tag === 'em' || tag === 'i') return content.trim() ? `*${content.trim()}*` : ''
   if (['s', 'del', 'strike'].includes(tag)) return content.trim() ? `~~${content.trim()}~~` : ''
   if (tag === 'br') return '\n'
+  if (tag === 'code') return content.trim() ? `\`${content.trim().replace(/`/g, '\\`')}\`` : ''
+  if (tag === 'a') {
+    const href = node.getAttribute('href') ?? ''
+    return /^https?:\/\//i.test(href) ? `[${content.trim() || escapeText(href)}](<${href}>)` : content
+  }
   if (tag === 'img') {
     const src = node.getAttribute('src') ?? ''
     return /^https?:\/\//i.test(src) ? `![기사 이미지](${src})` : ''
@@ -23,13 +32,30 @@ function inline(node: Node): string {
 }
 
 function block(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) return (node.textContent ?? '').replace(/\s+/g, ' ').trim()
+  if (node.nodeType === Node.TEXT_NODE) return escapeText((node.textContent ?? '').replace(/\s+/g, ' ').trim())
   if (!(node instanceof HTMLElement)) return [...node.childNodes].map(block).filter(Boolean).join('\n\n')
   const tag = node.tagName.toLowerCase()
-  if (['script', 'style', 'noscript', 'iframe', 'svg', 'form'].includes(tag)) return ''
+  if (['script', 'style', 'noscript', 'iframe', 'svg', 'form', 'input', 'button'].includes(tag)) return ''
   if (/^h[1-3]$/.test(tag)) {
     const content = inline(node).trim()
     return content ? `${'#'.repeat(Number(tag[1]))} ${content}` : ''
+  }
+  if (tag === 'blockquote') {
+    const quote = [...node.childNodes].map(block).filter(Boolean).join('\n\n')
+    return quote.split('\n').map((line) => line ? `> ${line}` : '>').join('\n')
+  }
+  if (tag === 'hr') return '---'
+  if (tag === 'pre') {
+    const code = node.textContent?.trim() ?? ''
+    return code ? '```\n' + code.replace(/```/g, '\\`\\`\\`') + '\n```' : ''
+  }
+  if (tag === 'table') {
+    const rows = [...node.querySelectorAll('tr')].map((row) => [...row.children].map((cell) => inline(cell).trim()))
+    if (!rows.length) return ''
+    const width = Math.max(...rows.map((row) => row.length))
+    const header = [...rows[0], ...Array(Math.max(0, width - rows[0].length)).fill('')]
+    const separator = header.map(() => '---')
+    return [header, separator, ...rows.slice(1)].map((row) => `| ${[...row, ...Array(Math.max(0, width - row.length)).fill('')].join(' | ')} |`).join('\n')
   }
   if (tag === 'ul' || tag === 'ol') return [...node.children].filter((child) => child.tagName.toLowerCase() === 'li').map((child, index) => `${tag === 'ol' ? `${index + 1}.` : '-'} ${inline(child).trim()}`).join('\n')
   const content = [...node.childNodes].map(block).filter(Boolean).join('\n\n')
