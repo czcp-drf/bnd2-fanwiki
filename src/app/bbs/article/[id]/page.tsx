@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import BbsArticleVisual from '../../components/BbsArticleVisual'
 import BbsArticleContent from '../../components/BbsArticleContent'
@@ -9,7 +9,7 @@ import BbsArticleInteractions from '../../components/BbsArticleInteractions'
 import BbsShareButton from '../../components/BbsShareButton'
 import BbsZoomableImage from '../../components/BbsZoomableImage'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
-import { getPublishedBbsArticle, getPublishedBbsArticleNeighbors, type BbsSortOrder } from '@/lib/bbs/data'
+import { getPublishedBbsArticle, getPublishedBbsArticleNeighbors } from '@/lib/bbs/data'
 import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
 import { getBbsArticleEngagement } from '@/lib/bbs/engagement'
 
@@ -39,7 +39,6 @@ export default async function BbsArticlePage({ params, searchParams }: Props) {
   const { id } = await params
   const query = await searchParams
   const activeDay = BBS_DAYS.some((item) => item.key === query.day) ? query.day as BbsDayKey : undefined
-  const activeSort: BbsSortOrder = query.order === 'oldest' ? 'oldest' : 'latest'
   const reporterIds = query.reporter ? (Array.isArray(query.reporter) ? query.reporter.join(',') : query.reporter).split(',').map((value) => value.trim()).filter(Boolean) : []
   const listParams = new URLSearchParams()
   if (query.category) listParams.set('category', query.category)
@@ -51,7 +50,7 @@ export default async function BbsArticlePage({ params, searchParams }: Props) {
   if (!article) notFound()
   const [engagement, neighbors] = await Promise.all([
     getBbsArticleEngagement(article.id),
-    getPublishedBbsArticleNeighbors(article.id, query.category, reporterIds, activeDay, activeSort),
+    getPublishedBbsArticleNeighbors(article.id, query.category, reporterIds, activeDay, query.order === 'oldest' ? 'oldest' : 'latest'),
   ])
 
   const heroMediaIndex = article.thumbnailUrl ? article.media.findIndex((media) => media.imageUrl === article.thumbnailUrl) : 0
@@ -90,13 +89,13 @@ export default async function BbsArticlePage({ params, searchParams }: Props) {
             </div>
           )}
           <BbsArticleContent content={bodyContent} className="mt-7" />
-          <nav aria-label="기사 이동" className="mt-10 grid grid-cols-2 gap-3 border-t border-[var(--bbs-border)] pt-5">
-            {neighbors.previous ? <Link href={`/bbs/article/${neighbors.previous.id}${listQuery ? `?${listQuery}` : ''}`} className="group min-w-0 rounded-xl border border-[var(--bbs-border)] px-4 py-3 transition-colors hover:border-[#d7432d]/40 hover:bg-[#d7432d]/5"><span className="block text-[11px] text-[var(--bbs-subtle-text)]">이전 기사</span><span className="mt-1 block truncate text-sm font-semibold text-[var(--bbs-text)] group-hover:text-[#d7432d]">{neighbors.previous.title}</span></Link> : <span className="rounded-xl border border-[var(--bbs-border)] px-4 py-3 opacity-40"><span className="block text-[11px] text-[var(--bbs-subtle-text)]">이전 기사</span><span className="mt-1 block text-sm text-[var(--bbs-subtle-text)]">없음</span></span>}
-            {neighbors.next ? <Link href={`/bbs/article/${neighbors.next.id}${listQuery ? `?${listQuery}` : ''}`} className="group min-w-0 rounded-xl border border-[var(--bbs-border)] px-4 py-3 text-right transition-colors hover:border-[#d7432d]/40 hover:bg-[#d7432d]/5"><span className="block text-[11px] text-[var(--bbs-subtle-text)]">다음 기사</span><span className="mt-1 block truncate text-sm font-semibold text-[var(--bbs-text)] group-hover:text-[#d7432d]">{neighbors.next.title}</span></Link> : <span className="rounded-xl border border-[var(--bbs-border)] px-4 py-3 text-right opacity-40"><span className="block text-[11px] text-[var(--bbs-subtle-text)]">다음 기사</span><span className="mt-1 block text-sm text-[var(--bbs-subtle-text)]">없음</span></span>}
-          </nav>
           <BbsArticleInteractions articleId={article.id} initial={engagement} />
         </main>
         </article>
+        <nav aria-label="기사 이동" className="mx-auto mt-4 grid max-w-3xl grid-cols-2 gap-3">
+          {neighbors.previous ? <Link href={`/bbs/article/${neighbors.previous.id}${listQuery ? `?${listQuery}` : ''}`} className="group min-w-0 rounded-xl border border-[var(--bbs-border)] bg-[var(--bbs-surface)] px-4 py-3 transition-colors hover:border-[#d7432d]/40 hover:bg-[#d7432d]/5"><span className="flex items-center gap-1 text-[11px] text-[var(--bbs-subtle-text)]"><ChevronLeft size={15} />이전 기사</span><span className="mt-1 block truncate text-sm font-semibold text-[var(--bbs-text)] group-hover:text-[#d7432d]">{neighbors.previous.title}</span></Link> : <span className="rounded-xl border border-[var(--bbs-border)] bg-[var(--bbs-surface)] px-4 py-3 opacity-40"><span className="flex items-center gap-1 text-[11px] text-[var(--bbs-subtle-text)]"><ChevronLeft size={15} />이전 기사</span><span className="mt-1 block text-sm text-[var(--bbs-subtle-text)]">없음</span></span>}
+          {neighbors.next ? <Link href={`/bbs/article/${neighbors.next.id}${listQuery ? `?${listQuery}` : ''}`} className="group min-w-0 rounded-xl border border-[var(--bbs-border)] bg-[var(--bbs-surface)] px-4 py-3 text-right transition-colors hover:border-[#d7432d]/40 hover:bg-[#d7432d]/5"><span className="flex items-center justify-end gap-1 text-[11px] text-[var(--bbs-subtle-text)]">다음 기사<ChevronRight size={15} /></span><span className="mt-1 block truncate text-sm font-semibold text-[var(--bbs-text)] group-hover:text-[#d7432d]">{neighbors.next.title}</span></Link> : <span className="rounded-xl border border-[var(--bbs-border)] bg-[var(--bbs-surface)] px-4 py-3 text-right opacity-40"><span className="flex items-center justify-end gap-1 text-[11px] text-[var(--bbs-subtle-text)]">다음 기사<ChevronRight size={15} /></span><span className="mt-1 block text-sm text-[var(--bbs-subtle-text)]">없음</span></span>}
+        </nav>
     </div>
   )
 }

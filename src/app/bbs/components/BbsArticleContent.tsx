@@ -15,7 +15,7 @@ const markdownComponents = {
   em: ({ children }: { children?: ReactNode }) => <em className="italic">{children}</em>,
   del: ({ children }: { children?: ReactNode }) => <del className="text-[var(--bbs-subtle-text)]">{children}</del>,
   a: ({ children, href }: { children?: ReactNode; href?: string }) => <a href={href} className="text-[#d7432d] underline underline-offset-2" target="_blank" rel="noreferrer">{children}</a>,
-  img: ({ src, alt }: ImgHTMLAttributes<HTMLImageElement>) => typeof src === 'string' ? <BbsZoomableImage src={src} alt={alt ?? ''} intrinsic previewClassName="max-w-full" sizes="(max-width: 768px) 100vw, 768px" /> : null,
+  img: ({ src, alt }: ImgHTMLAttributes<HTMLImageElement>) => typeof src === 'string' ? <BbsZoomableImage src={src} alt={alt ?? ''} intrinsic previewClassName="max-w-full rounded-xl" sizes="(max-width: 768px) 100vw, 768px" /> : null,
 }
 
 export default function BbsArticleContent({ content, className = '' }: { content: string; className?: string }) {

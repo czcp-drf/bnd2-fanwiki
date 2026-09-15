@@ -242,7 +242,8 @@ const getCachedBbsArticleNeighbors = unstable_cache(
       const day = BBS_DAYS.find((item) => item.key === dayKey)
       if (day) query = query.gte('approved_at', day.start).lte('approved_at', day.end)
     }
-    const { data, error } = await query.order('approved_at', { ascending: sortOrder === 'oldest' }).order('id', { ascending: false })
+    const ascending = sortOrder === 'oldest'
+    const { data, error } = await query.order('approved_at', { ascending }).order('id', { ascending })
     if (error) {
       console.error('BBS article neighbor load failed:', error.message)
       return { previous: null, next: null }
