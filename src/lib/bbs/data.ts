@@ -6,7 +6,6 @@ import { BBS_DAYS, type BbsDayKey } from './days'
 export const BBS_ARTICLE_LIST_TAG = 'bbs-article-list'
 export const BBS_ARTICLE_NEIGHBORS_TAG = 'bbs-article-neighbors'
 export const BBS_ARTICLE_DETAILS_TAG = 'bbs-article-details'
-export const BBS_ARTICLE_COMMENT_COUNTS_TAG = 'bbs-article-comment-counts'
 export function getBbsArticleTag(articleId: string) { return `bbs-article:${articleId}` }
 const BBS_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24 * 30
 export type BbsSortOrder = 'latest' | 'oldest'

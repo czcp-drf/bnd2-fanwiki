@@ -3,7 +3,6 @@
 import { revalidatePath, updateTag } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/auth'
 import {
-  BBS_ARTICLE_COMMENT_COUNTS_TAG,
   BBS_ARTICLE_DETAILS_TAG,
   BBS_ARTICLE_LIST_TAG,
   BBS_ARTICLE_NEIGHBORS_TAG,
@@ -190,7 +189,6 @@ export async function refreshBbsCache(): Promise<ActionResult> {
   revalidateBbsList()
   revalidateBbsNeighbors()
   updateTag(BBS_ARTICLE_DETAILS_TAG)
-  updateTag(BBS_ARTICLE_COMMENT_COUNTS_TAG)
   return { success: true }
 }
 

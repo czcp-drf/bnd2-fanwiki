@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import Select, { type SelectOption } from '@/components/ui/Select'
@@ -41,7 +41,6 @@ export default function CharacterFilters({
   showStatus?: boolean
 }) {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
 
   const status = searchParams.get('status') ?? ''
@@ -54,10 +53,9 @@ export default function CharacterFilters({
       if (value) params.set(key, value)
       else params.delete(key)
       const query = params.toString()
-      const targetPath = pathname.startsWith('/live') ? '/live' : basePath
-      router.push(`${targetPath}${query ? `?${query}` : ''}`, { scroll: false })
+      router.push(`${basePath}${query ? `?${query}` : ''}`, { scroll: false })
     },
-    [basePath, pathname, router, searchParams]
+    [basePath, router, searchParams]
   )
 
   // 카테고리별 그룹핑

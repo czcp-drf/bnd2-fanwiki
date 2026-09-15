@@ -44,7 +44,6 @@ GTA RP 서버 "봉누도2"의 팬 위키 사이트.
 src/
 ├── app/                        # Next.js App Router 페이지
 │   ├── page.tsx                # 홈 (통계, 최근 사건, 빠른 링크) [ISR 60s]
-│   ├── live/page.tsx           # 라이브 현황 (현재 LIVE_ENABLED=false로 안내만 표시) [ISR 60s]
 │   ├── streamers/              # 스트리머 목록 / 상세 [ISR 60s]
 │   ├── characters/             # 캐릭터 목록 / 상세 [ISR 300s]
 │   ├── organizations/          # 조직 목록 / 상세 [ISR 300s]
@@ -66,7 +65,6 @@ src/
 │   ├── guide/                  # 입문 가이드
 │   ├── report/                 # 제보 폼
 │   ├── api/
-│   │   └── live-status/route.ts  # Chzzk 라이브 상태 API (LIVE_ENABLED=false 시 503)
 │   └── admin/                  # 관리자 페이지 (로그인 필요)
 │       ├── page.tsx            # 대시보드 (통계, 미정 캐릭터·미처리 제보 바로가기)
 │       ├── layout.tsx          # 어드민 사이드바 레이아웃
@@ -119,8 +117,6 @@ src/
 │   │   ├── EventTypeFilter.tsx
 │   │   ├── ClipLabel.tsx       # 클립 라벨 스트리머명↔캐릭터명 치환
 │   │   └── ClipPlayer.tsx      # 클립 인라인 플레이어 (Chzzk/YouTube iframe, 플레이리스트, 툴팁)
-│   ├── live/
-│   │   └── LiveDataError.tsx   # 라이브 데이터 로드 실패 UI
 │   └── report/
 │       ├── ReportForm.tsx          # 제보 폼 (지도 핀 위치 첨부 포함)
 │       └── MapPinPicker.tsx        # Leaflet 지도 핀 찍기 컴포넌트 (SSR 제외, dynamic import)
@@ -132,12 +128,7 @@ src/
 │   ├── dropdown-keyboard.ts
 │   ├── map/
 │   │   └── constants.ts            # MAP_TILE_URLS, GTA_CRS_CONFIG, MAP_MAX_BOUNDS, CATEGORY_COLOR/LABEL 등
-│   ├── live/
-│   │   ├── config.ts               # LIVE_ENABLED 플래그 (현재 false)
-│   │   ├── status.ts               # LiveStatus 타입, checkChannelLive()
-│   │   └── useLiveStatus.ts        # 라이브 상태 훅 (60초 자동갱신)
 │   ├── data/
-│   │   ├── live-streamers.ts        # getLiveStreamers() 서버사이드 데이터
 │   │   └── organizations.ts         # getOrganizationFilterOptions()
 │   ├── admin/
 │   │   └── auth.ts                  # requireAdmin() (쿠키 검증, 미인증 시 리다이렉트)
@@ -165,18 +156,6 @@ src/
 - `StreamerReveal`: RedPill OFF 시 자식 숨김
 - `StreamerBlur`: RedPill OFF 시 자식 블러 처리 (숨기지는 않음)
 - 헤더의 빨간약/파란약 토글 버튼으로 전환 (compact 모드는 모바일 Sheet 내)
-
-### 라이브 상태
-
-- 트래픽 관리를 위해 현재 임시 중단: `src/lib/live/config.ts`의 `LIVE_ENABLED = false`
-- 홈 라이브 섹션과 메뉴 항목은 LIVE_ENABLED 에 따라 조건부 렌더링
-- `/live`는 LIVE_ENABLED=false 시 안내 메시지만 표시
-- `/api/live-status`는 LIVE_ENABLED=false 시 503 반환 (외부 조회 차단)
-- 재개 시 `LIVE_ENABLED = true`로 변경 후 재배포
-- `/api/live-status?ids=...` — Chzzk API 호출 (v3.3 → v2 폴백), `Cache-Control: s-maxage=30, stale-while-revalidate=60`
-- `live: true` = 방송 중, `live: false` = 오프라인, `live: null` = 확인 불가
-- `useLiveStatus` 훅 — 60초 자동갱신, 탭 숨김 시 일시정지, retry 지원
-- 채널 ID 형식: 32자 소문자 hex
 
 ### 어드민 인증
 
@@ -245,7 +224,7 @@ src/
 | 페이지                                           | revalidate |
 | --------------------------------------------- | ---------- |
 | `/`                                           | 60s        |
-| `/live`, `/streamers`, `/streamers/[id]`      | 60s        |
+| `/streamers`, `/streamers/[id]`              | 60s        |
 | `/characters`, `/characters/[id]`             | 300s       |
 | `/organizations`, `/organizations/[id]`       | 300s       |
 | `/events`, `/events/[id]`, `/events/timeline` | 300s       |

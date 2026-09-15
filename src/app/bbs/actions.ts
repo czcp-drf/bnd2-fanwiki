@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
-import { getBbsArticleComments, getBbsArticleEngagement, type BbsArticleReaction } from '@/lib/bbs/engagement'
+import { getBbsArticleEngagement, type BbsArticleReaction } from '@/lib/bbs/engagement'
 import { getBbsReactionMode } from '@/lib/bbs/reaction-mode'
 import { getPublishedBbsArticlesPage, type BbsSortOrder } from '@/lib/bbs/data'
 import type { BbsDayKey } from '@/lib/bbs/days'
@@ -17,10 +17,6 @@ export async function getBbsArticlesPageAction(category: string | undefined, rep
 
 export async function getBbsArticleEngagementAction(articleId: string) {
   return getBbsArticleEngagement(articleId)
-}
-
-export async function getBbsArticleCommentsAction(articleId: string) {
-  return getBbsArticleComments(articleId)
 }
 
 export async function toggleBbsArticleReaction(articleId: string, reaction: BbsArticleReaction) {
