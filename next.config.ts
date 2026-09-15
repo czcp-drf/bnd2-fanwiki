@@ -31,10 +31,10 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/bbs/:path*',
+        source: '/bbs/article/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600' },
-          { key: 'Vercel-CDN-Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' },
+          { key: 'Cache-Control', value: 'public, max-age=300, s-maxage=2592000, stale-while-revalidate=86400' },
+          { key: 'Vercel-CDN-Cache-Control', value: 'public, s-maxage=2592000, stale-while-revalidate=86400' },
         ],
       },
     ]

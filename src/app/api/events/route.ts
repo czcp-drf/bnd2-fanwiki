@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const supabase = createPublicClient()
   let query = supabase
     .from('events')
-    .select('*', { count: 'exact' })
+    .select('id, title, summary, content, type, thumbnail_url, occurred_at, is_published, location_x, location_y, created_at, updated_at', { count: 'exact' })
     .eq('is_published', true)
     .order('occurred_at', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)

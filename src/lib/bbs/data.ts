@@ -4,7 +4,7 @@ import { getBbsCategoryKey, getBbsCategoryLabel, type BbsArticle, type BbsArticl
 import { BBS_DAYS, type BbsDayKey } from './days'
 
 export const BBS_ARTICLES_TAG = 'bbs-articles'
-const BBS_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24
+const BBS_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24 * 30
 export type BbsSortOrder = 'latest' | 'oldest'
 
 export { BBS_DAYS, type BbsDayKey } from './days'
