@@ -52,21 +52,67 @@ async function getBbsReactions(supabase: ReturnType<typeof createAdminClient>, a
   return { data: [...firstPage.data, ...pages.flatMap((page) => page.data)], error: null, count: total, status: firstPage.status, statusText: firstPage.statusText }
 }
 
-async function getBbsAdminData({ page, pageSize, search, category, status, reporterId, sort }: { page: number; pageSize: number; search: string; category: string; status: string; reporterId: string; sort: string }) {
+async function getBbsAdminData({ page, pageSize, search, category, status, reporterId, reactionFilter, sort }: { page: number; pageSize: number; search: string; category: string; status: string; reporterId: string; reactionFilter: string; sort: string }) {
   const supabase = createAdminClient()
   const safePageSize = [10, 20, 30, 40, 50].includes(pageSize) ? pageSize : 50
   const safePage = Math.max(1, page)
-  let articleQuery = supabase.from('bbs_articles').select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id', { count: 'exact' })
-  if (category !== 'all') articleQuery = articleQuery.eq('category', category)
-  if (status === 'published') articleQuery = articleQuery.eq('is_published', true)
-  if (status === 'draft') articleQuery = articleQuery.eq('is_published', false)
-  if (reporterId !== 'all') articleQuery = articleQuery.eq('reporter_character_id', reporterId)
   const normalizedSearch = search.trim().replace(/[%,]/g, ' ')
-  if (normalizedSearch) articleQuery = articleQuery.or(`title.ilike.%${normalizedSearch}%,content.ilike.%${normalizedSearch}%`)
-  if (sort === 'title') articleQuery = articleQuery.order('title', { ascending: true })
-  else articleQuery = articleQuery.order('approved_at', { ascending: sort === 'oldest', nullsFirst: false }).order('created_at', { ascending: sort === 'oldest' })
-  const { data: articles, error: articleError, count: articleCount } = await articleQuery.range((safePage - 1) * safePageSize, safePage * safePageSize - 1)
-  const articleIds = ((articles ?? []) as ArticleRow[]).map((article) => article.id)
+  const reactionSort = ['likes-desc', 'likes-asc', 'dislikes-desc', 'dislikes-asc'].includes(sort)
+  let articles: ArticleRow[] = []
+  let articleCount = 0
+  let articleError: { message: string } | null = null
+
+  if (reactionSort) {
+    let idQuery = supabase.from('bbs_articles').select('id', { count: 'exact' })
+    if (category !== 'all') idQuery = idQuery.eq('category', category)
+    if (status === 'published') idQuery = idQuery.eq('is_published', true)
+    if (status === 'draft') idQuery = idQuery.eq('is_published', false)
+    if (reporterId !== 'all') idQuery = idQuery.eq('reporter_character_id', reporterId)
+    if (normalizedSearch) idQuery = idQuery.or(`title.ilike.%${normalizedSearch}%,content.ilike.%${normalizedSearch}%`)
+    const { data: idRows, error: idError } = await idQuery.range(0, 9999)
+    articleError = idError
+    const allArticleIds = ((idRows ?? []) as Array<{ id: string }>).map((article) => article.id)
+    const allReactions = await getBbsReactions(supabase, allArticleIds)
+    const counts = new Map<string, { like: number; dislike: number }>()
+    for (const reaction of (allReactions.data ?? []) as ReactionRow[]) {
+      const current = counts.get(reaction.article_id) ?? { like: 0, dislike: 0 }
+      current[reaction.reaction] += 1
+      counts.set(reaction.article_id, current)
+    }
+    const filteredIds = allArticleIds.filter((id) => {
+      const count = counts.get(id) ?? { like: 0, dislike: 0 }
+      return reactionFilter === 'liked' ? count.like > 0 : reactionFilter === 'disliked' ? count.dislike > 0 : reactionFilter === 'none' ? count.like === 0 && count.dislike === 0 : true
+    })
+    filteredIds.sort((a, b) => {
+      const aCount = counts.get(a) ?? { like: 0, dislike: 0 }
+      const bCount = counts.get(b) ?? { like: 0, dislike: 0 }
+      const key = sort.startsWith('likes') ? 'like' : 'dislike'
+      const difference = bCount[key] - aCount[key]
+      return (sort.endsWith('asc') ? -difference : difference) || a.localeCompare(b)
+    })
+    articleCount = filteredIds.length
+    const pageIds = filteredIds.slice((safePage - 1) * safePageSize, safePage * safePageSize)
+    if (pageIds.length) {
+      const result = await supabase.from('bbs_articles').select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id').in('id', pageIds)
+      articleError = result.error
+      const articleById = new Map(((result.data ?? []) as ArticleRow[]).map((article) => [article.id, article]))
+      articles = pageIds.map((id) => articleById.get(id)).filter((article): article is ArticleRow => Boolean(article))
+    }
+  } else {
+    let articleQuery = supabase.from('bbs_articles').select('id, title, category, summary, content, thumbnail_url, approved_at, is_published, reporter_character_id', { count: 'exact' })
+    if (category !== 'all') articleQuery = articleQuery.eq('category', category)
+    if (status === 'published') articleQuery = articleQuery.eq('is_published', true)
+    if (status === 'draft') articleQuery = articleQuery.eq('is_published', false)
+    if (reporterId !== 'all') articleQuery = articleQuery.eq('reporter_character_id', reporterId)
+    if (normalizedSearch) articleQuery = articleQuery.or(`title.ilike.%${normalizedSearch}%,content.ilike.%${normalizedSearch}%`)
+    if (sort === 'title') articleQuery = articleQuery.order('title', { ascending: true })
+    else articleQuery = articleQuery.order('approved_at', { ascending: sort === 'oldest', nullsFirst: false }).order('created_at', { ascending: sort === 'oldest' })
+    const result = await articleQuery.range((safePage - 1) * safePageSize, safePage * safePageSize - 1)
+    articles = (result.data ?? []) as ArticleRow[]
+    articleError = result.error
+    articleCount = result.count ?? 0
+  }
+  const articleIds = articles.map((article) => article.id)
   const [{ data: media, error: mediaError }, { data: characters, error: characterError }, { data: journalistOrganizations, error: organizationError }, { data: comments, error: commentError }, { data: reactions, error: reactionError }] = await Promise.all([
     articleIds.length ? supabase.from('bbs_article_media').select('id, article_id, image_url, sort_order').in('article_id', articleIds).order('sort_order') : Promise.resolve({ data: [], error: null }),
     supabase.from('characters').select('id, name, avatar_url, streamers ( display_name, profile_image_url )').order('name'),
