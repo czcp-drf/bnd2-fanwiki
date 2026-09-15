@@ -4,7 +4,7 @@
 
 ## 변경 기록
 
-- Vercel BBS 재검증 설정 보정 (`main`, 커밋·원격 푸시 예정): Next.js 세그먼트 설정에서 계산식으로 지정한 30일 재검증 값을 정적 숫자 리터럴(`2592000`)로 변경해 Vercel 프로덕션 빌드 오류를 해결했습니다. TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+- Vercel BBS 재검증 설정 보정 (`main`, `b0f9756`, 원격 푸시 완료): Next.js 세그먼트 설정에서 계산식으로 지정한 30일 재검증 값을 정적 숫자 리터럴(`2592000`)로 변경해 Vercel 프로덕션 빌드 오류를 해결했습니다. TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격 `deploy/main` 푸시를 완료했습니다.
 
 - BBS 기사 상세 30일 캐시 및 사건 API 응답 축소 (`main`, `a4f81a3`, 원격 푸시 완료): BBS 기사 상세 페이지·데이터 캐시와 상세 CDN 응답의 재검증 기간을 30일로 확대했습니다. 관리자 변경 시 캐시 무효화는 유지하며, 사건 목록 페이지와 API는 필요한 필드만 조회해 Origin Transfer를 줄였습니다. TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격 `deploy/main` 푸시를 완료했습니다.
 
