@@ -40,6 +40,8 @@ function block(node: Node): string {
     const content = inline(node).trim()
     return content ? `${'#'.repeat(Number(tag[1]))} ${content}` : ''
   }
+  if (['strong', 'b', 'em', 'i', 's', 'del', 'strike', 'a', 'code', 'br'].includes(tag)) return inline(node).trim()
+  if (tag === 'p') return inline(node).trim()
   if (tag === 'blockquote') {
     const quote = [...node.childNodes].map(block).filter(Boolean).join('\n\n')
     return quote.split('\n').map((line) => line ? `> ${line}` : '>').join('\n')
