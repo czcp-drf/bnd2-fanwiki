@@ -4,7 +4,7 @@
 
 ## 변경 기록
 
-- 스트리머 목록 미정 검색 보정 (`main`, 커밋·푸시 진행): `/streamers` 페이지의 빨간약 ON 상태 캐릭터 표시와 검색이 `is_name_pending`을 확인하도록 수정해 이름을 정하지 않은 캐릭터가 `미정` 검색 결과에 포함되지 않도록 했습니다. 실제 이름으로 입력한 `미정`은 계속 검색할 수 있습니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`이며 원격 `deploy/main` 푸시 결과를 확인해 기록할 예정입니다.
+- 스트리머 목록 미정 검색 보정 (`main`, `59349f1`, 원격 `deploy/main` 푸시 완료): `/streamers` 페이지의 빨간약 ON 상태 캐릭터 표시와 검색이 `is_name_pending`을 확인하도록 수정해 이름을 정하지 않은 캐릭터가 `미정` 검색 결과에 포함되지 않도록 했습니다. 실제 이름으로 입력한 `미정`은 계속 검색할 수 있습니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`이며 원격 `deploy/main` 푸시를 완료했습니다.
 
 - 스트리머 검색 미정 필터 보정 (`main`, `2f345f8`, 원격 `deploy/main` 푸시 완료): 빨간약 ON 상태의 스트리머 검색에서도 검색어가 있을 때 `is_name_pending` 캐릭터를 항상 제외하도록 수정했습니다. 실제 이름으로 입력한 `미정`과 `신미정`은 계속 검색할 수 있습니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`이며 원격 `deploy/main` 푸시를 완료했습니다.
 
