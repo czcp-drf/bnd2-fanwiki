@@ -32,13 +32,17 @@ type Event = {
   created_at: string
 }
 
-export default function AdminEventsClient({ events, total, totalPages, currentPage, pageSize: initialPageSize, search: initialSearch, type: initialType }: { events: Event[]; total: number; totalPages: number; currentPage: number; pageSize: number; search: string; type: string }) {
+export default function AdminEventsClient({ events, total, totalPages, currentPage, pageSize: initialPageSize, search: initialSearch, type: initialType, published: initialPublished, startDate: initialStartDate, endDate: initialEndDate, occurredOrder: initialOccurredOrder }: { events: Event[]; total: number; totalPages: number; currentPage: number; pageSize: number; search: string; type: string; published: string; startDate: string; endDate: string; occurredOrder: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [search, setSearch] = useState(initialSearch)
   const [pageSize, setPageSize] = useState(String(initialPageSize))
   const [type, setType] = useState(initialType)
+  const [published, setPublished] = useState(initialPublished)
+  const [startDate, setStartDate] = useState(initialStartDate)
+  const [endDate, setEndDate] = useState(initialEndDate)
+  const [occurredOrder, setOccurredOrder] = useState(initialOccurredOrder)
   const filtered = events
   function updateQuery(changes: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -74,6 +78,21 @@ export default function AdminEventsClient({ events, total, totalPages, currentPa
           <option value="">전체 유형</option>
           {typeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
+        <select value={published} onChange={(e) => { setPublished(e.target.value); updateQuery({ published: e.target.value }) }} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-2 text-xs text-zinc-300" aria-label="공개 여부 필터">
+          <option value="">전체 공개 여부</option>
+          <option value="published">공개</option>
+          <option value="unpublished">비공개</option>
+        </select>
+        <select value={occurredOrder} onChange={(e) => { setOccurredOrder(e.target.value); updateQuery({ occurredOrder: e.target.value }) }} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-2 text-xs text-zinc-300" aria-label="발생일 정렬">
+          <option value="latest">발생일 최신순</option>
+          <option value="oldest">발생일 오래된순</option>
+        </select>
+        <label className="flex items-center gap-1.5 text-xs text-zinc-500">
+          발생일
+          <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); updateQuery({ startDate: e.target.value }) }} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-2 text-xs text-zinc-300 [color-scheme:dark]" aria-label="발생일 시작" />
+          <span>~</span>
+          <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); updateQuery({ endDate: e.target.value }) }} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-2 text-xs text-zinc-300 [color-scheme:dark]" aria-label="발생일 종료" />
+        </label>
         <span className="text-xs text-zinc-600">
           {filtered.length} / {total}건
         </span>
@@ -96,7 +115,7 @@ export default function AdminEventsClient({ events, total, totalPages, currentPa
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-12 text-center text-sm text-zinc-600">
-                  {initialSearch || initialType ? '조건에 맞는 사건이 없습니다.' : '등록된 사건이 없습니다.'}
+                  {initialSearch || initialType || initialPublished || initialStartDate || initialEndDate ? '조건에 맞는 사건이 없습니다.' : '등록된 사건이 없습니다.'}
                 </td>
               </tr>
             ) : (
