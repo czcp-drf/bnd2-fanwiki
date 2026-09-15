@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { MessageCircle, ThumbsUp } from 'lucide-react'
-import { toggleBbsArticleReaction } from '../actions'
+import { getBbsArticleEngagementAction, toggleBbsArticleReaction } from '../actions'
 import type { BbsArticleEngagement, BbsArticleReaction } from '@/lib/bbs/engagement'
 import BbsShareButton from './BbsShareButton'
 
@@ -35,25 +35,28 @@ function reactionButtonClass(active: boolean, tone: 'like' | 'dislike') {
   return 'text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-muted)] hover:text-[var(--bbs-text)]'
 }
 
-export default function BbsArticleInteractions({ articleId, initial }: { articleId: string; initial: BbsArticleEngagement }) {
-  const [engagement, setEngagement] = useState(initial)
-  const [localReaction, setLocalReaction] = useState<BbsArticleReaction | null>(initial.reactionMode === 'local' ? null : initial.viewerReaction)
+export default function BbsArticleInteractions({ articleId }: { articleId: string }) {
+  const [engagement, setEngagement] = useState<BbsArticleEngagement | null>(null)
+  const [localReaction, setLocalReaction] = useState<BbsArticleReaction | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reactionCooldownUntil, setReactionCooldownUntil] = useState(0)
   const [rateLimitTooltip, setRateLimitTooltip] = useState<BbsArticleReaction | null>(null)
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    if (initial.reactionMode !== 'local' || typeof window === 'undefined') return
-    const timer = window.setTimeout(() => {
-      const storedReaction = readLocalReaction(articleId)
-      if (storedReaction) setLocalReaction(storedReaction)
-    }, 0)
-    return () => window.clearTimeout(timer)
-  }, [articleId, initial.reactionMode])
+    let active = true
+    startTransition(async () => {
+      const result = await getBbsArticleEngagementAction(articleId)
+      if (!active) return
+      setEngagement(result)
+      if (result.reactionMode === 'local') setLocalReaction(readLocalReaction(articleId))
+      else setLocalReaction(result.viewerReaction)
+    })
+    return () => { active = false }
+  }, [articleId])
 
   const handleReaction = (reaction: BbsArticleReaction) => {
-    if (isPending) return
+    if (isPending || !engagement) return
     if (engagement.reactionMode === 'server' && reactionCooldownUntil > Date.now()) {
       setRateLimitTooltip(reaction)
       window.setTimeout(() => setRateLimitTooltip(null), 1800)
@@ -95,9 +98,9 @@ export default function BbsArticleInteractions({ articleId, initial }: { article
       <div className="mt-8 border-t border-[var(--bbs-border)] pt-4">
         <div className="flex items-center justify-end gap-1 text-sm">
           <div className="relative">
-            <button type="button" onClick={() => handleReaction('like')} disabled={isPending} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${reactionButtonClass((engagement.reactionMode === 'local' ? localReaction : engagement.viewerReaction) === 'like', 'like')}`} aria-label="기사 좋아요">
-              <ThumbsUp size={18} fill={(engagement.reactionMode === 'local' ? localReaction : engagement.viewerReaction) === 'like' ? 'currentColor' : 'none'} />
-              <span>{engagement.reactionMode === 'local' ? (localReaction === 'like' ? 1 : 0) : engagement.likeCount}</span>
+            <button type="button" onClick={() => handleReaction('like')} disabled={isPending || !engagement} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${reactionButtonClass((engagement?.reactionMode === 'local' ? localReaction : engagement?.viewerReaction) === 'like', 'like')}`} aria-label="기사 좋아요">
+              <ThumbsUp size={18} fill={(engagement?.reactionMode === 'local' ? localReaction : engagement?.viewerReaction) === 'like' ? 'currentColor' : 'none'} />
+              <span>{engagement?.reactionMode === 'local' ? (localReaction === 'like' ? 1 : 0) : engagement?.likeCount ?? 0}</span>
             </button>
             {rateLimitTooltip === 'like' && <span role="status" className="pointer-events-none absolute bottom-full right-0 z-10 mb-2 whitespace-nowrap rounded-lg bg-[var(--bbs-text)] px-3 py-2 text-xs text-[var(--bbs-surface)] shadow-lg">잠시 후 다시 눌러주세요.</span>}
           </div>

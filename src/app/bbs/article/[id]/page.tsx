@@ -11,7 +11,6 @@ import BbsZoomableImage from '../../components/BbsZoomableImage'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
 import { getPublishedBbsArticle, getPublishedBbsArticleNeighbors } from '@/lib/bbs/data'
 import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
-import { getBbsArticleEngagement } from '@/lib/bbs/engagement'
 
 export const revalidate = 2592000
 
@@ -48,10 +47,7 @@ export default async function BbsArticlePage({ params, searchParams }: Props) {
   const listQuery = listParams.toString()
   const article = await getPublishedBbsArticle(id)
   if (!article) notFound()
-  const [engagement, neighbors] = await Promise.all([
-    getBbsArticleEngagement(article.id),
-    getPublishedBbsArticleNeighbors(article.id, query.category, reporterIds, activeDay, query.order === 'oldest' ? 'oldest' : 'latest'),
-  ])
+  const neighbors = await getPublishedBbsArticleNeighbors(article.id, query.category, reporterIds, activeDay, query.order === 'oldest' ? 'oldest' : 'latest')
 
   const heroMediaIndex = article.thumbnailUrl ? article.media.findIndex((media) => media.imageUrl === article.thumbnailUrl) : 0
   const additionalMedia = article.media.filter((_, index) => index !== heroMediaIndex)
@@ -89,7 +85,7 @@ export default async function BbsArticlePage({ params, searchParams }: Props) {
             </div>
           )}
           <BbsArticleContent content={bodyContent} className="mt-7" />
-          <BbsArticleInteractions articleId={article.id} initial={engagement} />
+          <BbsArticleInteractions articleId={article.id} />
         </main>
         </article>
         <nav aria-label="기사 이동" className="mx-auto mt-4 grid max-w-3xl grid-cols-2 gap-3">
