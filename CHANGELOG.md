@@ -4,7 +4,7 @@
 
 ## 변경 기록
 
-- 어드민 사건 유형 필터 (`main`, 커밋·푸시 진행): 사건 관리 목록에 유형 선택 필터를 추가하고, 선택한 유형의 전체 결과를 기준으로 건수·페이지네이션이 동작하도록 수정했습니다. 검색·페이지 크기 변경 시에도 유형 조건을 URL에 유지합니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`이며 원격 `deploy/main` 푸시 결과를 확인해 기록할 예정입니다.
+- 어드민 사건 유형 필터 (`main`, `0e52785`, 원격 `deploy/main` 푸시 완료): 사건 관리 목록에 유형 선택 필터를 추가하고, 선택한 유형의 전체 결과를 기준으로 건수·페이지네이션이 동작하도록 수정했습니다. 검색·페이지 크기 변경 시에도 유형 조건을 URL에 유지합니다. 변경 파일 ESLint·TypeScript·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`이며 원격 `deploy/main` 푸시를 완료했습니다.
 
 - 사건 아카이브 TanStack Query 전환 (`main`, 원격 `deploy/main` 푸시 완료): 사건 목록을 필터별 `useInfiniteQuery`로 관리하고, 기존 API의 offset 기반 무한 스크롤과 상세 진입 후 스크롤 위치 복원을 Query 캐시와 연결했습니다. 사건 전용 QueryProvider와 최대 10페이지 캐시 제한을 추가했습니다. 관련 ESLint·프로덕션 빌드·`git diff --check`를 통과했습니다.
 
