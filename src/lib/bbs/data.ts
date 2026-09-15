@@ -202,6 +202,31 @@ export async function getPublishedBbsArticlesPage(category: string | undefined, 
   return { articles: result.articles, page: actualPage, pageSize: safePageSize, total: result.total, totalPages }
 }
 
+const getCachedAvailableBbsDayKeys = unstable_cache(
+  async () => {
+    const supabase = createPublicClient()
+    const { data, error } = await supabase
+      .from('bbs_articles')
+      .select('approved_at')
+      .eq('is_published', true)
+      .not('approved_at', 'is', null)
+
+    if (error) {
+      console.error('BBS available day load failed:', error.message)
+      return []
+    }
+
+    const approvedTimes = ((data ?? []) as Array<{ approved_at: string | null }>).map((article) => article.approved_at).filter((value): value is string => Boolean(value))
+    return BBS_DAYS.filter((day) => approvedTimes.some((approvedAt) => approvedAt >= day.start && approvedAt <= day.end)).map((day) => day.key)
+  },
+  ['bbs-available-days'],
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
+)
+
+export async function getAvailableBbsDayKeys() {
+  return getCachedAvailableBbsDayKeys()
+}
+
 const getCachedBbsArticleNeighbors = unstable_cache(
   async (articleId: string, category: string | undefined, reporterIdsKey: string, dayKey: BbsDayKey | undefined, sortOrder: BbsSortOrder) => {
     const supabase = createPublicClient()

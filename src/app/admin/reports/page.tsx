@@ -20,18 +20,24 @@ const typeOptions = [
   { value: 'other', label: '기타' },
 ]
 
-async function getReports(status: string, type: string) {
+async function getReports(status: string, type: string, search: string, page: number, pageSize: number) {
   const supabase = createAdminClient()
+  const safePageSize = [10, 20, 30, 40, 50].includes(pageSize) ? pageSize : 50
   let query = supabase
     .from('reports')
-    .select('*')
-    .order('created_at', { ascending: false })
+    .select('*', { count: 'exact' })
 
   if (status) query = query.eq('status', status)
   if (type) query = query.eq('type', type)
+  const term = search.trim().replace(/[%_,()]/g, ' ')
+  if (term) query = query.or(`title.ilike.%${term}%,content.ilike.%${term}%,contact.ilike.%${term}%`)
 
-  const { data } = await query
-  return (data ?? []) as Report[]
+  const safePage = Math.max(1, page)
+  const { data, count } = await query
+    .order('created_at', { ascending: false })
+    .range((safePage - 1) * safePageSize, safePage * safePageSize - 1)
+  const total = count ?? 0
+  return { reports: (data ?? []) as Report[], total, pageSize: safePageSize, totalPages: Math.max(1, Math.ceil(total / safePageSize)) }
 }
 
 function buildHref(status: string, type: string) {
@@ -42,19 +48,26 @@ function buildHref(status: string, type: string) {
   return qs ? `/admin/reports?${qs}` : '/admin/reports'
 }
 
-type Props = { searchParams: Promise<{ status?: string; type?: string }> }
+type Props = { searchParams: Promise<{ status?: string; type?: string; search?: string; page?: string; pageSize?: string }> }
 
 export default async function AdminReportsPage({ searchParams }: Props) {
   const params = await searchParams
   const status = params.status === undefined ? 'pending' : params.status === 'all' ? '' : params.status
   const type = params.type ?? ''
-  const reports = await getReports(status, type)
+  const search = params.search ?? ''
+  const page = Number.parseInt(params.page ?? '', 10) || 1
+  const pageSize = Number.parseInt(params.pageSize ?? '', 10) || 50
+  const data = await getReports(status, type, search, page, pageSize)
+  const currentPage = Math.min(page, data.totalPages)
 
   return (
     <div className="p-8 space-y-6">
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-4">
-          <h1 className="text-xl font-black text-white">제보 관리</h1>
+          <div>
+            <h1 className="text-xl font-black text-white">제보 관리</h1>
+            <p className="mt-0.5 text-sm text-zinc-500">총 {data.total}건 · {currentPage}/{data.totalPages}페이지</p>
+          </div>
           <CacheRefreshButton scope="reports" />
         </div>
 
@@ -97,7 +110,7 @@ export default async function AdminReportsPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <AdminReportsClient reports={reports} />
+      <AdminReportsClient reports={data.reports} total={data.total} totalPages={data.totalPages} currentPage={currentPage} pageSize={data.pageSize} search={search} />
     </div>
   )
 }

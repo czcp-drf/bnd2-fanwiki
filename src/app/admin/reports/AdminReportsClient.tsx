@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Check, Copy, Search, X } from 'lucide-react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import ReportStatusSelect from './ReportStatusSelect'
 import BlockIpButton from './BlockIpButton'
 import ReportCoordAction from './ReportCoordAction'
@@ -76,19 +77,19 @@ function ReportTemplateButton({ report }: { report: Report }) {
   )
 }
 
-export default function AdminReportsClient({ reports }: { reports: Report[] }) {
-  const [search, setSearch] = useState('')
+export default function AdminReportsClient({ reports, total, totalPages, currentPage, pageSize: initialPageSize, search: initialSearch }: { reports: Report[]; total: number; totalPages: number; currentPage: number; pageSize: number; search: string }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [search, setSearch] = useState(initialSearch)
+  const [pageSize, setPageSize] = useState(String(initialPageSize))
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return reports
-    return reports.filter(
-      (r) =>
-        r.title.toLowerCase().includes(q) ||
-        r.content.toLowerCase().includes(q) ||
-        r.contact?.toLowerCase().includes(q)
-    )
-  }, [reports, search])
+  function updateQuery(changes: Record<string, string>) {
+    const params = new URLSearchParams(searchParams.toString())
+    for (const [key, value] of Object.entries(changes)) value ? params.set(key, value) : params.delete(key)
+    params.delete('page')
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+  }
 
   return (
     <div className="space-y-4">
@@ -110,17 +111,18 @@ export default function AdminReportsClient({ reports }: { reports: Report[] }) {
           )}
         </div>
         <span className="text-xs text-zinc-600">
-          {search ? `${filtered.length} / ${reports.length}건` : `${reports.length}건`}
+          {reports.length} / {total}건
         </span>
+        <select value={pageSize} onChange={(e) => { setPageSize(e.target.value); updateQuery({ pageSize: e.target.value }) }} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-2 text-xs text-zinc-300"><option value="10">10개씩</option><option value="20">20개씩</option><option value="30">30개씩</option><option value="40">40개씩</option><option value="50">50개씩</option></select>
       </div>
 
-      {filtered.length === 0 ? (
+      {reports.length === 0 ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 py-20 text-center text-sm text-zinc-600">
-          {search ? '검색 결과가 없습니다.' : '해당하는 제보가 없습니다.'}
+          {initialSearch ? '검색 결과가 없습니다.' : '해당하는 제보가 없습니다.'}
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((r) => (
+          {reports.map((r) => (
             <div key={r.id} className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 space-y-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 min-w-0">
@@ -170,6 +172,7 @@ export default function AdminReportsClient({ reports }: { reports: Report[] }) {
           ))}
         </div>
       )}
+      {totalPages > 1 && <nav className="flex items-center justify-center gap-2 pt-2" aria-label="제보 페이지 이동"><button type="button" onClick={() => updateQuery({ page: String(currentPage - 1) })} disabled={currentPage <= 1} className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 disabled:opacity-40">이전</button><span className="text-xs text-zinc-500">{currentPage} / {totalPages}</span><button type="button" onClick={() => updateQuery({ page: String(currentPage + 1) })} disabled={currentPage >= totalPages} className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 disabled:opacity-40">다음</button></nav>}
     </div>
   )
 }

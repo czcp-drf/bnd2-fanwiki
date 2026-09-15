@@ -7,6 +7,7 @@ import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/c
 import type { Event } from '@/types/database'
 import AppImage from '@/components/ui/AppImage'
 import { BBS_ARTICLES_TAG, getPublishedBbsArticlesPage } from '@/lib/bbs/data'
+import BbsHomeLink from '@/components/bbs/BbsHomeLink'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
 import { Archive, Map, Newspaper, Users } from 'lucide-react'
 
@@ -179,9 +180,9 @@ export default async function HomePage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e14b32]">Bongnudo Broadcasting System</p>
                 <h2 className="mt-1 text-xl font-bold text-[var(--site-text)]">BBS 최신 기사</h2>
               </div>
-              <Link href="/bbs" className="text-sm text-[var(--site-muted)] transition-colors hover:text-[#e14b32]">
+              <BbsHomeLink className="text-sm text-[var(--site-muted)] transition-colors hover:text-[#e14b32]">
                 전체 보기 →
-              </Link>
+              </BbsHomeLink>
             </div>
 
             {bbsArticles.length === 0 ? (
