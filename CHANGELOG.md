@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- BBS 어드민 기사 페이지네이션 및 조회 단위 선택 (`main`, 커밋·원격 푸시 예정): 관리자 기사 목록을 서버 페이지네이션으로 전환해 현재 페이지의 기사·첨부 이미지·댓글·반응만 조회하도록 했습니다. 페이지당 기사 수를 10·20·30·40·50개 중 선택할 수 있으며, 검색·공개 상태·카테고리·담당기자·정렬·페이지 정보를 URL에 유지합니다. 좋아요·싫어요가 1,000건을 넘어도 현재 페이지 기준으로 전체 반응을 집계합니다. TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격은 `deploy/main`입니다.
+
 - Vercel 이벤트 수집 제거 및 BBS CDN 캐시 보완 (`main`, `b04d689`, 원격 푸시 완료): Web Analytics와 Speed Insights 컴포넌트·패키지를 제거해 신규 이벤트 수집을 중단하고, 공개 BBS 목록·상세 응답에 브라우저 60초·Vercel CDN 5분 캐시와 stale-while-revalidate 1시간을 적용했습니다. Observability 이벤트 설정은 Vercel 프로젝트 설정에서 별도로 관리해야 합니다. TypeScript·프로덕션 빌드·`git diff --check`를 통과했으며 ESLint는 기존 어드민 이벤트 편집기 오류 2건으로 실패했습니다. 대상 브랜치는 `main`, 원격 `deploy/main` 푸시를 완료했습니다.
 
 - BBS 목록 TanStack Query 캐시 및 내부 스크롤 복귀 (`main`, `31e4c79`, 원격 푸시 완료): BBS 전용 QueryClient와 `useInfiniteQuery`를 적용해 필터별 목록 데이터를 브라우저 메모리에 캐시하고, 본문을 제외한 목록용 데이터만 조회하도록 했습니다. 최대 10페이지를 유지해 클라이언트 메모리 사용량을 제한하며, 기사 진입 전 BBS 내부 스크롤 위치를 저장하고 목록 복귀 시 캐시된 목록에 맞춰 한 번 복원합니다. 변경 파일 ESLint·TypeScript·프로덕션 빌드·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격 `deploy/main` 푸시를 완료했습니다.
