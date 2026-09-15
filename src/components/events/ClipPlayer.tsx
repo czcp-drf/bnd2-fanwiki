@@ -130,18 +130,18 @@ export default function ClipPlayer({
           })}
 
           {!isRevealed && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-zinc-950 px-6 text-center">
-              <EyeOff size={26} className="text-amber-400" />
+            <div className="clip-warning-panel absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6 text-center">
+              <EyeOff size={26} className="clip-warning-icon" />
               <div>
-                <p className="text-sm font-semibold text-white">빨간약 주의</p>
-                <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                <p className="clip-warning-title text-sm font-semibold">빨간약 주의</p>
+                <p className="clip-warning-description mt-1 text-xs leading-relaxed">
                   클립에 스트리머 정보가 포함될 수 있습니다.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsManuallyRevealed(true)}
-                className="cursor-pointer rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-100 transition-colors hover:bg-zinc-700"
+                className="clip-warning-button cursor-pointer rounded-lg px-4 py-2 text-xs font-medium transition-colors"
               >
                 클립 보기
               </button>

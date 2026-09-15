@@ -292,6 +292,13 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .placeholder\:text-zinc-600::placeholder { color: var(--wiki-faint); }
 .wiki-theme .placeholder\:text-zinc-500::placeholder { color: var(--wiki-subtle); }
 
+.clip-warning-panel { background-color: #09090b; }
+.clip-warning-icon { color: #fbbf24; }
+.clip-warning-title { color: #ffffff; }
+.clip-warning-description { color: #d4d4d8; }
+.clip-warning-button { border: 1px solid #a1a1aa; background-color: #3f3f46; color: #ffffff; }
+.clip-warning-button:hover { background-color: #52525b; }
+
 .wiki-theme .hover\:bg-zinc-800\/50:hover,
 .wiki-theme .hover\:bg-zinc-800\/40:hover { background-color: var(--wiki-hover); }
 .wiki-theme .hover\:bg-zinc-800:hover { background-color: var(--wiki-raised); }
