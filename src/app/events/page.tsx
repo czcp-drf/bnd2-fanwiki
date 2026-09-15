@@ -76,7 +76,7 @@ export default async function EventsPage({ searchParams }: Props) {
         <EventTypeFilter />
       </Suspense>
 
-      <EventArchiveFeed initialEvents={events} type={type} initialHasMore={hasMore} total={total} />
+      <EventArchiveFeed key={type || 'all'} initialEvents={events} type={type} initialHasMore={hasMore} total={total} />
       </div>
     </div>
   )
