@@ -3,7 +3,11 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { getBbsCategoryKey, getBbsCategoryLabel, type BbsArticle, type BbsArticleMedia, type BbsCategoryKey } from './articles'
 import { BBS_DAYS, type BbsDayKey } from './days'
 
-export const BBS_ARTICLES_TAG = 'bbs-articles'
+export const BBS_ARTICLE_LIST_TAG = 'bbs-article-list'
+export const BBS_ARTICLE_NEIGHBORS_TAG = 'bbs-article-neighbors'
+export const BBS_ARTICLE_DETAILS_TAG = 'bbs-article-details'
+export const BBS_ARTICLE_COMMENT_COUNTS_TAG = 'bbs-article-comment-counts'
+export function getBbsArticleTag(articleId: string) { return `bbs-article:${articleId}` }
 const BBS_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24 * 30
 export type BbsSortOrder = 'latest' | 'oldest'
 
@@ -147,7 +151,7 @@ function serializeReporterIds(reporterIds?: string[]) {
   return [...new Set((reporterIds ?? []).map((id) => id.trim()).filter(Boolean))].sort().join(',')
 }
 
-const getCachedBbsArticles = unstable_cache(
+const getCachedBbsArticleList = unstable_cache(
   async (
     categoryKey: BbsCategoryKey | undefined,
     articleId: string | undefined,
@@ -166,12 +170,12 @@ const getCachedBbsArticles = unstable_cache(
     sortOrder,
     includeContent,
   ),
-  ['bbs-public-articles'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
+  ['bbs-public-article-list'],
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
 async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }, dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest', includeContent = true) {
-  return getCachedBbsArticles(
+  return getCachedBbsArticleList(
     categoryKey,
     articleId,
     serializeReporterIds(reporterIds),
@@ -188,7 +192,14 @@ export async function getPublishedBbsArticles(category?: string, reporterIds?: s
 }
 
 export async function getPublishedBbsArticle(id: string) {
-  return (await loadArticles(undefined, id)).articles[0] ?? null
+  const articleId = id.trim()
+  if (!articleId) return null
+  const getCachedArticle = unstable_cache(
+    async () => loadArticlesUncached(undefined, articleId, undefined, undefined, undefined, 'latest', true),
+    ['bbs-public-article', articleId],
+    { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_DETAILS_TAG, getBbsArticleTag(articleId)] },
+  )
+  return (await getCachedArticle()).articles[0] ?? null
 }
 
 export async function getPublishedBbsArticlesPage(category: string | undefined, reporterIds: string[] | undefined, page: number, pageSize = 12, dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest', includeContent = false): Promise<BbsArticlePage> {
@@ -220,7 +231,7 @@ const getCachedAvailableBbsDayKeys = unstable_cache(
     return BBS_DAYS.filter((day) => approvedTimes.some((approvedAt) => approvedAt >= day.start && approvedAt <= day.end)).map((day) => day.key)
   },
   ['bbs-available-days'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
 export async function getAvailableBbsDayKeys() {
@@ -256,7 +267,7 @@ const getCachedBbsArticleNeighbors = unstable_cache(
     }
   },
   ['bbs-article-neighbors'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_NEIGHBORS_TAG] },
 )
 
 export async function getPublishedBbsArticleNeighbors(articleId: string, category?: string, reporterIds?: string[], dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest') {
@@ -307,7 +318,7 @@ const getCachedBbsReporterOptions = unstable_cache(
     }))
   },
   ['bbs-reporter-options-v2'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
 export function getBbsReporterOptions() {
@@ -345,7 +356,7 @@ const getCachedLatestBbsArticle = unstable_cache(
     }
   },
   ['bbs-latest-article'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLES_TAG] },
+  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
 export function getLatestBbsArticle() {

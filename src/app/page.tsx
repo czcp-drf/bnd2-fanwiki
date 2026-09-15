@@ -6,7 +6,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import type { Event } from '@/types/database'
 import AppImage from '@/components/ui/AppImage'
-import { BBS_ARTICLES_TAG, getPublishedBbsArticlesPage } from '@/lib/bbs/data'
+import { BBS_ARTICLE_LIST_TAG, getPublishedBbsArticlesPage } from '@/lib/bbs/data'
 import BbsHomeLink from '@/components/bbs/BbsHomeLink'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
 import { Archive, Map, Newspaper, Users } from 'lucide-react'
@@ -35,7 +35,7 @@ async function getRecentEvents() {
 
 const getStatsCached = unstable_cache(getStats, ['wiki-home-stats'], {
   revalidate: WIKI_CACHE_REVALIDATE,
-  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, BBS_ARTICLES_TAG],
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, BBS_ARTICLE_LIST_TAG],
 })
 const getRecentEventsCached = unstable_cache(getRecentEvents, ['wiki-home-events'], {
   revalidate: WIKI_CACHE_REVALIDATE,

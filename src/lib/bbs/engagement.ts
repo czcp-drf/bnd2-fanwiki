@@ -2,7 +2,7 @@ import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBongstagramIpHash } from '@/lib/bongstagram/like-ip'
 import { getBbsReactionMode, type BbsReactionMode } from './reaction-mode'
-import { BBS_ARTICLES_TAG } from './data'
+import { BBS_ARTICLE_COMMENT_COUNTS_TAG, getBbsArticleTag } from './data'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -32,16 +32,18 @@ function isValidArticleId(articleId: string) {
   return UUID_PATTERN.test(articleId.trim())
 }
 
-const getCachedBbsCommentCount = unstable_cache(
-  async (articleId: string) => {
-    const supabase = createAdminClient()
-    const result = await supabase.from('bbs_article_comments').select('id', { count: 'exact', head: true }).eq('article_id', articleId)
-    if (result.error) console.error('BBS article comment count load failed:', result.error.message)
-    return result.count ?? 0
-  },
-  ['bbs-article-comment-count'],
-  { revalidate: 60 * 60 * 24, tags: [BBS_ARTICLES_TAG] },
-)
+function getCachedBbsCommentCount(articleId: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createAdminClient()
+      const result = await supabase.from('bbs_article_comments').select('id', { count: 'exact', head: true }).eq('article_id', articleId)
+      if (result.error) console.error('BBS article comment count load failed:', result.error.message)
+      return result.count ?? 0
+    },
+    ['bbs-article-comment-count', articleId],
+    { revalidate: 60 * 60 * 24, tags: [BBS_ARTICLE_COMMENT_COUNTS_TAG, getBbsArticleTag(articleId)] },
+  )()
+}
 
 export async function getBbsArticleEngagement(articleId: string): Promise<BbsArticleEngagement> {
   const id = articleId.trim()
@@ -49,7 +51,7 @@ export async function getBbsArticleEngagement(articleId: string): Promise<BbsArt
   if (!isValidArticleId(id)) return { likeCount: 0, dislikeCount: 0, commentCount: 0, viewerReaction: null, reactionMode }
 
   const supabase = createAdminClient()
-  const commentCountPromise = getCachedBbsCommentCount(id)
+    const commentCountPromise = getCachedBbsCommentCount(id)
   if (reactionMode === 'local') {
     return { likeCount: 0, dislikeCount: 0, commentCount: await commentCountPromise, viewerReaction: null, reactionMode }
   }

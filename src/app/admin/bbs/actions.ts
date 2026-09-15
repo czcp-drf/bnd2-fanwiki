@@ -2,7 +2,13 @@
 
 import { revalidatePath, updateTag } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/auth'
-import { BBS_ARTICLES_TAG } from '@/lib/bbs/data'
+import {
+  BBS_ARTICLE_COMMENT_COUNTS_TAG,
+  BBS_ARTICLE_DETAILS_TAG,
+  BBS_ARTICLE_LIST_TAG,
+  BBS_ARTICLE_NEIGHBORS_TAG,
+  getBbsArticleTag,
+} from '@/lib/bbs/data'
 
 const BBS_MEDIA_BUCKET = 'bbs-media'
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
@@ -159,20 +165,32 @@ async function removeStoragePaths(supabase: Awaited<ReturnType<typeof requireAdm
   if (error) console.error('BBS storage cleanup failed:', error.message)
 }
 
-function revalidateBbs(articleId?: string) {
+function revalidateBbsList() {
   revalidatePath('/admin/bbs')
   revalidatePath('/bbs')
   revalidatePath('/api/bbs/latest')
-  updateTag(BBS_ARTICLES_TAG)
-  if (articleId) revalidatePath(`/bbs/article/${articleId}`)
+  updateTag(BBS_ARTICLE_LIST_TAG)
+}
+
+function revalidateBbsNeighbors() {
+  updateTag(BBS_ARTICLE_NEIGHBORS_TAG)
+}
+
+function revalidateBbsArticle(articleId: string) {
+  updateTag(getBbsArticleTag(articleId))
+  revalidatePath(`/bbs/article/${articleId}`)
+}
+
+function revalidateBbsAdmin() {
+  revalidatePath('/admin/bbs')
 }
 
 export async function refreshBbsCache(): Promise<ActionResult> {
   await requireAdmin()
-  revalidatePath('/admin/bbs')
-  revalidatePath('/bbs')
-  revalidatePath('/api/bbs/latest')
-  updateTag(BBS_ARTICLES_TAG)
+  revalidateBbsList()
+  revalidateBbsNeighbors()
+  updateTag(BBS_ARTICLE_DETAILS_TAG)
+  updateTag(BBS_ARTICLE_COMMENT_COUNTS_TAG)
   return { success: true }
 }
 
@@ -280,7 +298,12 @@ export async function createBbsArticle(input: BbsArticleInput): Promise<ActionRe
     return { error: '기사 이미지를 등록하지 못했습니다.' }
   }
 
-  revalidateBbs(article.id)
+  if (validated.data.isPublished) {
+    revalidateBbsList()
+    revalidateBbsNeighbors()
+  } else {
+    revalidateBbsAdmin()
+  }
   return { success: true, id: article.id }
 }
 
@@ -319,7 +342,8 @@ export async function updateBbsArticle(id: string, input: BbsArticleInput): Prom
     return { error: '기사 이미지를 수정하지 못했습니다.' }
   }
 
-  revalidateBbs(articleId)
+  revalidateBbsAdmin()
+  revalidateBbsArticle(articleId)
   return { success: true }
 }
 
@@ -370,7 +394,7 @@ export async function importBbsArticles(rows: BbsImportRow[]): Promise<BbsImport
     imported += 1
   }
 
-  revalidateBbs()
+  revalidateBbsAdmin()
   return { imported, skipped: safeRows.length - candidates.length, errors }
 }
 
@@ -388,7 +412,9 @@ export async function toggleBbsArticlePublished(id: string, current: boolean): P
     return { error: '기사 공개 상태를 변경하지 못했습니다.' }
   }
 
-  revalidateBbs(articleId)
+  revalidateBbsList()
+  revalidateBbsNeighbors()
+  revalidateBbsArticle(articleId)
   return { success: true }
 }
 
@@ -405,7 +431,9 @@ export async function deleteBbsArticle(id: string): Promise<ActionResult> {
   }
 
   await removeStoragePaths(supabase, (media ?? []).map((item) => extractStoragePath(item.image_url)).filter((path): path is string => Boolean(path)))
-  revalidateBbs(articleId)
+  revalidateBbsList()
+  revalidateBbsNeighbors()
+  revalidateBbsArticle(articleId)
   return { success: true }
 }
 
@@ -446,7 +474,8 @@ export async function createBbsComment(input: BbsCommentInput): Promise<ActionRe
     return { error: '댓글을 등록하지 못했습니다.' }
   }
 
-  revalidateBbs(articleId)
+  revalidateBbsAdmin()
+  revalidateBbsArticle(articleId)
   return { success: true }
 }
 
@@ -485,7 +514,8 @@ export async function updateBbsComment(id: string, input: BbsCommentUpdateInput)
     return { error: '댓글을 수정하지 못했습니다.' }
   }
 
-  revalidateBbs(comment.article_id)
+  revalidateBbsAdmin()
+  revalidateBbsArticle(comment.article_id)
   return { success: true }
 }
 
@@ -502,6 +532,7 @@ export async function deleteBbsComment(id: string): Promise<ActionResult> {
     return { error: '댓글을 삭제하지 못했습니다.' }
   }
 
-  revalidateBbs(comment.article_id)
+  revalidateBbsAdmin()
+  revalidateBbsArticle(comment.article_id)
   return { success: true }
 }
