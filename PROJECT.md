@@ -361,6 +361,7 @@ src/
 - [x] BBS 공개 기사 카드 카테고리 표시 및 사용자 싫어요 비활성화 — 기사 목록에서 말머리를 표시하고 공개 화면은 좋아요만 제공하며 서버에서도 싫어요 요청을 거부
 - [x] BBS 기사 상세 반응 분리 — 기사 본문은 반응 상태 조회 없이 캐시 응답으로 제공하고, 좋아요·싫어요 집계와 IP별 반응 상태는 클라이언트에서 별도 조회
 - [x] BBS 기사 상세 필터·이웃 이동 분리 — 서버 상세 페이지에서 `searchParams`와 이전·다음 기사 조회를 제거하고, 클라이언트가 현재 필터 조건을 유지한 채 목록 복귀·이웃 기사를 조회
+- [x] 사건 상세 대표 이미지 비율 보정 — 세로 이미지를 화면 높이 안에서 원본 비율로 전체 표시하고, 가로 이미지와 함께 `object-contain`으로 잘림을 방지
 - [x] BBS 기사 이미지 Storage migration 운영 DB 적용 (`034_bss_storage.sql`, 사용자 확인)
 - [x] BBS 기사 DB 식별자 rename migration 운영 DB 적용 (`035_rename_bss_tables_to_bbs.sql`, 사용자 확인)
 - [x] 인게임 수집 대비 source·external_id migration 운영 DB 적용 (`040_ingame_ingest_source.sql`, 사용자 확인)

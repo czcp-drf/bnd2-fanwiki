@@ -153,8 +153,8 @@ export default async function EventDetailPage({ params }: Props) {
 
       {/* 썸네일 */}
       {event.thumbnail_url && (
-        <div className="overflow-hidden rounded-xl border border-zinc-800">
-          <AppImage src={event.thumbnail_url} alt={event.title} className="w-full object-cover max-h-80" />
+        <div className="flex max-h-[70vh] justify-center overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/40">
+          <AppImage src={event.thumbnail_url} alt={event.title} width={1200} height={900} className="max-h-[70vh] max-w-full object-contain" />
         </div>
       )}
 
