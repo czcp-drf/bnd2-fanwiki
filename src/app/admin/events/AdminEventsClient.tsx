@@ -13,6 +13,16 @@ const typeLabel: Record<string, string> = {
   social: '사회', accident: '사고', highlight: '하이라이트', other: '기타',
 }
 
+const typeOptions = [
+  { value: 'war', label: '전쟁/항쟁' },
+  { value: 'crime', label: '범죄' },
+  { value: 'political', label: '정치' },
+  { value: 'social', label: '사회' },
+  { value: 'accident', label: '사고' },
+  { value: 'highlight', label: '하이라이트' },
+  { value: 'other', label: '기타' },
+]
+
 type Event = {
   id: string
   title: string
@@ -22,16 +32,20 @@ type Event = {
   created_at: string
 }
 
-export default function AdminEventsClient({ events, total, totalPages, currentPage, pageSize: initialPageSize, search: initialSearch }: { events: Event[]; total: number; totalPages: number; currentPage: number; pageSize: number; search: string }) {
+export default function AdminEventsClient({ events, total, totalPages, currentPage, pageSize: initialPageSize, search: initialSearch, type: initialType }: { events: Event[]; total: number; totalPages: number; currentPage: number; pageSize: number; search: string; type: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [search, setSearch] = useState(initialSearch)
   const [pageSize, setPageSize] = useState(String(initialPageSize))
+  const [type, setType] = useState(initialType)
   const filtered = events
   function updateQuery(changes: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
-    for (const [key, value] of Object.entries(changes)) value ? params.set(key, value) : params.delete(key)
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) params.set(key, value)
+      else params.delete(key)
+    }
     params.delete('page')
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
@@ -47,7 +61,7 @@ export default function AdminEventsClient({ events, total, totalPages, currentPa
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') updateQuery({ search: e.currentTarget.value }) }}
-            placeholder="제목 또는 유형 검색"
+            placeholder="제목 검색"
             className="rounded border border-zinc-700 bg-zinc-900 py-2 pl-7 pr-7 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
           />
           {search && (
@@ -56,6 +70,10 @@ export default function AdminEventsClient({ events, total, totalPages, currentPa
             </button>
           )}
         </div>
+        <select value={type} onChange={(e) => { setType(e.target.value); updateQuery({ type: e.target.value }) }} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-2 text-xs text-zinc-300" aria-label="사건 유형 필터">
+          <option value="">전체 유형</option>
+          {typeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
         <span className="text-xs text-zinc-600">
           {filtered.length} / {total}건
         </span>
@@ -78,7 +96,7 @@ export default function AdminEventsClient({ events, total, totalPages, currentPa
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-12 text-center text-sm text-zinc-600">
-                  {initialSearch ? '검색 결과가 없습니다.' : '등록된 사건이 없습니다.'}
+                  {initialSearch || initialType ? '조건에 맞는 사건이 없습니다.' : '등록된 사건이 없습니다.'}
                 </td>
               </tr>
             ) : (
