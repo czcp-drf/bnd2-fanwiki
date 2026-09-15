@@ -53,6 +53,10 @@ export default function AdminCharactersClient({
   filter,
   sort,
   org,
+  total,
+  totalPages,
+  currentPage,
+  pageSize: initialPageSize,
 }: {
   characters: Character[]
   organizations: OrgOption[]
@@ -60,10 +64,15 @@ export default function AdminCharactersClient({
   filter: string
   sort: string
   org: string
+  total: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
 }) {
   const [search, setSearch] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [pageSize, setPageSize] = useState(String(initialPageSize))
 
   // 캐릭터 추가 폼
   const [showAddForm, setShowAddForm] = useState(false)
@@ -124,6 +133,9 @@ export default function AdminCharactersClient({
     router.push(`/admin/characters?${params}`, { scroll: false })
   }
 
+  function movePage(page: number) { const params = new URLSearchParams(searchParams.toString()); params.set('page', String(page)); router.push(`/admin/characters?${params}`, { scroll: false }) }
+  function changePageSize(value: string) { setPageSize(value); const params = new URLSearchParams(searchParams.toString()); params.set('pageSize', value); params.delete('page'); router.push(`/admin/characters?${params}`, { scroll: false }) }
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) return characters
@@ -163,7 +175,7 @@ export default function AdminCharactersClient({
                 className="w-40 rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
               />
               <div className="w-40">
-                <Select value={addStreamerId} onChange={setAddStreamerId} options={streamerOptions} fullWidth />
+                <Select value={addStreamerId} onChange={setAddStreamerId} options={streamerOptions} searchable searchPlaceholder="스트리머 검색" fullWidth />
               </div>
               <input
                 value={addJob}
@@ -264,9 +276,12 @@ export default function AdminCharactersClient({
         </div>
 
         <span className="ml-auto text-xs text-zinc-600">
-          {search ? `${filtered.length} / ${characters.length}명` : `${characters.length}명`}
+          {filtered.length} / {total}명
+          <select value={pageSize} onChange={(e) => changePageSize(e.target.value)} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-300"><option value="10">10개씩</option><option value="20">20개씩</option><option value="30">30개씩</option><option value="40">40개씩</option><option value="50">50개씩</option></select>
         </span>
       </div>
+
+      {totalPages > 1 && <nav className="flex items-center justify-center gap-2" aria-label="캐릭터 페이지 이동"><button type="button" onClick={() => movePage(currentPage - 1)} disabled={currentPage <= 1} className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 disabled:opacity-40">이전</button><span className="text-xs text-zinc-500">{currentPage} / {totalPages}</span><button type="button" onClick={() => movePage(currentPage + 1)} disabled={currentPage >= totalPages} className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 disabled:opacity-40">다음</button></nav>}
 
       {/* 테이블 */}
       <div className="rounded-xl border border-zinc-800 overflow-x-auto">

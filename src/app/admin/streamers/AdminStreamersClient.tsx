@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import StreamerEditRow from './StreamerEditRow'
 
@@ -13,8 +14,10 @@ type Streamer = {
   created_at: string
 }
 
-export default function AdminStreamersClient({ streamers }: { streamers: Streamer[] }) {
+export default function AdminStreamersClient({ streamers, total, totalPages, currentPage, pageSize: initialPageSize }: { streamers: Streamer[]; total: number; totalPages: number; currentPage: number; pageSize: number; search: string }) {
+  const router = useRouter(); const pathname = usePathname(); const searchParams = useSearchParams()
   const [search, setSearch] = useState('')
+  const [pageSize, setPageSize] = useState(String(initialPageSize))
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -23,6 +26,9 @@ export default function AdminStreamersClient({ streamers }: { streamers: Streame
       (s) => s.display_name.toLowerCase().includes(q) || s.chzzk_channel_id.toLowerCase().includes(q)
     )
   }, [streamers, search])
+
+  function movePage(page: number) { const params = new URLSearchParams(searchParams.toString()); params.set('page', String(page)); router.push(`${pathname}?${params.toString()}`, { scroll: false }) }
+  function changePageSize(value: string) { setPageSize(value); const params = new URLSearchParams(searchParams.toString()); params.set('pageSize', value); params.delete('page'); router.push(`${pathname}?${params.toString()}`, { scroll: false }) }
 
   return (
     <div className="space-y-4">
@@ -44,9 +50,11 @@ export default function AdminStreamersClient({ streamers }: { streamers: Streame
           )}
         </div>
         <span className="text-xs text-zinc-600">
-          {search ? `${filtered.length} / ${streamers.length}명` : `${streamers.length}명`}
+          {filtered.length} / {total}명
         </span>
+        <select value={pageSize} onChange={(e) => changePageSize(e.target.value)} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-2 text-xs text-zinc-300"><option value="10">10개씩</option><option value="20">20개씩</option><option value="30">30개씩</option><option value="40">40개씩</option><option value="50">50개씩</option></select>
       </div>
+      {totalPages > 1 && <nav className="flex items-center justify-center gap-2 pt-2" aria-label="스트리머 페이지 이동"><button type="button" onClick={() => movePage(currentPage - 1)} disabled={currentPage <= 1} className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 disabled:opacity-40">이전</button><span className="text-xs text-zinc-500">{currentPage} / {totalPages}</span><button type="button" onClick={() => movePage(currentPage + 1)} disabled={currentPage >= totalPages} className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 disabled:opacity-40">다음</button></nav>}
 
       {/* 목록 */}
       <div className="rounded-xl border border-zinc-800 overflow-hidden">

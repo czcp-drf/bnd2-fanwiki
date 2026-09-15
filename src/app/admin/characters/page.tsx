@@ -14,17 +14,14 @@ const columns = [
   { key: 'org', field: 'org_name' },
 ] as const
 
-async function getCharacters(filter: string, sort: string, org: string) {
+async function getCharacters(filter: string, sort: string, org: string, page: number, pageSize: number) {
   const supabase = createAdminClient()
-
-  const { data } = await supabase
-    .from('characters')
-    .select(`
-      id, name, job, status, created_at,
-      streamers ( display_name ),
-      organization_members ( role, is_primary, organization_id, organizations ( name ) )
-    `)
-    .order('name')
+  const safePageSize = [10, 20, 30, 40, 50].includes(pageSize) ? pageSize : 50
+  const select = org ? `id, name, job, status, created_at, streamers ( display_name ), organization_members!inner ( role, is_primary, organization_id, organizations ( name ) )` : `id, name, job, status, created_at, streamers ( display_name ), organization_members ( role, is_primary, organization_id, organizations ( name ) )`
+  let query = supabase.from('characters').select(select, { count: 'exact' }).order('name')
+  if (filter === 'unnamed') query = query.eq('name', '미정')
+  if (org) query = query.eq('organization_members.organization_id', org)
+  const { data, count } = await query.range((Math.max(1, page) - 1) * safePageSize, Math.max(1, page) * safePageSize - 1)
 
   type Row = {
     id: string
@@ -43,9 +40,7 @@ async function getCharacters(filter: string, sort: string, org: string) {
 
   const rows = (data ?? []) as unknown as Row[]
 
-  return rows
-    .filter((r) => filter === 'unnamed' ? r.name === '미정' : true)
-    .filter((r) => org ? r.organization_members.some((m) => m.organization_id === org) : true)
+  const characters = rows
     .map((r) => {
       const primary = r.organization_members.find((m) => m.is_primary)
       return {
@@ -68,6 +63,7 @@ async function getCharacters(filter: string, sort: string, org: string) {
       const right = field === 'status' ? statusLabels[b.status] ?? b.status : (b as Record<string, unknown>)[field] as string ?? ''
       return left.localeCompare(right, 'ko') * (sort.endsWith('_desc') ? -1 : 1) || a.id.localeCompare(b.id)
     })
+  return { characters, total: count ?? 0, totalPages: Math.max(1, Math.ceil((count ?? 0) / safePageSize)), pageSize: safePageSize }
 }
 
 async function getOrganizations() {
@@ -87,12 +83,14 @@ async function getStreamers() {
   return (data ?? []) as { id: string; display_name: string }[]
 }
 
-type Props = { searchParams: Promise<{ filter?: string; sort?: string; org?: string }> }
+type Props = { searchParams: Promise<{ filter?: string; sort?: string; org?: string; page?: string; pageSize?: string }> }
 
 export default async function AdminCharactersPage({ searchParams }: Props) {
-  const { filter = '', sort = 'name', org = '' } = await searchParams
-  const [characters, organizations, streamers] = await Promise.all([
-    getCharacters(filter, sort, org),
+  const { filter = '', sort = 'name', org = '', page: pageValue = '', pageSize: pageSizeValue = '' } = await searchParams
+  const page = Number.parseInt(pageValue, 10) || 1
+  const pageSize = Number.parseInt(pageSizeValue, 10) || 50
+  const [characterData, organizations, streamers] = await Promise.all([
+    getCharacters(filter, sort, org, page, pageSize),
     getOrganizations(),
     getStreamers(),
   ])
@@ -106,12 +104,16 @@ export default async function AdminCharactersPage({ searchParams }: Props) {
         <CacheRefreshButton scope="characters" />
       </div>
       <AdminCharactersClient
-        characters={characters}
+        characters={characterData.characters}
         organizations={organizations}
         streamers={streamers}
         filter={filter}
         sort={sort}
         org={org}
+        total={characterData.total}
+        totalPages={characterData.totalPages}
+        currentPage={Math.min(page, characterData.totalPages)}
+        pageSize={characterData.pageSize}
       />
     </div>
   )

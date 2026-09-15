@@ -4,24 +4,30 @@ import { Plus } from 'lucide-react'
 import AdminEventsClient from './AdminEventsClient'
 import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
-async function getEvents() {
+async function getEvents(page: number, pageSize: number, search: string) {
   const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('events')
-    .select('id, title, type, occurred_at, is_published, created_at')
+  const safePageSize = [10, 20, 30, 40, 50].includes(pageSize) ? pageSize : 50
+  let query = supabase.from('events').select('id, title, type, occurred_at, is_published, created_at', { count: 'exact' })
+  if (search.trim()) query = query.ilike('title', `%${search.trim().replace(/[%_]/g, ' ')}%`)
+  const { data, count } = await query
     .order('occurred_at', { ascending: false, nullsFirst: false })
-  return data ?? []
+    .range((Math.max(1, page) - 1) * safePageSize, Math.max(1, page) * safePageSize - 1)
+  return { events: data ?? [], total: count ?? 0, pageSize: safePageSize, totalPages: Math.max(1, Math.ceil((count ?? 0) / safePageSize)) }
 }
 
-export default async function AdminEventsPage() {
-  const events = await getEvents()
+export default async function AdminEventsPage({ searchParams }: { searchParams: Promise<{ page?: string; pageSize?: string; search?: string }> }) {
+  const params = await searchParams
+  const page = Number.parseInt(params.page ?? '', 10) || 1
+  const pageSize = Number.parseInt(params.pageSize ?? '', 10) || 50
+  const search = params.search ?? ''
+  const data = await getEvents(page, pageSize, search)
 
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black text-white">사건 관리</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">총 {events.length}건</p>
+          <p className="text-sm text-zinc-500 mt-0.5">총 {data.total}건 · {page}/{data.totalPages}페이지</p>
         </div>
         <div className="flex items-center gap-2">
           <CacheRefreshButton scope="events" />
@@ -35,7 +41,7 @@ export default async function AdminEventsPage() {
         </div>
       </div>
 
-      <AdminEventsClient events={events} />
+      <AdminEventsClient events={data.events} total={data.total} totalPages={data.totalPages} currentPage={Math.min(page, data.totalPages)} pageSize={data.pageSize} search={search} />
     </div>
   )
 }

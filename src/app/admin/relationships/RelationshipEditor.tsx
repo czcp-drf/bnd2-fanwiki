@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useId } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Plus, Search, X, Check, Pencil, Trash2 } from 'lucide-react'
 import { addRelationship, updateRelationship, deleteRelationship } from './actions'
 import { handleDropdownKeyDown } from '@/lib/dropdown-keyboard'
@@ -343,13 +344,25 @@ function AddForm({ characters }: { characters: Character[] }) {
 export default function RelationshipEditor({
   relationships,
   characters,
+  total,
+  totalPages,
+  currentPage,
+  pageSize: initialPageSize,
 }: {
   relationships: Relationship[]
   characters: Character[]
+  total: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
 }) {
+  const router = useRouter(); const pathname = usePathname(); const searchParams = useSearchParams()
+  const [pageSize, setPageSize] = useState(String(initialPageSize))
+  function move(changes: Record<string, string>) { const params = new URLSearchParams(searchParams.toString()); for (const [key, value] of Object.entries(changes)) params.set(key, value); if ('pageSize' in changes) params.delete('page'); router.push(`${pathname}?${params.toString()}`, { scroll: false }) }
   return (
     <div className="space-y-4">
       <AddForm characters={characters} />
+      <div className="flex items-center justify-end gap-2"><span className="text-xs text-zinc-600">{relationships.length} / {total}건</span><select value={pageSize} onChange={(e) => { setPageSize(e.target.value); move({ pageSize: e.target.value }) }} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-300"><option value="10">10개씩</option><option value="20">20개씩</option><option value="30">30개씩</option><option value="40">40개씩</option><option value="50">50개씩</option></select></div>
 
       <div className="rounded-xl border border-zinc-800 overflow-hidden">
         <table className="w-full">
@@ -377,6 +390,7 @@ export default function RelationshipEditor({
           </tbody>
         </table>
       </div>
+      {totalPages > 1 && <nav className="flex items-center justify-center gap-2" aria-label="관계 페이지 이동"><button type="button" onClick={() => move({ page: String(currentPage - 1) })} disabled={currentPage <= 1} className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 disabled:opacity-40">이전</button><span className="text-xs text-zinc-500">{currentPage} / {totalPages}</span><button type="button" onClick={() => move({ page: String(currentPage + 1) })} disabled={currentPage >= totalPages} className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 disabled:opacity-40">다음</button></nav>}
     </div>
   )
 }
