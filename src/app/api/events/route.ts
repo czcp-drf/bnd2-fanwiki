@@ -25,6 +25,18 @@ export async function GET(request: NextRequest) {
 
   const { data, count, error } = await query
   if (error) console.error('Events API load failed:', { code: error.code, message: error.message, details: error.details, hint: error.hint, type, offset })
+  if (error?.code === 'PGRST103') {
+    let countQuery = supabase.from('events').select('id', { count: 'exact', head: true }).eq('is_published', true)
+    if (type) countQuery = countQuery.eq('type', type)
+
+    const { count: refreshedCount, error: countError } = await countQuery
+    if (!countError) {
+      return NextResponse.json(
+        { events: [], total: refreshedCount ?? 0, hasMore: false },
+        { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } },
+      )
+    }
+  }
   if (error) return NextResponse.json({ error: '사건 목록을 불러오지 못했습니다.' }, { status: 500 })
 
   return NextResponse.json(
