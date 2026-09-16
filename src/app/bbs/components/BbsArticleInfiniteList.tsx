@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import type { BbsArticle } from '@/lib/bbs/articles'
 import type { BbsDayKey } from '@/lib/bbs/days'
 import type { BbsSortOrder } from '@/lib/bbs/data'
@@ -20,6 +20,8 @@ type Props = {
 
 export default function BbsArticleInfiniteList({ initialArticles, total, totalPages, category, reporterIds, day, sortOrder }: Props) {
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const queryClient = useQueryClient()
+  const queryKey = useMemo(() => ['bbs-articles', category, [...reporterIds].sort(), day ?? null, sortOrder] as const, [category, day, reporterIds, sortOrder])
   const listParams = useMemo(() => {
     const params = new URLSearchParams()
     if (category !== '전체') params.set('category', category)
@@ -30,7 +32,7 @@ export default function BbsArticleInfiniteList({ initialArticles, total, totalPa
   }, [category, day, reporterIds, sortOrder])
 
   const query = useInfiniteQuery({
-    queryKey: ['bbs-articles', category, [...reporterIds].sort(), day ?? null, sortOrder],
+    queryKey,
     queryFn: ({ pageParam }) => getBbsArticlesPageAction(category === '전체' ? undefined : category, reporterIds, pageParam, day, sortOrder),
     initialPageParam: 1,
     initialData: { pages: [{ articles: initialArticles, page: 1, pageSize: 12, total, totalPages }], pageParams: [1] },
@@ -39,6 +41,24 @@ export default function BbsArticleInfiniteList({ initialArticles, total, totalPa
   })
   const articles = query.data.pages.flatMap((page) => page.articles)
   const hasMore = Boolean(query.hasNextPage)
+
+  useEffect(() => {
+    queryClient.setQueryData(queryKey, (current: typeof query.data | undefined) => {
+      if (!current?.pages.length) return current
+      const firstPage = current.pages[0]
+      const hasSameArticles = firstPage.articles.length === initialArticles.length
+        && firstPage.articles.every((article, index) => article.id === initialArticles[index]?.id)
+      if (hasSameArticles && firstPage.total === total && firstPage.totalPages === totalPages) return current
+
+      return {
+        ...current,
+        pages: [
+          { ...firstPage, articles: initialArticles, page: 1, total, totalPages },
+          ...current.pages.slice(1),
+        ],
+      }
+    })
+  }, [initialArticles, query.data, queryClient, queryKey, total, totalPages])
 
   useEffect(() => {
     const stateKey = `${BBS_SCROLL_STATE_PREFIX}${window.location.pathname}${window.location.search}`
