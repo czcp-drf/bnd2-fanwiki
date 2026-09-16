@@ -124,6 +124,8 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
     setFilterOpen(false)
   }
 
+  const selectedDayLabel = activeDay ? BBS_DAYS.find((day) => day.key === activeDay)?.label.replace('일차', '') : null
+
   return (
     <header className="sticky top-0 z-20 border-b border-[var(--bbs-border)] bg-[var(--bbs-surface)] px-5 py-5 sm:px-7 md:relative md:rounded-t-3xl md:px-8 md:py-6">
       <div className="flex items-center justify-between gap-4">
@@ -158,7 +160,7 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
             onClick={() => { dismissFilterTip(); setFilterOpen(false); setDayMenuPosition(null); setDayMenuOpen((open) => !open) }}
             className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeDay ? 'bg-[#e14b32]/15 text-[#e14b32]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
           >
-            <CalendarDays size={16} />
+            {selectedDayLabel ? <span className="text-sm font-bold leading-none">{selectedDayLabel}</span> : <CalendarDays size={16} />}
           </button>
         </div>
       </div>
