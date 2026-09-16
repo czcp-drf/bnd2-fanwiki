@@ -1,10 +1,10 @@
-export const revalidate = 86400
+export const revalidate = 2592000
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
+import { WIKI_CACHE_TAGS, WIKI_DETAIL_CACHE_REVALIDATE, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import { ExternalLink, Calendar, Swords, MapPin } from 'lucide-react'
 import type { Metadata } from 'next'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
@@ -125,15 +125,15 @@ async function getRelationships(id: string): Promise<RelationshipRow[]> {
 }
 
 const getCharacterCached = unstable_cache(getCharacter, ['wiki-character-detail'], {
-  revalidate: WIKI_CACHE_REVALIDATE,
+  revalidate: WIKI_DETAIL_CACHE_REVALIDATE,
   tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.streamers, WIKI_CACHE_TAGS.organizations],
 })
 const getCharacterEventsCached = unstable_cache(getCharacterEvents, ['wiki-character-events'], {
-  revalidate: WIKI_CACHE_REVALIDATE,
+  revalidate: WIKI_DETAIL_CACHE_REVALIDATE,
   tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.events],
 })
 const getRelationshipsCached = unstable_cache(getRelationships, ['wiki-character-relationships'], {
-  revalidate: WIKI_CACHE_REVALIDATE,
+  revalidate: WIKI_DETAIL_CACHE_REVALIDATE,
   tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.relationships],
 })
 

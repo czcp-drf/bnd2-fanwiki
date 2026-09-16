@@ -1,10 +1,10 @@
-export const revalidate = 86400
+export const revalidate = 2592000
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
+import { WIKI_CACHE_TAGS, WIKI_DETAIL_CACHE_REVALIDATE, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import { ExternalLink } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { Streamer } from '@/types/database'
@@ -78,7 +78,7 @@ async function getStreamer(id: string): Promise<StreamerDetail | null> {
 }
 
 const getStreamerCached = unstable_cache(getStreamer, ['wiki-streamer-detail'], {
-  revalidate: WIKI_CACHE_REVALIDATE,
+  revalidate: WIKI_DETAIL_CACHE_REVALIDATE,
   tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.streamers, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.organizations],
 })
 
