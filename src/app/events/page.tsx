@@ -28,7 +28,7 @@ async function getEvents(type: string) {
   const supabase = createPublicClient()
   let query = supabase
     .from('events')
-    .select('id, title, summary, content, type, thumbnail_url, occurred_at, is_published, location_x, location_y, created_at, updated_at', { count: 'exact' })
+    .select('id, title, summary, type, thumbnail_url, occurred_at, is_published, location_x, location_y, created_at, updated_at', { count: 'exact' })
     .eq('is_published', true)
     .order('occurred_at', { ascending: false })
 
