@@ -20,6 +20,9 @@ type Props = {
   availableDayKeys: BbsDayKey[]
 }
 
+const BBS_FILTER_TIP_SEEN_KEY = 'bbs-filter-tip-seen'
+const BBS_SCROLL_STATE_PREFIX = 'bbs-scroll-state:'
+
 export default function BbsHeader({ activeCategory, activeReporterIds, activeDay, activeSort, reporters, availableDayKeys }: Props) {
   const router = useRouter()
   const { isRedPill } = useRedPill()
@@ -29,10 +32,32 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
   const [filterOpen, setFilterOpen] = useState(false)
   const [reporterMenuOpen, setReporterMenuOpen] = useState(false)
   const [dayMenuOpen, setDayMenuOpen] = useState(false)
+  const [showFilterTip, setShowFilterTip] = useState(false)
   const [selectedReporterIds, setSelectedReporterIds] = useState(activeReporterIds)
   const [selectedSort, setSelectedSort] = useState<BbsSortOrder>(activeSort)
   const [filterPosition, setFilterPosition] = useState<{ left: number; top: number; width: number } | null>(null)
   const [dayMenuPosition, setDayMenuPosition] = useState<{ left: number; top: number } | null>(null)
+
+  useEffect(() => {
+    try {
+      const scrollStateKey = `${BBS_SCROLL_STATE_PREFIX}${window.location.pathname}${window.location.search}`
+      if (!sessionStorage.getItem(BBS_FILTER_TIP_SEEN_KEY) && !sessionStorage.getItem(scrollStateKey)) {
+        setShowFilterTip(true)
+        sessionStorage.setItem(BBS_FILTER_TIP_SEEN_KEY, '1')
+      }
+    } catch {
+      // Ignore storage restrictions and keep the BBS controls usable.
+    }
+  }, [])
+
+  function dismissFilterTip() {
+    setShowFilterTip(false)
+    try {
+      sessionStorage.setItem(BBS_FILTER_TIP_SEEN_KEY, '1')
+    } catch {
+      // Ignore storage restrictions.
+    }
+  }
 
   const positionFilterPanel = useCallback(() => {
     const button = filterButtonRef.current
@@ -105,13 +130,22 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
         <Link href="/bbs" aria-label="BBS 홈" className="cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e14b32]/50">
           <BbsLogo />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="relative flex items-center gap-2">
+          {showFilterTip && (
+            <div onClick={dismissFilterTip} className="absolute right-0 top-[calc(100%+0.75rem)] z-30 w-56 cursor-pointer rounded-xl border border-[#e14b32]/30 bg-[var(--bbs-card)] px-3 py-2.5 text-xs font-semibold leading-relaxed text-[var(--bbs-text)] shadow-lg">
+              <span className="absolute -top-1.5 right-5 h-3 w-3 rotate-45 border-l border-t border-[#e14b32]/30 bg-[var(--bbs-card)]" />
+              <div className="relative flex items-start gap-2">
+                <p className="flex-1">일차별 보기 등 다양한 필터를 활용해보세요.</p>
+                <button type="button" onClick={dismissFilterTip} aria-label="필터 안내 닫기" className="shrink-0 cursor-pointer rounded-full p-0.5 text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-hover)] hover:text-[var(--bbs-text)]"><X size={13} /></button>
+              </div>
+            </div>
+          )}
           <button
             type="button"
             aria-label="기사 필터"
             aria-expanded={filterOpen}
             ref={filterButtonRef}
-            onClick={() => { setDayMenuOpen(false); setSelectedReporterIds(activeReporterIds); setSelectedSort(activeSort); setReporterMenuOpen(false); setFilterPosition(null); setFilterOpen((open) => !open) }}
+            onClick={() => { dismissFilterTip(); setDayMenuOpen(false); setSelectedReporterIds(activeReporterIds); setSelectedSort(activeSort); setReporterMenuOpen(false); setFilterPosition(null); setFilterOpen((open) => !open) }}
             className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeReporterIds.length || activeSort === 'oldest' ? 'bg-[#e14b32]/15 text-[#e14b32]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
           >
             <Filter size={17} />
@@ -121,7 +155,7 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
             aria-label="기사 일차 선택"
             aria-expanded={dayMenuOpen}
             ref={dayButtonRef}
-            onClick={() => { setFilterOpen(false); setDayMenuPosition(null); setDayMenuOpen((open) => !open) }}
+            onClick={() => { dismissFilterTip(); setFilterOpen(false); setDayMenuPosition(null); setDayMenuOpen((open) => !open) }}
             className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeDay ? 'bg-[#e14b32]/15 text-[#e14b32]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
           >
             <CalendarDays size={16} />
