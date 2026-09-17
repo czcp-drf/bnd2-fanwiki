@@ -42,7 +42,7 @@ export default function ClipPlayer({
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canLeft, setCanLeft] = useState(false)
   const [canRight, setCanRight] = useState(false)
-  const [tooltip, setTooltip] = useState<{ label: string; streamerLine: string | null } | null>(null)
+  const [tooltip, setTooltip] = useState<{ label: string; streamerLine: string | null; labelMap: Record<string, string> } | null>(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
   const { isRedPill } = useRedPill()
   // 빨간약이 켜져 있으면 즉시 공개하고, 사용자가 직접 연 상태도 유지한다.
@@ -87,6 +87,9 @@ export default function ClipPlayer({
 
   const active = clips.find((c) => c.id === activeId) ?? clips[0]
   const activeCharName = active.streamers?.id ? streamerToChar[active.streamers.id] : null
+  const activeLabelMap = active.streamers && activeCharName
+    ? { ...streamerNameToChar, [active.streamers.display_name]: activeCharName }
+    : streamerNameToChar
   const activePerspective = active.streamers
     ? (isRedPill ? active.streamers.display_name : activeCharName)
     : null
@@ -155,7 +158,7 @@ export default function ClipPlayer({
             <p className="text-sm font-medium text-zinc-200 truncate">
               <ClipLabel
                 label={active.label ?? '클립'}
-                streamerToChar={streamerNameToChar}
+                streamerToChar={activeLabelMap}
               />
             </p>
             <p className="text-xs text-zinc-500 mt-0.5 truncate">
@@ -198,6 +201,9 @@ export default function ClipPlayer({
             {clips.map((clip, i) => {
               const isActive = clip.id === activeId
               const charName = clip.streamers?.id ? streamerToChar[clip.streamers.id] : null
+              const clipLabelMap = clip.streamers && charName
+                ? { ...streamerNameToChar, [clip.streamers.display_name]: charName }
+                : streamerNameToChar
               const streamerLine = clip.streamers
                 ? (isRedPill ? `${clip.streamers.display_name} 시점` : charName ? `${charName} 시점` : null)
                 : null
@@ -208,7 +214,7 @@ export default function ClipPlayer({
                   onMouseEnter={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect()
                     setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top })
-                    setTooltip({ label: clip.label ?? `클립 ${i + 1}`, streamerLine })
+                    setTooltip({ label: clip.label ?? `클립 ${i + 1}`, streamerLine, labelMap: clipLabelMap })
                   }}
                   onMouseLeave={() => setTooltip(null)}
                   className={`flex shrink-0 items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer w-52 ${
@@ -228,7 +234,7 @@ export default function ClipPlayer({
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className={`text-xs font-medium truncate ${isActive ? 'text-amber-400' : 'text-zinc-300'}`}>
-                      <ClipLabel label={clip.label ?? `클립 ${i + 1}`} streamerToChar={streamerNameToChar} />
+                      <ClipLabel label={clip.label ?? `클립 ${i + 1}`} streamerToChar={clipLabelMap} />
                     </p>
                     {clip.streamers && (
                       <p className="text-[11px] text-zinc-500 truncate">{streamerLine}</p>
@@ -249,7 +255,7 @@ export default function ClipPlayer({
         >
           <div className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 shadow-xl w-max max-w-64 text-left">
             <p className="text-xs font-medium text-zinc-200">
-              <ClipLabel label={tooltip.label} streamerToChar={streamerNameToChar} />
+              <ClipLabel label={tooltip.label} streamerToChar={tooltip.labelMap} />
             </p>
             {tooltip.streamerLine && (
               <p className="text-[11px] text-zinc-500 mt-0.5">{tooltip.streamerLine}</p>
