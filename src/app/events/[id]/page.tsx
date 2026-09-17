@@ -1,6 +1,7 @@
 export const revalidate = 2592000
 
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
@@ -15,6 +16,7 @@ import BackButton from '@/components/ui/BackButton'
 import ClipPlayer from '@/components/events/ClipPlayer'
 import EventLocationMap from './EventLocationMap'
 import { formatKstDateTime } from '@/lib/date/kst'
+import EventNeighbors from '../EventNeighbors'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -262,6 +264,7 @@ export default async function EventDetailPage({ params }: Props) {
           </div>
         )}
       </section>
+      <Suspense fallback={<div className="h-20" />}><EventNeighbors eventId={event.id} /></Suspense>
       </div>
     </div>
   )

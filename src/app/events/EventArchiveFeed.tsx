@@ -91,9 +91,9 @@ export default function EventArchiveFeed({ initialEvents, type, initialHasMore, 
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 py-24 text-center text-zinc-500 text-sm">기록된 사건이 없습니다.</div>
       ) : (
         <div className="space-y-6">
-          {!type && <FeaturedEvent event={events[0]} />}
+          {!type && <FeaturedEvent event={events[0]} type={type} />}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {visibleEvents.map((event) => <EventCard key={event.id} event={event} />)}
+            {visibleEvents.map((event) => <EventCard key={event.id} event={event} type={type} />)}
           </div>
           <div ref={sentinelRef} className="flex min-h-10 items-center justify-center text-zinc-500" aria-live="polite">
             {query.isFetchingNextPage && <Loader2 size={18} className="animate-spin" aria-label="사건을 불러오는 중" />}
@@ -106,15 +106,19 @@ export default function EventArchiveFeed({ initialEvents, type, initialHasMore, 
   )
 }
 
-function FeaturedEvent({ event }: { event: Event }) {
+function eventHref(id: string, type: string) {
+  return `/events/${id}${type ? `?type=${encodeURIComponent(type)}` : ''}`
+}
+
+function FeaturedEvent({ event, type }: { event: Event; type: string }) {
   return (
-    <Link href={`/events/${event.id}`} onClick={rememberEventScrollPosition} className={`group relative flex min-h-[260px] flex-col justify-end overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition-colors hover:border-amber-400/30 ${event.thumbnail_url ? 'events-featured-card' : ''}`}>
+    <Link href={eventHref(event.id, type)} onClick={rememberEventScrollPosition} className={`group relative flex min-h-[260px] flex-col justify-end overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition-colors hover:border-amber-400/30 ${event.thumbnail_url ? 'events-featured-card' : ''}`}>
       {event.thumbnail_url ? <><AppImage src={event.thumbnail_url} alt={event.title} className="absolute inset-0 h-full w-full object-cover opacity-30 group-hover:opacity-40 transition-opacity" /><div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" /></> : <div className="events-thumbnail-fallback absolute inset-0 flex items-center justify-center bg-gradient-to-br from-amber-500/10 to-transparent"><span className="text-4xl font-black text-amber-400 opacity-50 drop-shadow-sm">{typeLabel[event.type ?? 'other'] ?? '기타'}</span></div>}
       <div className="relative z-10 space-y-3 p-6"><div className="flex items-center gap-2"><span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-xs font-bold text-zinc-900">최신</span>{event.type && <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${typeColor[event.type]}`}>{typeLabel[event.type]}</span>}{event.occurred_at && <span className="text-xs text-zinc-500">{formatKstDateTime(event.occurred_at)}</span>}</div><h2 className="text-xl font-black text-white group-hover:text-amber-400 transition-colors leading-snug">{event.title}</h2>{event.summary && <p className="text-sm text-zinc-400 line-clamp-2">{event.summary}</p>}</div>
     </Link>
   )
 }
 
-function EventCard({ event }: { event: Event }) {
-  return <Link href={`/events/${event.id}`} onClick={rememberEventScrollPosition} className="group flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden transition-colors hover:border-amber-400/30 hover:bg-zinc-800/50">{event.thumbnail_url ? <div className="relative h-40 overflow-hidden"><AppImage src={event.thumbnail_url} alt={event.title} className="h-full w-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" /><div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent" />{event.type && <span className={`absolute bottom-2 left-3 rounded-full border px-2 py-0.5 text-xs font-medium ${typeColor[event.type]}`}>{typeLabel[event.type]}</span>}</div> : <div className="events-thumbnail-fallback flex h-40 items-center justify-center bg-amber-400/5"><span className={`rounded-full border px-3 py-1 text-sm font-semibold ${typeColor[event.type ?? 'other'] ?? typeColor.other}`}>{typeLabel[event.type ?? 'other'] ?? '기타'}</span></div>}<div className="flex flex-col gap-2 px-4 pb-4">{event.occurred_at && <p className="text-xs text-zinc-500">{formatKstDateTime(event.occurred_at)}</p>}<h3 className="font-bold text-white group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">{event.title}</h3>{event.summary && <p className="text-xs text-zinc-500 line-clamp-3 leading-relaxed">{event.summary}</p>}</div></Link>
+function EventCard({ event, type }: { event: Event; type: string }) {
+  return <Link href={eventHref(event.id, type)} onClick={rememberEventScrollPosition} className="group flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden transition-colors hover:border-amber-400/30 hover:bg-zinc-800/50">{event.thumbnail_url ? <div className="relative h-40 overflow-hidden"><AppImage src={event.thumbnail_url} alt={event.title} className="h-full w-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" /><div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent" />{event.type && <span className={`absolute bottom-2 left-3 rounded-full border px-2 py-0.5 text-xs font-medium ${typeColor[event.type]}`}>{typeLabel[event.type]}</span>}</div> : <div className="events-thumbnail-fallback flex h-40 items-center justify-center bg-amber-400/5"><span className={`rounded-full border px-3 py-1 text-sm font-semibold ${typeColor[event.type ?? 'other'] ?? typeColor.other}`}>{typeLabel[event.type ?? 'other'] ?? '기타'}</span></div>}<div className="flex flex-col gap-2 px-4 pb-4">{event.occurred_at && <p className="text-xs text-zinc-500">{formatKstDateTime(event.occurred_at)}</p>}<h3 className="font-bold text-white group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">{event.title}</h3>{event.summary && <p className="text-xs text-zinc-500 line-clamp-3 leading-relaxed">{event.summary}</p>}</div></Link>
 }
