@@ -50,6 +50,7 @@ type EventDetail = {
     sort_order: number
     streamers: { id: string; display_name: string } | null
   }>
+  clip_characters?: Array<{ streamer_id: string; name: string }>
 }
 
 const statusColor: Record<string, string> = {
@@ -81,7 +82,22 @@ async function getEvent(id: string): Promise<EventDetail | null> {
     .eq('is_published', true)
     .single()
 
-  return data as unknown as EventDetail | null
+  if (!data) return null
+
+  const event = data as unknown as EventDetail
+  const clipStreamerIds = [...new Set((event.event_clips ?? []).map((clip) => clip.streamers?.id).filter((id): id is string => Boolean(id)))]
+  const participantStreamerIds = new Set((event.event_participants ?? []).map((participant) => participant.characters?.streamers?.id).filter((id): id is string => Boolean(id)))
+  const missingStreamerIds = clipStreamerIds.filter((id) => !participantStreamerIds.has(id))
+  if (missingStreamerIds.length) {
+    const { data: characterData } = await supabase
+      .from('characters')
+      .select('streamer_id, name, is_name_pending')
+      .in('streamer_id', missingStreamerIds)
+      .order('is_name_pending', { ascending: true })
+    event.clip_characters = ((characterData ?? []) as Array<{ streamer_id: string; name: string; is_name_pending: boolean }>)
+      .map(({ streamer_id, name }) => ({ streamer_id, name }))
+  }
+  return event
 }
 
 const getEventCached = unstable_cache(getEvent, ['wiki-event-detail'], {
@@ -120,6 +136,9 @@ export default async function EventDetailPage({ params }: Props) {
     const c = p.characters
     if (c?.streamers?.id) streamerToChar[c.streamers.id] = c.name
     if (c?.streamers?.display_name) streamerNameToChar[c.streamers.display_name] = c.name
+  }
+  for (const character of event.clip_characters ?? []) {
+    if (!streamerToChar[character.streamer_id]) streamerToChar[character.streamer_id] = character.name
   }
 
   return (
