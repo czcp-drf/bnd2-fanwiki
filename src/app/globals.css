@@ -204,6 +204,8 @@ html.theme-changing *::after {
 }
 
 .bbs-theme {
+  --bbs-accent-text: #d7432d;
+  --bbs-accent-strong: #e14b32;
   --bbs-page: #e9e9e9;
   --bbs-surface: #ededed;
   --bbs-card: #ffffff;
@@ -216,6 +218,8 @@ html.theme-changing *::after {
 }
 
 html[data-bongstagram-theme="dark"] .bbs-theme {
+  --bbs-accent-text: #eb765d;
+  --bbs-accent-strong: #f08468;
   --bbs-page: #101216;
   --bbs-surface: #171a20;
   --bbs-card: #1d2128;

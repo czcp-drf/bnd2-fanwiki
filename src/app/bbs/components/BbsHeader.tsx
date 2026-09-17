@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -150,7 +150,7 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
             aria-expanded={filterOpen}
             ref={filterButtonRef}
             onClick={() => { dismissFilterTip(); setDayMenuOpen(false); setSelectedReporterIds(activeReporterIds); setSelectedSort(activeSort); setReporterMenuOpen(false); setFilterPosition(null); setFilterOpen((open) => !open) }}
-            className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeReporterIds.length || activeSort === 'oldest' ? 'bg-[#e14b32]/15 text-[#e14b32]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
+            className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeReporterIds.length || activeSort === 'oldest' ? 'bg-[#e14b32]/15 text-[var(--bbs-accent-strong)]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
           >
             <Filter size={17} />
           </button>
@@ -160,7 +160,7 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
             aria-expanded={dayMenuOpen}
             ref={dayButtonRef}
             onClick={() => { dismissFilterTip(); setFilterOpen(false); setDayMenuPosition(null); setDayMenuOpen((open) => !open) }}
-            className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeDay ? 'bg-[#e14b32]/15 text-[#e14b32]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
+            className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition-colors ${activeDay ? 'bg-[#e14b32]/15 text-[var(--bbs-accent-strong)]' : 'bg-[var(--bbs-muted)] text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-border)] hover:text-[var(--bbs-text)]'}`}
           >
             {selectedDayLabel ? <span className="text-sm font-bold leading-none">{selectedDayLabel}</span> : <CalendarDays size={16} />}
           </button>
@@ -198,8 +198,8 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
             </button>
             {reporterMenuOpen && (
               <div role="listbox" aria-label="담당기자 선택" className="absolute inset-x-0 top-[4.25rem] z-50 max-h-52 overflow-y-auto rounded-xl border border-[var(--bbs-border)] bg-[var(--bbs-card)] p-1.5 shadow-lg [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <button type="button" role="option" aria-selected={!selectedReporterIds.length} onClick={() => setSelectedReporterIds([])} className={`flex w-full cursor-pointer items-center rounded-lg px-3 py-2 max-md:py-3 text-left text-sm transition-colors ${!selectedReporterIds.length ? 'bg-[#e14b32]/12 font-semibold text-[#e14b32]' : 'text-[var(--bbs-text)] hover:bg-[var(--bbs-hover)]'}`}><span className="mr-2 flex h-4 w-4 items-center justify-center rounded border border-current">{!selectedReporterIds.length && <Check size={12} />}</span>모든 기자</button>
-                {reporters.map((reporter) => { const selected = selectedReporterIds.includes(reporter.id); return <button key={reporter.id} type="button" role="option" aria-selected={selected} onClick={() => setSelectedReporterIds((current) => selected ? current.filter((id) => id !== reporter.id) : [...current, reporter.id])} className={`flex w-full cursor-pointer items-center rounded-lg px-3 py-2.5 max-md:py-3 text-left text-sm transition-colors ${selected ? 'bg-[#e14b32]/12 font-semibold text-[#e14b32]' : 'text-[var(--bbs-text)] hover:bg-[var(--bbs-hover)]'}`}><span className="mr-2 flex h-4 w-4 items-center justify-center rounded border border-current">{selected && <Check size={12} />}</span>{displayReporterName(reporter)}</button> })}
+                <button type="button" role="option" aria-selected={!selectedReporterIds.length} onClick={() => setSelectedReporterIds([])} className={`flex w-full cursor-pointer items-center rounded-lg px-3 py-2 max-md:py-3 text-left text-sm transition-colors ${!selectedReporterIds.length ? 'bg-[#e14b32]/12 font-semibold text-[var(--bbs-accent-strong)]' : 'text-[var(--bbs-text)] hover:bg-[var(--bbs-hover)]'}`}><span className="mr-2 flex h-4 w-4 items-center justify-center rounded border border-current">{!selectedReporterIds.length && <Check size={12} />}</span>모든 기자</button>
+                {reporters.map((reporter) => { const selected = selectedReporterIds.includes(reporter.id); return <button key={reporter.id} type="button" role="option" aria-selected={selected} onClick={() => setSelectedReporterIds((current) => selected ? current.filter((id) => id !== reporter.id) : [...current, reporter.id])} className={`flex w-full cursor-pointer items-center rounded-lg px-3 py-2.5 max-md:py-3 text-left text-sm transition-colors ${selected ? 'bg-[#e14b32]/12 font-semibold text-[var(--bbs-accent-strong)]' : 'text-[var(--bbs-text)] hover:bg-[var(--bbs-hover)]'}`}><span className="mr-2 flex h-4 w-4 items-center justify-center rounded border border-current">{selected && <Check size={12} />}</span>{displayReporterName(reporter)}</button> })}
                 {!reporters.length && <p className="px-3 py-3 text-sm text-[var(--bbs-subtle-text)]">등록된 기자가 없습니다.</p>}
               </div>
             )}
@@ -208,7 +208,7 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
             <span>정렬</span>
             <div className="mt-1.5 grid grid-cols-2 gap-1.5">
               {([['latest', '최신순'], ['oldest', '오래된순']] as const).map(([value, label]) => (
-                <button key={value} type="button" onClick={() => setSelectedSort(value)} className={`cursor-pointer rounded-lg border px-3 py-2 text-sm transition-colors ${selectedSort === value ? 'border-[#e14b32] bg-[#e14b32]/12 font-semibold text-[#e14b32]' : 'border-[var(--bbs-border)] bg-[var(--bbs-muted)] text-[var(--bbs-text)] hover:border-[#e14b32]/60'}`}>{label}</button>
+                <button key={value} type="button" onClick={() => setSelectedSort(value)} className={`cursor-pointer rounded-lg border px-3 py-2 text-sm transition-colors ${selectedSort === value ? 'border-[#e14b32] bg-[#e14b32]/12 font-semibold text-[var(--bbs-accent-strong)]' : 'border-[var(--bbs-border)] bg-[var(--bbs-muted)] text-[var(--bbs-text)] hover:border-[#e14b32]/60'}`}>{label}</button>
               ))}
             </div>
           </div>

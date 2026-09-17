@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
@@ -38,17 +38,17 @@ export default function BbsArticleCard({ article, listQuery = '' }: { article: B
       <BbsArticleVisual article={article} compact />
       <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3.5">
         <div className="min-w-0 flex-1">
-          <span className="mb-1.5 inline-flex rounded-full bg-[#e14b32]/10 px-2 py-0.5 text-[10px] font-semibold text-[#d7432d]">
+          <span className="mb-1.5 inline-flex rounded-full bg-[#e14b32]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--bbs-accent-text)]">
             {article.category}
           </span>
-          <h2 className="line-clamp-2 text-[13px] font-bold leading-snug text-[var(--bbs-text)] group-hover:text-[#d7432d] sm:text-[15px]">{article.title}</h2>
+          <h2 className="line-clamp-2 text-[13px] font-bold leading-snug text-[var(--bbs-text)] group-hover:text-[var(--bbs-accent-text)] sm:text-[15px]">{article.title}</h2>
           <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--bbs-subtle-text)]">
             <span><BongstagramDisplayName profileName={article.author} streamerName={article.authorStreamerName} /></span>
             <span aria-hidden="true">·</span>
-            <time dateTime={article.approvedAt} className="text-[#d7432d]">{formatArticleTime(article.approvedAt)}</time>
+            <time dateTime={article.approvedAt} className="text-[var(--bbs-accent-text)]">{formatArticleTime(article.approvedAt)}</time>
           </div>
         </div>
-        <ChevronRight size={19} className="shrink-0 text-[#e14b32] transition-transform group-hover:translate-x-0.5" />
+        <ChevronRight size={19} className="shrink-0 text-[var(--bbs-accent-strong)] transition-transform group-hover:translate-x-0.5" />
       </div>
     </Link>
   )

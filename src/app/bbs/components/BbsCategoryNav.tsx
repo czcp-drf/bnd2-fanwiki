@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { AlertTriangle, BriefcaseBusiness, CalendarDays, LayoutGrid, Megaphone, PenLine } from 'lucide-react'
 import { BBS_CATEGORIES, type BbsCategory } from '@/lib/bbs/articles'
 import type { BbsDayKey } from '@/lib/bbs/days'
@@ -33,7 +33,7 @@ export default function BbsCategoryNav({ activeCategory, reporterIds = [], day, 
               key={category}
               href={href}
               aria-current={active ? 'page' : undefined}
-              className={`flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10px] font-medium transition-colors md:flex-row md:flex-none md:gap-1.5 md:px-2.5 md:text-xs ${active ? 'text-[#e14b32]' : 'text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-hover)] hover:text-[var(--bbs-text)]'}`}
+              className={`flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10px] font-medium transition-colors md:flex-row md:flex-none md:gap-1.5 md:px-2.5 md:text-xs ${active ? 'text-[var(--bbs-accent-strong)]' : 'text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-hover)] hover:text-[var(--bbs-text)]'}`}
             >
               <Icon size={17} strokeWidth={active ? 2.5 : 1.8} />
               <span className="truncate">{category}</span>

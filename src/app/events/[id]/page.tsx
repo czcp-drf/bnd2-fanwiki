@@ -12,11 +12,11 @@ import ReactMarkdown from 'react-markdown'
 import { typeLabel, typeColor } from '@/lib/events'
 import { StreamerReveal } from '@/components/ui/StreamerMask'
 import AppImage from '@/components/ui/AppImage'
-import BackButton from '@/components/ui/BackButton'
 import ClipPlayer from '@/components/events/ClipPlayer'
 import EventLocationMap from './EventLocationMap'
 import { formatKstDateTime } from '@/lib/date/kst'
 import EventNeighbors from '../EventNeighbors'
+import EventBackLink from '../EventBackLink'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -126,7 +126,7 @@ export default async function EventDetailPage({ params }: Props) {
     <div className="wiki-theme min-h-[calc(100vh-3.5rem)] px-4 py-10">
       <div className="mx-auto max-w-4xl space-y-8">
       {/* 뒤로가기 */}
-      <BackButton />
+      <Suspense fallback={<span className="h-5" />}><EventBackLink /></Suspense>
 
       {/* 헤더 */}
       <div className="space-y-4">

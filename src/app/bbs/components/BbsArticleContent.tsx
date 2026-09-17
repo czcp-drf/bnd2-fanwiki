@@ -1,4 +1,4 @@
-import type { ImgHTMLAttributes, ReactNode } from 'react'
+﻿import type { ImgHTMLAttributes, ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import BbsZoomableImage from './BbsZoomableImage'
@@ -14,7 +14,7 @@ const markdownComponents = {
   strong: ({ children }: { children?: ReactNode }) => <strong className="font-bold">{children}</strong>,
   em: ({ children }: { children?: ReactNode }) => <em className="italic">{children}</em>,
   del: ({ children }: { children?: ReactNode }) => <del className="text-[var(--bbs-subtle-text)]">{children}</del>,
-  a: ({ children, href }: { children?: ReactNode; href?: string }) => <a href={href} className="text-[#d7432d] underline underline-offset-2" target="_blank" rel="noreferrer">{children}</a>,
+  a: ({ children, href }: { children?: ReactNode; href?: string }) => <a href={href} className="text-[var(--bbs-accent-text)] underline underline-offset-2" target="_blank" rel="noreferrer">{children}</a>,
   img: ({ src, alt }: ImgHTMLAttributes<HTMLImageElement>) => typeof src === 'string' ? <BbsZoomableImage src={src} alt={alt ?? ''} intrinsic previewClassName="max-w-full rounded-xl" sizes="(max-width: 768px) 100vw, 768px" /> : null,
 }
 

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import BbsArticleVisual from '../../components/BbsArticleVisual'
@@ -53,7 +53,7 @@ export default async function BbsArticlePage({ params }: Props) {
           <p className="truncate text-xs font-bold text-[var(--bbs-text)]">{article.title}</p>
             <p className="mt-0.5 text-[10px] text-[var(--bbs-subtle-text)]"><BongstagramDisplayName profileName={article.author} streamerName={article.authorStreamerName} /></p>
           </div>
-          <BbsShareButton className="text-[#d7432d] hover:bg-[#d7432d]/10 hover:text-[#a82f23]" />
+          <BbsShareButton className="text-[var(--bbs-accent-text)] hover:bg-[#d7432d]/10 hover:text-[#a82f23]" />
         </header>
 
         <main className="bg-[var(--bbs-surface)] px-5 pb-8 pt-7 sm:px-10 sm:pb-12 sm:pt-10">
