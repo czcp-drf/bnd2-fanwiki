@@ -8,6 +8,8 @@ import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/c
 import type { Metadata } from 'next'
 import type { Event } from '@/types/database'
 import EventTypeFilter from '@/components/events/EventTypeFilter'
+import EventDayFilter from '@/components/events/EventDayFilter'
+import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
 import { GitCommitVertical } from 'lucide-react'
 import EventArchiveFeed from './EventArchiveFeed'
 
@@ -19,12 +21,16 @@ export const metadata: Metadata = {
 export { typeLabel, typeColor } from '@/lib/events'
 
 type Props = {
-  searchParams: Promise<{ type?: string }>
+  searchParams: Promise<{ type?: string; day?: string }>
 }
 
 const PAGE_SIZE = 12
 
-async function getEvents(type: string) {
+function getDayKey(value: string | undefined): BbsDayKey | undefined {
+  return BBS_DAYS.some((day) => day.key === value) ? value as BbsDayKey : undefined
+}
+
+async function getEvents(type: string, dayKey?: BbsDayKey) {
   const supabase = createPublicClient()
   let query = supabase
     .from('events')
@@ -33,19 +39,41 @@ async function getEvents(type: string) {
     .order('occurred_at', { ascending: false })
 
   if (type) query = query.eq('type', type)
+  if (dayKey) {
+    const day = BBS_DAYS.find((item) => item.key === dayKey)
+    if (day) query = query.gte('occurred_at', day.start).lte('occurred_at', day.end)
+  }
 
   const { data, count } = await query.range(0, PAGE_SIZE - 1)
   return { events: (data ?? []) as Event[], total: count ?? 0 }
 }
 
-const getEventsCached = unstable_cache(getEvents, ['wiki-events-list'], {
+const getEventsCached = unstable_cache(getEvents, ['wiki-events-list-v2'], {
   revalidate: WIKI_CACHE_REVALIDATE,
   tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events],
 })
 
+const getAvailableEventDayKeys = unstable_cache(async (): Promise<BbsDayKey[]> => {
+  const supabase = createPublicClient()
+  const { data, error } = await supabase
+    .from('events')
+    .select('occurred_at')
+    .eq('is_published', true)
+    .not('occurred_at', 'is', null)
+  if (error) {
+    console.error('Event available day load failed:', error.message)
+    return []
+  }
+  const occurredTimes = ((data ?? []) as Array<{ occurred_at: string | null }>)
+    .map((event) => event.occurred_at)
+    .filter((value): value is string => Boolean(value))
+  return BBS_DAYS.filter((day) => occurredTimes.some((occurredAt) => occurredAt >= day.start && occurredAt <= day.end)).map((day) => day.key)
+}, ['events-available-days'], { revalidate: WIKI_CACHE_REVALIDATE, tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events] })
+
 export default async function EventsPage({ searchParams }: Props) {
-  const { type = '' } = await searchParams
-  const { events, total } = await getEventsCached(type)
+  const { type = '', day: dayValue } = await searchParams
+  const day = getDayKey(dayValue)
+  const [{ events, total }, availableDayKeys] = await Promise.all([getEventsCached(type, day), getAvailableEventDayKeys()])
   const hasMore = events.length < total
 
   return (
@@ -72,11 +100,12 @@ export default async function EventsPage({ searchParams }: Props) {
       </div>
 
       {/* 타입 필터 */}
-      <Suspense>
-        <EventTypeFilter />
-      </Suspense>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Suspense><EventTypeFilter /></Suspense>
+        <Suspense><EventDayFilter availableDayKeys={availableDayKeys} /></Suspense>
+      </div>
 
-      <EventArchiveFeed key={type || 'all'} initialEvents={events} type={type} initialHasMore={hasMore} total={total} />
+      <EventArchiveFeed key={`${type || 'all'}:${day || 'all'}`} initialEvents={events} type={type} day={day} initialHasMore={hasMore} total={total} />
       </div>
     </div>
   )

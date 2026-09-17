@@ -113,6 +113,8 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
     return isRedPill && reporter.streamerName ? reporter.streamerName : reporter.name
   }
 
+  const visibleDays = BBS_DAYS.filter((day) => availableDayKeys.includes(day.key))
+
   function applyReporterFilter(nextReporterIds = selectedReporterIds, nextSortOrder = selectedSort) {
     const params = new URLSearchParams()
     if (activeCategory !== '전체') params.set('category', activeCategory)
@@ -170,7 +172,7 @@ export default function BbsHeader({ activeCategory, activeReporterIds, activeDay
           <p className="mb-2 px-1 text-xs font-bold text-[var(--bbs-text)]">기사 일차 선택</p>
           <div className="grid grid-cols-5 gap-1.5">
             <Link href={`/bbs?${new URLSearchParams({ ...(activeCategory !== '전체' ? { category: activeCategory } : {}), ...(activeReporterIds.length ? { reporter: activeReporterIds.join(',') } : {}), ...(activeSort === 'oldest' ? { order: 'oldest' } : {}) }).toString()}`} onClick={() => setDayMenuOpen(false)} className={`flex h-9 cursor-pointer items-center justify-center rounded-lg text-[11px] font-semibold ${!activeDay ? 'bg-[#e14b32] text-white' : 'text-[var(--bbs-subtle-text)] hover:bg-[var(--bbs-hover)] hover:text-[var(--bbs-text)]'}`}>전체</Link>
-          {BBS_DAYS.filter((day) => availableDayKeys.includes(day.key)).map((day) => {
+          {visibleDays.map((day) => {
             const params = new URLSearchParams()
             params.set('day', day.key)
             if (activeCategory !== '전체') params.set('category', activeCategory)

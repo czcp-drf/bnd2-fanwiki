@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { getEventNeighborsAction } from './actions'
+import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
 
 type Neighbor = { id: string; title: string }
 type Neighbors = { previous: Neighbor | null; next: Neighbor | null }
@@ -13,15 +14,17 @@ export default function EventNeighbors({ eventId }: { eventId: string }) {
   const searchParams = useSearchParams()
   const [neighbors, setNeighbors] = useState<Neighbors>({ previous: null, next: null })
   const type = searchParams.get('type') || undefined
+  const dayValue = searchParams.get('day') || ''
+  const day = BBS_DAYS.some((item) => item.key === dayValue) ? dayValue as BbsDayKey : undefined
   const query = searchParams.toString()
 
   useEffect(() => {
     let active = true
-    void getEventNeighborsAction(eventId, type).then((result) => {
+    void getEventNeighborsAction(eventId, type, day).then((result) => {
       if (active) setNeighbors(result)
     })
     return () => { active = false }
-  }, [eventId, type])
+  }, [eventId, type, day])
 
   const href = (id: string) => `/events/${id}${query ? `?${query}` : ''}`
   return (

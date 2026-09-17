@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient } from '@/lib/supabase/public'
+import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
 
 export const revalidate = 86400
 
@@ -8,6 +9,8 @@ const eventTypes = new Set(['war', 'crime', 'political', 'social', 'accident', '
 
 export async function GET(request: NextRequest) {
   const type = request.nextUrl.searchParams.get('type') ?? ''
+  const dayValue = request.nextUrl.searchParams.get('day') ?? ''
+  const day = BBS_DAYS.some((item) => item.key === dayValue) ? dayValue as BbsDayKey : undefined
   const offsetValue = Number(request.nextUrl.searchParams.get('offset') ?? '0')
   const offset = Number.isInteger(offsetValue) && offsetValue >= 0 ? offsetValue : 0
 
@@ -22,12 +25,20 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + PAGE_SIZE - 1)
 
   if (type) query = query.eq('type', type)
+  if (day) {
+    const dayRange = BBS_DAYS.find((item) => item.key === day)
+    if (dayRange) query = query.gte('occurred_at', dayRange.start).lte('occurred_at', dayRange.end)
+  }
 
   const { data, count, error } = await query
   if (error) console.error('Events API load failed:', { code: error.code, message: error.message, details: error.details, hint: error.hint, type, offset })
   if (error?.code === 'PGRST103') {
     let countQuery = supabase.from('events').select('id', { count: 'exact', head: true }).eq('is_published', true)
     if (type) countQuery = countQuery.eq('type', type)
+    if (day) {
+      const dayRange = BBS_DAYS.find((item) => item.key === day)
+      if (dayRange) countQuery = countQuery.gte('occurred_at', dayRange.start).lte('occurred_at', dayRange.end)
+    }
 
     const { count: refreshedCount, error: countError } = await countQuery
     if (!countError) {
