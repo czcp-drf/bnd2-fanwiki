@@ -88,7 +88,7 @@ export default function ClipPlayer({
   const active = clips.find((c) => c.id === activeId) ?? clips[0]
   const activeCharName = active.streamers?.id ? streamerToChar[active.streamers.id] : null
   const activePerspective = active.streamers
-    ? (isRedPill ? active.streamers.display_name : activeCharName ?? active.streamers.display_name)
+    ? (isRedPill ? active.streamers.display_name : activeCharName)
     : null
 
   return (
@@ -199,7 +199,7 @@ export default function ClipPlayer({
               const isActive = clip.id === activeId
               const charName = clip.streamers?.id ? streamerToChar[clip.streamers.id] : null
               const streamerLine = clip.streamers
-                ? `${isRedPill ? clip.streamers.display_name : charName ?? clip.streamers.display_name} 시점`
+                ? (isRedPill ? `${clip.streamers.display_name} 시점` : charName ? `${charName} 시점` : null)
                 : null
               return (
                 <button

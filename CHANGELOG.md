@@ -337,6 +337,10 @@
 - 검증: `npx tsc --noEmit`, `git diff --check` 통과.
 - 대상 브랜치: `main` (`deploy` 원격으로 커밋·푸시)
 
+- 2026-09-17: 사건 클립에서 빨간약 OFF인데 캐릭터 매핑이 없는 경우 스트리머명이 fallback으로 노출되던 문제를 수정했습니다. OFF 상태에서는 매핑된 캐릭터명만 표시하고, 매핑이 없으면 시점 이름을 숨깁니다.
+- 검증: `npx tsc --noEmit`, `git diff --check` 통과.
+- 대상 브랜치: `main` (`deploy` 원격으로 커밋·푸시)
+
 - 2026-09-17: BBS·사건 아카이브의 일차 존재 여부를 ISO 문자열이 아닌 KST 범위의 실제 timestamp로 비교하도록 수정해 UTC 반환 데이터에서도 일차 버튼이 정확히 표시되도록 했습니다. 관련 캐시 키도 갱신했습니다.
 - 검증: `npx tsc --noEmit`, `git diff --check` 통과.
 - 대상 브랜치: `main` (`deploy` 원격으로 커밋·푸시)
