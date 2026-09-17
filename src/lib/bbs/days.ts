@@ -2,6 +2,11 @@ export type BbsDayKey = `day${number}`
 
 export type BbsDay = { key: BbsDayKey; label: string; range: string; start: string; end: string }
 
+export function isWithinBbsDay(value: string, day: BbsDay) {
+  const timestamp = Date.parse(value)
+  return Number.isFinite(timestamp) && timestamp >= Date.parse(day.start) && timestamp <= Date.parse(day.end)
+}
+
 const KST_OFFSET = '+09:00'
 const INITIAL_DAY: BbsDay = {
   key: 'day0',

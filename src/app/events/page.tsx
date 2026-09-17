@@ -9,7 +9,7 @@ import type { Metadata } from 'next'
 import type { Event } from '@/types/database'
 import EventTypeFilter from '@/components/events/EventTypeFilter'
 import EventDayFilter from '@/components/events/EventDayFilter'
-import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
+import { BBS_DAYS, isWithinBbsDay, type BbsDayKey } from '@/lib/bbs/days'
 import { GitCommitVertical } from 'lucide-react'
 import EventArchiveFeed from './EventArchiveFeed'
 
@@ -67,8 +67,8 @@ const getAvailableEventDayKeys = unstable_cache(async (): Promise<BbsDayKey[]> =
   const occurredTimes = ((data ?? []) as Array<{ occurred_at: string | null }>)
     .map((event) => event.occurred_at)
     .filter((value): value is string => Boolean(value))
-  return BBS_DAYS.filter((day) => occurredTimes.some((occurredAt) => occurredAt >= day.start && occurredAt <= day.end)).map((day) => day.key)
-}, ['events-available-days'], { revalidate: WIKI_CACHE_REVALIDATE, tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events] })
+  return BBS_DAYS.filter((day) => occurredTimes.some((occurredAt) => isWithinBbsDay(occurredAt, day))).map((day) => day.key)
+}, ['events-available-days-v2'], { revalidate: WIKI_CACHE_REVALIDATE, tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events] })
 
 export default async function EventsPage({ searchParams }: Props) {
   const { type = '', day: dayValue } = await searchParams

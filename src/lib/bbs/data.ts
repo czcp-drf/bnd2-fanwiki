@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { getBbsCategoryKey, getBbsCategoryLabel, type BbsArticle, type BbsArticleMedia, type BbsCategoryKey } from './articles'
-import { BBS_DAYS, type BbsDayKey } from './days'
+import { BBS_DAYS, isWithinBbsDay, type BbsDayKey } from './days'
 
 export const BBS_ARTICLE_LIST_TAG = 'bbs-article-list'
 export const BBS_ARTICLE_NEIGHBORS_TAG = 'bbs-article-neighbors'
@@ -227,9 +227,9 @@ const getCachedAvailableBbsDayKeys = unstable_cache(
     }
 
     const approvedTimes = ((data ?? []) as Array<{ approved_at: string | null }>).map((article) => article.approved_at).filter((value): value is string => Boolean(value))
-    return BBS_DAYS.filter((day) => approvedTimes.some((approvedAt) => approvedAt >= day.start && approvedAt <= day.end)).map((day) => day.key)
+    return BBS_DAYS.filter((day) => approvedTimes.some((approvedAt) => isWithinBbsDay(approvedAt, day))).map((day) => day.key)
   },
-  ['bbs-available-days'],
+  ['bbs-available-days-v2'],
   { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
