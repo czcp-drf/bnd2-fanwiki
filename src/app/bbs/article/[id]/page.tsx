@@ -9,6 +9,7 @@ import BbsArticleBackLink from '../../components/BbsArticleBackLink'
 import BbsArticleNeighbors from '../../components/BbsArticleNeighbors'
 import BbsShareButton from '../../components/BbsShareButton'
 import BbsZoomableImage from '../../components/BbsZoomableImage'
+import BbsArticleReadTracker from '../../components/BbsArticleReadTracker'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
 import { getPublishedBbsArticle } from '@/lib/bbs/data'
 
@@ -45,6 +46,7 @@ export default async function BbsArticlePage({ params }: Props) {
 
   return (
     <div className="bbs-theme min-h-[calc(100vh-3.5rem)] bg-[var(--bbs-page)] px-0 py-0 text-[var(--bbs-text)] md:px-4 md:py-8">
+        <BbsArticleReadTracker articleId={article.id} />
         <article className="mx-auto max-w-3xl overflow-hidden bg-[var(--bbs-surface)] md:rounded-3xl md:border md:border-[var(--bbs-border)] md:shadow-xl">
         <header className="flex items-center gap-3 border-b border-[var(--bbs-border)] px-4 py-4 sm:px-6">
           <Suspense fallback={<span className="h-9 w-9" />}><BbsArticleBackLink /></Suspense>
