@@ -103,6 +103,43 @@ export async function removeParticipant(eventId: string, participantId: string) 
   return { success: true }
 }
 
+export async function addEventOrganization(eventId: string, organizationId: string, role: string | null) {
+  const supabase = await requireAdmin()
+  const { error } = await supabase.from('event_organizations').insert({ event_id: eventId, organization_id: organizationId, role: role || null })
+  if (error) return { error: error.message }
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
+  return { success: true }
+}
+
+export async function updateEventOrganization(eventId: string, organizationParticipantId: string, role: string | null) {
+  const supabase = await requireAdmin()
+  const { error } = await supabase.from('event_organizations').update({ role }).eq('id', organizationParticipantId)
+  if (error) return { error: error.message }
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
+  return { success: true }
+}
+
+export async function removeEventOrganization(eventId: string, organizationParticipantId: string) {
+  const supabase = await requireAdmin()
+  const { error } = await supabase.from('event_organizations').delete().eq('id', organizationParticipantId)
+  if (error) return { error: error.message }
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
+  return { success: true }
+}
+
+export async function reorderEventOrganizations(eventId: string, orders: { id: string; sortOrder: number }[]) {
+  const supabase = await requireAdmin()
+  const results = await Promise.all(orders.map(({ id, sortOrder }) => supabase.from('event_organizations').update({ sort_order: sortOrder }).eq('id', id)))
+  const failed = results.find((result) => result.error)
+  if (failed?.error) return { error: failed.error.message }
+  invalidateAndRevalidate(`/admin/events/${eventId}/edit`)
+  invalidateAndRevalidate(`/events/${eventId}`)
+  return { success: true }
+}
+
 export async function addClip(eventId: string, data: {
   streamer_id: string | null
   clip_url: string

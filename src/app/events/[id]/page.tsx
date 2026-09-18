@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { WIKI_CACHE_TAGS, WIKI_DETAIL_CACHE_REVALIDATE, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
-import { Calendar, MapPin, Users, Play } from 'lucide-react'
+import { Building2, Calendar, MapPin, Users, Play } from 'lucide-react'
 import type { Metadata } from 'next'
 import ReactMarkdown from 'react-markdown'
 import { typeLabel, typeColor } from '@/lib/events'
@@ -43,6 +43,11 @@ type EventDetail = {
       streamers: { id: string; display_name: string; profile_image_url: string | null } | null
     } | null
   }>
+  event_organizations: Array<{
+    sort_order: number
+    role: string | null
+    organizations: { id: string; name: string; type: string | null; category: string | null; color: string | null } | null
+  }>
   event_clips: Array<{
     id: string
     clip_url: string
@@ -72,6 +77,10 @@ async function getEvent(id: string): Promise<EventDetail | null> {
           id, name, alias, avatar_url, job, status,
           streamers ( id, display_name, profile_image_url )
         )
+      ),
+      event_organizations (
+        sort_order, role,
+        organizations ( id, name, type, category, color )
       ),
       event_clips (
         id, clip_url, label, sort_order,
@@ -127,6 +136,7 @@ export default async function EventDetailPage({ params }: Props) {
 
   const clips = [...(event.event_clips ?? [])].sort((a, b) => a.sort_order - b.sort_order)
   const participants = [...(event.event_participants ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+  const organizations = [...(event.event_organizations ?? [])].sort((a, b) => a.sort_order - b.sort_order)
 
   // 스트리머 ID → 캐릭터명 맵 (클립 시점 표시용)
   const streamerToChar: Record<string, string> = {}
@@ -228,6 +238,27 @@ export default async function EventDetailPage({ params }: Props) {
       )}
 
       {/* 참여 캐릭터 */}
+      {organizations.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="flex items-center gap-2 text-base font-bold text-white">
+            <Building2 size={16} className="text-zinc-500" />
+            참여 조직
+            <span className="text-sm font-normal text-zinc-500">({organizations.length}개)</span>
+          </h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {organizations.map((item) => item.organizations && (
+              <Link key={item.organizations.id} href={`/organizations/${item.organizations.id}`} className="group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition-colors hover:border-zinc-700 hover:bg-zinc-800/50">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: item.organizations.color ?? '#3f3f46' }}>{item.organizations.name.charAt(0)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-white group-hover:text-amber-400">{item.organizations.name}</span>
+                  {(item.role || item.organizations.category) && <span className="block truncate text-xs text-zinc-500">{item.role ?? item.organizations.category}</span>}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-base font-bold text-white">
           <Users size={16} className="text-zinc-500" />

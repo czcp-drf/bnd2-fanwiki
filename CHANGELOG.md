@@ -375,3 +375,7 @@
 - 2026-09-17: 모바일 BBS 기자 필터에서 모든 기자 및 개별 기자 선택 항목의 세로 여백을 늘려 터치 영역을 확장했습니다.
 - 검증: `npx tsc --noEmit`, `git diff --check` 통과.
 - 대상 브랜치: `main` (`deploy` 원격으로 커밋·푸시)
+
+- 2026-09-18: 사건에 조직 단위 참여자를 추가할 수 있도록 `event_organizations` 테이블과 `044_event_organizations.sql` 마이그레이션을 추가했습니다. 관리자에서 조직 검색·추가, 역할 관리, 삭제, 순서 변경을 지원하고 공개 사건 상세에 참여 조직을 표시합니다.
+- 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
+- 대상 브랜치: `main` (`deploy` 원격으로 커밋·푸시 예정)

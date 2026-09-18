@@ -124,6 +124,16 @@ create table reports (
   created_at    timestamptz default now()
 );
 
+-- event_organizations
+create table event_organizations (
+  id             uuid primary key default gen_random_uuid(),
+  event_id       uuid not null references events(id) on delete cascade,
+  organization_id uuid not null references organizations(id) on delete cascade,
+  role           text,
+  sort_order     int not null default 0,
+  unique (event_id, organization_id)
+);
+
 -- blocked IP hashes
 create table blocked_ips (
   id            uuid primary key default gen_random_uuid(),
@@ -169,6 +179,7 @@ alter table organization_members enable row level security;
 alter table character_relationships enable row level security;
 alter table events enable row level security;
 alter table event_participants enable row level security;
+alter table event_organizations enable row level security;
 alter table event_clips enable row level security;
 alter table reports enable row level security;
 
@@ -180,6 +191,7 @@ create policy "public read organization_members" on organization_members for sel
 create policy "public read character_relationships" on character_relationships for select using (true);
 create policy "public read events" on events for select using (is_published = true);
 create policy "public read event_participants" on event_participants for select using (true);
+create policy "public read event_organizations" on event_organizations for select using (true);
 create policy "public read event_clips" on event_clips for select using (true);
 
 -- 제보는 누구나 insert 가능

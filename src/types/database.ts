@@ -125,6 +125,17 @@ export type Database = {
         Insert: Omit<Database['public']['Tables']['event_participants']['Row'], 'id'>
         Update: Partial<Database['public']['Tables']['event_participants']['Insert']>
       }
+      event_organizations: {
+        Row: {
+          id: string
+          event_id: string
+          organization_id: string
+          role: string | null
+          sort_order: number
+        }
+        Insert: Omit<Database['public']['Tables']['event_organizations']['Row'], 'id'>
+        Update: Partial<Database['public']['Tables']['event_organizations']['Insert']>
+      }
       event_clips: {
         Row: {
           id: string
@@ -317,6 +328,7 @@ export type OrganizationMember = Database['public']['Tables']['organization_memb
 export type CharacterRelationship = Database['public']['Tables']['character_relationships']['Row']
 export type Event = Database['public']['Tables']['events']['Row']
 export type EventParticipant = Database['public']['Tables']['event_participants']['Row']
+export type EventOrganization = Database['public']['Tables']['event_organizations']['Row']
 export type EventClip = Database['public']['Tables']['event_clips']['Row']
 export type Report = Database['public']['Tables']['reports']['Row']
 export type BbsArticleRecord = Database['public']['Tables']['bbs_articles']['Row']

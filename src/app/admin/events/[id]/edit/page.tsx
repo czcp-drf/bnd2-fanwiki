@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import EventForm from '../../EventForm'
 import ParticipantsEditor from '../ParticipantsEditor'
+import OrganizationsEditor from '../OrganizationsEditor'
 import ClipsEditor from '../ClipsEditor'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
@@ -14,21 +15,23 @@ type Props = { params: Promise<{ id: string }> }
 async function getData(id: string) {
   const supabase = createAdminClient()
 
-  const [{ data: event }, { data: participants }, { data: clips }, { data: characters }, { data: streamers }] =
+  const [{ data: event }, { data: participants }, { data: organizationParticipants }, { data: clips }, { data: characters }, { data: streamers }, { data: organizations }] =
     await Promise.all([
       supabase.from('events').select('*').eq('id', id).single(),
       supabase.from('event_participants').select('id, role, sort_order, characters(id, name)').eq('event_id', id).order('sort_order'),
+      supabase.from('event_organizations').select('id, role, sort_order, organizations(id, name, type, category)').eq('event_id', id).order('sort_order'),
       supabase.from('event_clips').select('id, clip_url, label, sort_order, streamers(display_name)').eq('event_id', id).order('sort_order'),
       supabase.from('characters').select('id, name, streamers(id, display_name)').order('name'),
       supabase.from('streamers').select('id, display_name').order('display_name'),
+      supabase.from('organizations').select('id, name, type, category').eq('is_active', true).order('name'),
     ])
 
-  return { event, participants: participants ?? [], clips: clips ?? [], characters: characters ?? [], streamers: streamers ?? [] }
+  return { event, participants: participants ?? [], organizationParticipants: organizationParticipants ?? [], clips: clips ?? [], characters: characters ?? [], streamers: streamers ?? [], organizations: organizations ?? [] }
 }
 
 export default async function EditEventPage({ params }: Props) {
   const { id } = await params
-  const { event, participants, clips, characters, streamers } = await getData(id)
+  const { event, participants, organizationParticipants, clips, characters, streamers, organizations } = await getData(id)
   if (!event) notFound()
 
   type CharRow = { id: string; name: string; streamers: { id: string; display_name: string } | null }
@@ -92,6 +95,15 @@ export default async function EditEventPage({ params }: Props) {
               eventId={id}
               participants={participants as unknown as ParticipantRow[]}
               characters={charList}
+            />
+          </section>
+
+          <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 space-y-4">
+            <h2 className="text-sm font-bold text-white">참여 조직</h2>
+            <OrganizationsEditor
+              eventId={id}
+              participants={organizationParticipants as unknown as { id: string; role: string | null; sort_order: number; organizations: { id: string; name: string; type: string | null; category: string | null } | null }[]}
+              organizations={organizations as { id: string; name: string; type: string | null; category: string | null }[]}
             />
           </section>
 
