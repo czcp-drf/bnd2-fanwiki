@@ -204,6 +204,17 @@ export type Database = {
         Insert: Omit<Database['public']['Tables']['bbs_article_media']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['bbs_article_media']['Insert']>
       }
+      bbs_article_media_sources: {
+        Row: {
+          id: string
+          article_id: string
+          source_url: string
+          storage_url: string
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['bbs_article_media_sources']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['bbs_article_media_sources']['Insert']>
+      }
       bbs_article_reactions: {
         Row: {
           id: string

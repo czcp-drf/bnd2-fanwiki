@@ -209,6 +209,7 @@ src/
 - 대표 이미지가 비어 있으면 본문 첫 이미지, 첨부 이미지 첫 장 순서로 자동 지정하며 기사 상세에서는 대표 이미지와 중복되는 본문 이미지가 다시 표시되지 않음
 - BBS 공개 화면은 `bbs-media` Supabase Storage 공개 URL을 `unoptimized`로 직접 사용하고, JSON 가져오기는 Fivemanage 원본 이미지를 Storage로 이전한 뒤 비공개 기사로 저장 (`b5f9006`, `deploy/main` 푸시 완료)
 - JSON 이미지 이전 실패 시 기사별 Markdown 다운로드와 원본 URL 유지 비공개 등록을 선택할 수 있으며, `scripts/migrate-bbs-external-images.mjs`의 백업 manifest·`scripts/rollback-bbs-external-images.mjs`로 일괄 이전을 확인·롤백
+- `BBS_MEDIA_MODE`가 `storage`이면 Storage URL을 사용하고 `external`이면 `bbs_article_media_sources` 매핑을 통해 원본 URL을 사용합니다. 매핑이 없는 이미지는 Storage URL로 fallback합니다.
 
 ### 타일 Storage
 
@@ -426,6 +427,7 @@ src/
 | `NEXT_PUBLIC_SUPABASE_URL`      | Supabase 프로젝트 URL                                                 |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key                                                 |
 | `SUPABASE_SERVICE_ROLE_KEY`     | 서버 전용 서비스 롤 key (어드민, 업로드 스크립트)                                   |
+| `BBS_MEDIA_MODE`                | BBS 이미지 서빙 경로 (`storage` 기본값, `external`은 저장된 원본 URL 사용)             |
 | `BONGSTAGRAM_SERVER_FINAL_DATE` | 서버 마지막 종료일 (`YYYY-MM-DD`, 해당일 오전 3시에 스토리 전체 종료)                   |
 | `BONGSTAGRAM_LIKES_MODE`        | 좋아요 저장 모드 (`server` 기본값, `local`은 브라우저 localStorage만 사용)          |
 | `BBS_REACTIONS_MODE`            | BBS 좋아요·싫어요 저장 모드 (`local` 기본값, `server` 설정 시 IP 해시 DB 저장)        |

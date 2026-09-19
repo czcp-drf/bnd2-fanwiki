@@ -2,6 +2,17 @@
 
 BBS 이미지는 `bbs-media` 공개 버킷에 저장하고, 공개 BBS 화면에서는 Supabase Storage CDN URL을 직접 사용한다. BBS 컴포넌트는 Next Image Optimization을 사용하지 않는다.
 
+## 서빙 경로 전환
+
+Storage 이전 때 원본 Fivemanage URL과 Storage URL의 연결을 `bbs_article_media_sources`에 저장한다. 기본값은 Storage URL이며, 긴급하게 원본 URL로 되돌려야 할 때 서버 환경 변수 `BBS_MEDIA_MODE=external`을 설정하면 공개 BBS가 저장된 매핑을 사용해 원본 URL을 반환한다. 환경 변수 변경 후에는 재배포하고 관리자 BBS 캐시 새로고침을 실행한다. `external` 이외의 값은 모두 Storage 모드로 처리한다.
+
+기존에 매핑 저장 기능을 적용하기 전에 이전한 기사에는 기존 백업 manifest를 사용해 매핑을 복구할 수 있다.
+
+```powershell
+npm run backfill:bbs-image-mappings -- --dry-run backups/bbs-media-migration-날짜.json
+npm run backfill:bbs-image-mappings -- --confirm backups/bbs-media-migration-날짜.json
+```
+
 ## 기존 기사 이전
 
 먼저 변경 대상만 확인한다.
@@ -10,7 +21,7 @@ BBS 이미지는 `bbs-media` 공개 버킷에 저장하고, 공개 BBS 화면에
 npm run migrate:bbs-images -- --dry-run
 ```
 
-실제 이전은 `.env.local`의 `NEXT_PUBLIC_SUPABASE_URL`과 `SUPABASE_SERVICE_ROLE_KEY`를 사용한다.
+실제 이전은 `.env.local`의 `NEXT_PUBLIC_SUPABASE_URL`과 `SUPABASE_SERVICE_ROLE_KEY`를 사용한다. 먼저 `049_bbs_article_media_sources.sql` migration을 적용해야 한다.
 
 ```powershell
 npm run migrate:bbs-images
@@ -39,6 +50,12 @@ npm run migrate:bbs-images -- --article-id=<기사 UUID>
 
 ```powershell
 npm run rollback:bbs-images -- --dry-run backups/bbs-media-migration-날짜.json
+
+npm run backfill:bbs-image-mappings -- --dry-run backups/bbs-media-pilot.json
+npm run backfill:bbs-image-mappings -- --confirm backups/기존백업.json
+
+npm run backfill:bbs-image-mappings -- --dry-run backups/bbs-media-pilot.json
+npm run backfill:bbs-image-mappings -- --confirm backups/기존백업.json
 ```
 
 확인 후 실행하면 manifest에 기록된 작업 대상의 본문·대표 이미지·첨부 URL을 원본으로 복구하고, 해당 이전 작업에서 새로 생성된 Storage 파일만 삭제한다.

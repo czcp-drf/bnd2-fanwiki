@@ -2,6 +2,7 @@ import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { getBbsCategoryKey, getBbsCategoryLabel, type BbsArticle, type BbsArticleMedia, type BbsCategoryKey } from './articles'
 import { BBS_DAYS, isWithinBbsDay, type BbsDayKey } from './days'
+import { replaceBbsImageUrls } from './media'
 
 export const BBS_ARTICLE_LIST_TAG = 'bbs-article-list'
 export const BBS_ARTICLE_NEIGHBORS_TAG = 'bbs-article-neighbors'
@@ -9,6 +10,7 @@ export const BBS_ARTICLE_DETAILS_TAG = 'bbs-article-details'
 export function getBbsArticleTag(articleId: string) { return `bbs-article:${articleId}` }
 const BBS_LIST_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24 * 365
 const BBS_DETAILS_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24 * 30
+const BBS_MEDIA_MODE = process.env.BBS_MEDIA_MODE === 'external' ? 'external' : 'storage'
 export type BbsSortOrder = 'latest' | 'oldest'
 
 export { BBS_DAYS, type BbsDayKey } from './days'
@@ -62,8 +64,9 @@ type ReporterRow = {
 }
 
 type StreamerRow = { id: string; display_name: string }
+type SourceMappingRow = { article_id: string; source_url: string; storage_url: string }
 
-function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: ReporterRow[], streamers: StreamerRow[]): BbsArticle[] {
+function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: ReporterRow[], streamers: StreamerRow[], sourceMappings: SourceMappingRow[] = []): BbsArticle[] {
   const mediaByArticleId = new Map<string, BbsArticleMedia[]>()
   for (const item of media) {
     const current = mediaByArticleId.get(item.article_id) ?? []
@@ -73,23 +76,31 @@ function mapArticles(articles: ArticleRow[], media: MediaRow[], reporters: Repor
 
   const reporterById = new Map(reporters.map((reporter) => [reporter.id, reporter]))
   const streamerById = new Map(streamers.map((streamer) => [streamer.id, streamer.display_name]))
+  const sourceMappingsByArticleId = new Map<string, Map<string, string>>()
+  for (const mapping of sourceMappings) {
+    const replacements = sourceMappingsByArticleId.get(mapping.article_id) ?? new Map<string, string>()
+    replacements.set(mapping.storage_url, mapping.source_url)
+    sourceMappingsByArticleId.set(mapping.article_id, replacements)
+  }
 
   return articles
     .filter((article) => article.approved_at && getBbsCategoryKey(article.category))
     .map((article) => {
       const categoryKey = getBbsCategoryKey(article.category) as BbsCategoryKey
+      const replacements = sourceMappingsByArticleId.get(article.id) ?? new Map<string, string>()
+      const articleMedia = mediaByArticleId.get(article.id) ?? []
       return {
         id: article.id,
         category: getBbsCategoryLabel(categoryKey),
         categoryKey,
         title: article.title,
         summary: article.summary ?? '',
-        content: article.content ?? '',
+        content: replaceBbsImageUrls(article.content ?? '', replacements),
         author: reporterById.get(article.reporter_character_id)?.name ?? '알 수 없는 기자',
         authorStreamerName: (() => { const streamerId = reporterById.get(article.reporter_character_id)?.streamer_id; return streamerId ? streamerById.get(streamerId) ?? null : null })(),
         approvedAt: article.approved_at as string,
-        thumbnailUrl: article.thumbnail_url,
-        media: mediaByArticleId.get(article.id) ?? [],
+        thumbnailUrl: article.thumbnail_url ? replacements.get(article.thumbnail_url) ?? article.thumbnail_url : null,
+        media: articleMedia.map((item) => ({ ...item, imageUrl: replacements.get(item.imageUrl) ?? item.imageUrl })),
       }
     })
 }
@@ -137,6 +148,16 @@ async function loadArticlesUncached(categoryKey?: BbsCategoryKey, articleId?: st
   if (mediaError) console.error('BBS public article media load failed:', mediaError.message)
   if (reporterError) console.error('BBS public reporter load failed:', reporterError.message)
 
+  let sourceMappings: SourceMappingRow[] = []
+  if (BBS_MEDIA_MODE === 'external') {
+    const { data, error } = await supabase
+      .from('bbs_article_media_sources')
+      .select('article_id, source_url, storage_url')
+      .in('article_id', articleIds)
+    if (error) console.error('BBS public image source mapping load failed:', error.message)
+    sourceMappings = (data ?? []) as SourceMappingRow[]
+  }
+
   const reporterRows = (reporterData ?? []) as ReporterRow[]
   const streamerIds = [...new Set(reporterRows.map((reporter) => reporter.streamer_id).filter((id): id is string => Boolean(id)))]
   const { data: streamerData, error: streamerError } = streamerIds.length
@@ -144,7 +165,7 @@ async function loadArticlesUncached(categoryKey?: BbsCategoryKey, articleId?: st
     : { data: [], error: null }
   if (streamerError) console.error('BBS public streamer load failed:', streamerError.message)
 
-  return { articles: mapArticles(articles, (mediaData ?? []) as MediaRow[], reporterRows, (streamerData ?? []) as StreamerRow[]), total: articleCount ?? articles.length }
+  return { articles: mapArticles(articles, (mediaData ?? []) as MediaRow[], reporterRows, (streamerData ?? []) as StreamerRow[], sourceMappings), total: articleCount ?? articles.length }
 }
 
 function serializeReporterIds(reporterIds?: string[]) {
@@ -170,7 +191,7 @@ const getCachedBbsArticleList = unstable_cache(
     sortOrder,
     includeContent,
   ),
-  ['bbs-public-article-list'],
+  ['bbs-public-article-list', BBS_MEDIA_MODE],
   { revalidate: BBS_LIST_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
@@ -196,7 +217,7 @@ export async function getPublishedBbsArticle(id: string) {
   if (!articleId) return null
   const getCachedArticle = unstable_cache(
     async () => loadArticlesUncached(undefined, articleId, undefined, undefined, undefined, 'latest', true),
-    ['bbs-public-article', articleId],
+    ['bbs-public-article', articleId, BBS_MEDIA_MODE],
     { revalidate: BBS_DETAILS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_DETAILS_TAG, getBbsArticleTag(articleId)] },
   )
   return (await getCachedArticle()).articles[0] ?? null

@@ -25,11 +25,13 @@ if (manifest.version !== 1 || manifest.bucket !== BUCKET) throw new Error('지�
 if (!Array.isArray(manifest.articles) || !Array.isArray(manifest.media) || !Array.isArray(manifest.created_storage_paths)) {
   throw new Error('백업 manifest 구조가 올바르지 않습니다.')
 }
+const originalSourceMappings = Array.isArray(manifest.source_mappings) ? manifest.source_mappings : []
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
 const restorableArticles = manifest.articles.filter((article) => article.status && article.status !== 'pending' && article.status !== 'rolled_back')
 const restorableIds = new Set(restorableArticles.map((article) => article.id))
 const restorableMedia = manifest.media.filter((media) => restorableIds.has(media.article_id))
+const restorableSourceMappings = originalSourceMappings.filter((mapping) => restorableIds.has(mapping.article_id))
 const storagePaths = manifest.created_storage_paths.filter((storagePath) => (
   typeof storagePath === 'string' && /^articles\/[0-9a-f-]{36}\/[a-f0-9]{64}\.(jpg|png|webp|gif|avif)$/.test(storagePath)
 ))
@@ -38,6 +40,7 @@ console.log(JSON.stringify({
   backup_file: backupFile,
   articles: restorableArticles.length,
   media: restorableMedia.length,
+  source_mappings: restorableSourceMappings.length,
   storage_files: storagePaths.length,
   dry_run: dryRun,
 }, null, 2))
@@ -56,6 +59,16 @@ for (const article of restorableArticles) {
 for (const media of restorableMedia) {
   const { error } = await supabase.from('bbs_article_media').update({ image_url: media.image_url }).eq('id', media.id)
   if (error) failures.push(`첨부 ${media.id}: ${error.message}`)
+}
+
+for (const article of restorableArticles) {
+  const { error: deleteError } = await supabase.from('bbs_article_media_sources').delete().eq('article_id', article.id)
+  if (deleteError) failures.push(`기사 ${article.id}: 이미지 원본 매핑 삭제 실패: ${deleteError.message}`)
+}
+
+if (!failures.length && restorableSourceMappings.length) {
+  const { error: insertError } = await supabase.from('bbs_article_media_sources').insert(restorableSourceMappings)
+  if (insertError) failures.push(`이미지 원본 매핑 복구 실패: ${insertError.message}`)
 }
 
 if (failures.length) {

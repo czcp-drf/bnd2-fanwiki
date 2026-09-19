@@ -17,6 +17,7 @@ import {
   isBbsStorageUrl,
   migrateBbsImageFields,
   extractBbsImageUrls,
+  type BbsImageSourceMapping,
 } from '@/lib/bbs/media'
 
 const MAX_MEDIA_COUNT = 5
@@ -264,6 +265,31 @@ async function saveBbsMedia(
   return { error: null, oldPaths: [...new Set([...oldPaths, ...referencedPaths])].filter((path) => !newPaths.has(path)) }
 }
 
+async function saveBbsImageSourceMappings(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  articleId: string,
+  mappings: BbsImageSourceMapping[],
+) {
+  if (!mappings.length) return { error: null }
+  const { error } = await supabase.from('bbs_article_media_sources').upsert(
+    mappings.map((mapping) => ({
+      article_id: articleId,
+      source_url: mapping.sourceUrl,
+      storage_url: mapping.storageUrl,
+    })),
+    { onConflict: 'article_id,source_url' },
+  )
+  return { error }
+}
+
+async function clearBbsImageSourceMappings(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>,
+  articleId: string,
+) {
+  const { error } = await supabase.from('bbs_article_media_sources').delete().eq('article_id', articleId)
+  return { error }
+}
+
 export async function createBbsArticle(input: BbsArticleInput): Promise<ActionResult> {
   const validated = validateArticleInput(input)
   if ('error' in validated) return validated
@@ -345,6 +371,12 @@ export async function updateBbsArticle(id: string, input: BbsArticleInput): Prom
   if (mediaResult.error) {
     console.error('BBS article media update failed:', mediaResult.error.code, mediaResult.error.message)
     return { error: '기사 이미지를 수정하지 못했습니다.' }
+  }
+
+  const sourceMappingResult = await clearBbsImageSourceMappings(supabase, articleId)
+  if (sourceMappingResult.error) {
+    console.error('BBS article image source mapping cleanup failed:', sourceMappingResult.error.message)
+    return { error: '기사 이미지 원본 연결을 갱신하지 못했습니다.' }
   }
 
   const previousPaths = getArticleStoragePaths(previousArticle.content, previousArticle.thumbnail_url, mediaResult.oldPaths)
@@ -438,6 +470,8 @@ export async function importBbsArticles(rows: BbsImportRow[]): Promise<BbsImport
         .update({ content: migrated.content, thumbnail_url: migrated.thumbnailUrl })
         .eq('id', article.id)
       if (imageUpdateError) throw new Error(imageUpdateError.message)
+      const mappingResult = await saveBbsImageSourceMappings(supabase, article.id, migrated.sourceMappings)
+      if (mappingResult.error) throw new Error(`이미지 원본 연결 저장 실패: ${mappingResult.error.message}`)
     } catch (imageError) {
       await supabase.from('bbs_articles').delete().eq('id', article.id)
       if (uploadedPaths.length) await supabase.storage.from(BBS_MEDIA_BUCKET).remove(uploadedPaths)

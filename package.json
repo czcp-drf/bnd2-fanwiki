@@ -10,6 +10,7 @@
     "test:reliability": "node --experimental-strip-types --test scripts/test-admin-reliability.mjs",
     "migrate:report-ip-hashes": "node scripts/migrate-report-ip-hashes.mjs",
     "migrate:bbs-images": "node --env-file=.env.local scripts/migrate-bbs-external-images.mjs",
+    "backfill:bbs-image-mappings": "node --env-file=.env.local scripts/backfill-bbs-media-source-mappings.mjs",
     "rollback:bbs-images": "node --env-file=.env.local scripts/rollback-bbs-external-images.mjs"
   },
   "dependencies": {

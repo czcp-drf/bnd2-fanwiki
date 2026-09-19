@@ -143,6 +143,10 @@ const articleRows = (articles || [])
   .filter((article) => !onlyArticleId || article.id === onlyArticleId)
   .slice(0, limit)
 const articleIds = articleRows.map((article) => article.id)
+const { data: sourceMappingRows, error: sourceMappingError } = articleIds.length
+  ? await supabase.from('bbs_article_media_sources').select('article_id, source_url, storage_url').in('article_id', articleIds)
+  : { data: [], error: null }
+if (sourceMappingError) throw new Error(`이미지 원본 매핑 조회 실패: ${sourceMappingError.message} (049 migration 적용 여부를 확인하세요.)`)
 const { data: mediaRows, error: mediaError } = articleIds.length
   ? await supabase.from('bbs_article_media').select('id, article_id, image_url').in('article_id', articleIds)
   : { data: [], error: null }
@@ -153,6 +157,13 @@ for (const row of mediaRows || []) {
   const current = mediaByArticle.get(row.article_id) || []
   current.push(row)
   mediaByArticle.set(row.article_id, current)
+}
+
+const sourceMappingsByArticle = new Map()
+for (const row of sourceMappingRows || []) {
+  const current = sourceMappingsByArticle.get(row.article_id) || []
+  current.push(row)
+  sourceMappingsByArticle.set(row.article_id, current)
 }
 
 const candidates = articleRows.map((article) => {
@@ -198,6 +209,7 @@ if (!dryRun) {
       article_id: row.article_id,
       image_url: row.image_url,
     }))),
+    source_mappings: backupCandidates.flatMap(({ article }) => sourceMappingsByArticle.get(article.id) || []),
     created_storage_paths: [],
     migrated_article_ids: [],
   }
@@ -257,6 +269,18 @@ for (const candidate of candidates) {
       }
     }
 
+    const nextMappings = sourceUrls.map((sourceUrl) => ({
+      article_id: article.id,
+      source_url: sourceUrl,
+      storage_url: replacements.get(sourceUrl),
+    }))
+    const { error: mappingDeleteError } = await supabase.from('bbs_article_media_sources').delete().eq('article_id', article.id)
+    if (mappingDeleteError) throw new Error(`이미지 원본 매핑 정리 실패: ${mappingDeleteError.message}`)
+    if (nextMappings.length) {
+      const { error: mappingInsertError } = await supabase.from('bbs_article_media_sources').insert(nextMappings)
+      if (mappingInsertError) throw new Error(`이미지 원본 매핑 저장 실패: ${mappingInsertError.message}`)
+    }
+
     snapshot.status = 'completed'
     manifest.migrated_article_ids = [...(manifest.migrated_article_ids || []), article.id]
     writeBackup(manifest, { overwrite: true })
@@ -271,6 +295,13 @@ for (const candidate of candidates) {
     for (const media of articleMedia) {
       const { error: restoreMediaError } = await supabase.from('bbs_article_media').update({ image_url: media.image_url }).eq('id', media.id)
       if (restoreMediaError) failures.push(`${article.id}: 첨부 이미지 롤백 실패: ${restoreMediaError.message}`)
+    }
+    const { error: mappingDeleteError } = await supabase.from('bbs_article_media_sources').delete().eq('article_id', article.id)
+    if (mappingDeleteError) failures.push(`${article.id}: 이미지 원본 매핑 롤백 실패: ${mappingDeleteError.message}`)
+    const originalMappings = sourceMappingsByArticle.get(article.id) || []
+    if (!mappingDeleteError && originalMappings.length) {
+      const { error: mappingRestoreError } = await supabase.from('bbs_article_media_sources').insert(originalMappings)
+      if (mappingRestoreError) failures.push(`${article.id}: 이미지 원본 매핑 롤백 실패: ${mappingRestoreError.message}`)
     }
     const { error: cleanupError } = createdPaths.length
       ? await supabase.storage.from(BUCKET).remove(createdPaths)

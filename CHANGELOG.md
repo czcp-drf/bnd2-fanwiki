@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- BBS 이미지 원본 URL 전환 구조 (`main`, 커밋·푸시 준비): 이미지 이전 시 원본 URL과 Storage URL을 `bbs_article_media_sources`에 저장하고, `BBS_MEDIA_MODE=external` 환경변수로 공개 BBS의 이미지 서빙 경로를 원본 URL로 전환할 수 있도록 했습니다. 기본값은 Storage이며 매핑이 없는 이미지는 Storage URL을 유지합니다. 기존 시험 이전분은 백업 manifest를 이용한 매핑 복구 드라이런·실행 스크립트로 연결할 수 있고, migration 049 적용이 필요합니다. TypeScript·대상 ESLint·프로덕션 빌드·스크립트 문법 검사·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`이며 푸시 결과는 완료 응답에서 갱신합니다.
+
 - BBS 목록 캐시 기간 확대 (`main`, `07e1f1d`, 원격 `deploy/main` 푸시 완료): 기사 목록·최신 기사·일차 필터·기자 필터 데이터 캐시를 1년으로 확대하고, 공개 기사 수정 시 제목·카테고리·승인일시·대표 이미지 변경도 목록·이웃 기사 캐시를 무효화하도록 보완했습니다. 기사 상세·이웃 기사 캐시는 30일을 유지합니다. TypeScript·관련 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격 `deploy/main` 푸시 완료를 확인했습니다.
 
 - BBS 이미지 Storage 이전 및 가져오기 실패 분기 (`main`, `b5f9006`, 원격 `deploy/main` 푸시 완료): BBS 공개 화면이 `bbs-media` Supabase Storage URL을 직접 사용하도록 연결하고, 기존 외부 이미지 일괄 이전 스크립트에 원본 manifest 백업·중간 작업 기록·롤백 명령을 추가했습니다. 어드민 JSON 가져오기 실패 시 기사별 Markdown을 다운로드하거나 원본 외부 URL을 유지한 비공개 기사로 등록할 수 있습니다. TypeScript·대상 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격 `deploy/main` 푸시 완료를 확인했습니다.

@@ -24,6 +24,12 @@ export type BbsImageMigrationResult = {
   content: string
   thumbnailUrl: string | null
   uploadedPaths: string[]
+  sourceMappings: BbsImageSourceMapping[]
+}
+
+export type BbsImageSourceMapping = {
+  sourceUrl: string
+  storageUrl: string
 }
 
 function normalizeImageUrl(value: string) {
@@ -142,10 +148,12 @@ export async function migrateBbsImageFields(
 
   const replacements = new Map<string, string>()
   const uploadedPaths: string[] = []
+  const sourceMappings: BbsImageSourceMapping[] = []
   try {
     for (const sourceUrl of sourceUrls) {
       const uploaded = await uploadExternalBbsImage(supabase, articleId, sourceUrl)
       replacements.set(sourceUrl, uploaded.publicUrl)
+      sourceMappings.push({ sourceUrl, storageUrl: uploaded.publicUrl })
       uploadedPaths.push(uploaded.path)
     }
   } catch (error) {
@@ -159,5 +167,5 @@ export async function migrateBbsImageFields(
     ? replacements.get(normalizedThumbnail) ?? normalizedThumbnail
     : getFirstBbsImageUrl(nextContent)
 
-  return { content: nextContent, thumbnailUrl: nextThumbnail, uploadedPaths }
+  return { content: nextContent, thumbnailUrl: nextThumbnail, uploadedPaths, sourceMappings }
 }
