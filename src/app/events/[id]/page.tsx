@@ -17,6 +17,7 @@ import EventLocationMap from './EventLocationMap'
 import { formatKstDateTime } from '@/lib/date/kst'
 import EventNeighbors from '../EventNeighbors'
 import EventBackLink from '../EventBackLink'
+import { CATEGORY_LABEL } from '@/lib/map/constants'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -251,7 +252,7 @@ export default async function EventDetailPage({ params }: Props) {
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: item.organizations.color ?? '#3f3f46' }}>{item.organizations.name.charAt(0)}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-white group-hover:text-amber-400">{item.organizations.name}</span>
-                  {(item.role || item.organizations.category) && <span className="block truncate text-xs text-zinc-500">{item.role ?? item.organizations.category}</span>}
+                  {(item.role || item.organizations.category) && <span className="block truncate text-xs text-zinc-500">{item.role ?? (CATEGORY_LABEL[item.organizations.category ?? ''] ?? item.organizations.category)}</span>}
                 </span>
               </Link>
             ))}

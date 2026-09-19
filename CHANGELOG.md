@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- 사건 참여 조직 표시·관련 사건 보완 (`main`, 커밋·푸시 진행): 사건 편집 화면과 공개 사건 상세의 조직 카테고리를 한글 라벨로 표시하고, 조직 상세 관련 사건에 `event_organizations`로 직접 연결된 공개 사건도 중복 없이 포함했습니다. `npx tsc --noEmit`, `npm run build`, `git diff --check`를 통과했습니다. Supabase MCP 원격 SQL 검증은 인증 scope 부족으로 실행하지 못했습니다.
+
 - BBS 이미지 원본 URL 전환 구조 (`main`, `a8d51a2`, 원격 `deploy/main` 푸시 완료): 이미지 이전 시 원본 URL과 Storage URL을 `bbs_article_media_sources`에 저장하고, `BBS_MEDIA_MODE=external` 환경변수로 공개 BBS의 이미지 서빙 경로를 원본 URL로 전환할 수 있도록 했습니다. 기본값은 Storage이며 매핑이 없는 이미지는 Storage URL을 유지합니다. 기존 시험 이전분은 백업 manifest를 이용한 매핑 복구 드라이런·실행 스크립트로 연결할 수 있고, migration 049 적용이 필요합니다. TypeScript·대상 ESLint·프로덕션 빌드·스크립트 문법 검사·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`, 원격 `deploy/main` 푸시를 완료했습니다.
 
 - BBS 목록 캐시 기간 확대 (`main`, `07e1f1d`, 원격 `deploy/main` 푸시 완료): 기사 목록·최신 기사·일차 필터·기자 필터 데이터 캐시를 1년으로 확대하고, 공개 기사 수정 시 제목·카테고리·승인일시·대표 이미지 변경도 목록·이웃 기사 캐시를 무효화하도록 보완했습니다. 기사 상세·이웃 기사 캐시는 30일을 유지합니다. TypeScript·관련 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격 `deploy/main` 푸시 완료를 확인했습니다.

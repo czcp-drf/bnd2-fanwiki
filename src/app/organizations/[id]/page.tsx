@@ -141,28 +141,42 @@ type OrgEvent = {
 async function getOrgEvents(orgId: string): Promise<OrgEvent[]> {
   const supabase = createPublicClient()
 
-  // 조직 멤버 캐릭터 ID 목록
-  const { data: members } = await supabase
-    .from('organization_members')
-    .select('character_id')
-    .eq('organization_id', orgId)
+  const [{ data: members }, { data: organizationEvents }] = await Promise.all([
+    supabase
+      .from('organization_members')
+      .select('character_id')
+      .eq('organization_id', orgId),
+    supabase
+      .from('event_organizations')
+      .select('events ( id, title, type, occurred_at, summary, is_published )')
+      .eq('organization_id', orgId),
+  ])
 
   const charIds = (members ?? []).map((m: { character_id: string }) => m.character_id)
-  if (charIds.length === 0) return []
 
-  // 해당 캐릭터들이 참여한 공개 사건
-  const { data } = await supabase
-    .from('event_participants')
-    .select('events ( id, title, type, occurred_at, summary, is_published )')
-    .in('character_id', charIds)
+  // 조직 멤버 캐릭터들이 참여한 공개 사건
+  const { data: participantEvents } = charIds.length
+    ? await supabase
+      .from('event_participants')
+      .select('events ( id, title, type, occurred_at, summary, is_published )')
+      .in('character_id', charIds)
+    : { data: [] }
 
   const seen = new Set<string>()
   const events: OrgEvent[] = []
-  for (const row of data ?? []) {
-    const e = (row as { events: OrgEvent & { is_published: boolean } | null }).events
-    if (!e || !e.is_published || seen.has(e.id)) continue
+  const addEvent = (value: unknown) => {
+    const e = value as (OrgEvent & { is_published: boolean }) | null
+    if (!e || !e.is_published || seen.has(e.id)) return
     seen.add(e.id)
     events.push(e)
+  }
+
+  for (const row of organizationEvents ?? []) {
+    addEvent((row as { events: OrgEvent & { is_published: boolean } | null }).events)
+  }
+  for (const row of participantEvents ?? []) {
+    const e = (row as { events: OrgEvent & { is_published: boolean } | null }).events
+    addEvent(e)
   }
 
   return events.sort((a, b) => {
