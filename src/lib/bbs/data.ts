@@ -7,7 +7,8 @@ export const BBS_ARTICLE_LIST_TAG = 'bbs-article-list'
 export const BBS_ARTICLE_NEIGHBORS_TAG = 'bbs-article-neighbors'
 export const BBS_ARTICLE_DETAILS_TAG = 'bbs-article-details'
 export function getBbsArticleTag(articleId: string) { return `bbs-article:${articleId}` }
-const BBS_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24 * 30
+const BBS_LIST_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24 * 365
+const BBS_DETAILS_CACHE_REVALIDATE_SECONDS = 60 * 60 * 24 * 30
 export type BbsSortOrder = 'latest' | 'oldest'
 
 export { BBS_DAYS, type BbsDayKey } from './days'
@@ -170,7 +171,7 @@ const getCachedBbsArticleList = unstable_cache(
     includeContent,
   ),
   ['bbs-public-article-list'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
+  { revalidate: BBS_LIST_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
 async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, reporterIds?: string[], pagination?: { page: number; pageSize: number }, dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest', includeContent = true) {
@@ -196,7 +197,7 @@ export async function getPublishedBbsArticle(id: string) {
   const getCachedArticle = unstable_cache(
     async () => loadArticlesUncached(undefined, articleId, undefined, undefined, undefined, 'latest', true),
     ['bbs-public-article', articleId],
-    { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_DETAILS_TAG, getBbsArticleTag(articleId)] },
+    { revalidate: BBS_DETAILS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_DETAILS_TAG, getBbsArticleTag(articleId)] },
   )
   return (await getCachedArticle()).articles[0] ?? null
 }
@@ -230,7 +231,7 @@ const getCachedAvailableBbsDayKeys = unstable_cache(
     return BBS_DAYS.filter((day) => approvedTimes.some((approvedAt) => isWithinBbsDay(approvedAt, day))).map((day) => day.key)
   },
   ['bbs-available-days-v2'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
+  { revalidate: BBS_LIST_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
 export async function getAvailableBbsDayKeys() {
@@ -266,7 +267,7 @@ const getCachedBbsArticleNeighbors = unstable_cache(
     }
   },
   ['bbs-article-neighbors'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_NEIGHBORS_TAG] },
+  { revalidate: BBS_DETAILS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_NEIGHBORS_TAG] },
 )
 
 export async function getPublishedBbsArticleNeighbors(articleId: string, category?: string, reporterIds?: string[], dayKey?: BbsDayKey, sortOrder: BbsSortOrder = 'latest') {
@@ -317,7 +318,7 @@ const getCachedBbsReporterOptions = unstable_cache(
     }))
   },
   ['bbs-reporter-options-v2'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
+  { revalidate: BBS_LIST_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
 export function getBbsReporterOptions() {
@@ -355,7 +356,7 @@ const getCachedLatestBbsArticle = unstable_cache(
     }
   },
   ['bbs-latest-article'],
-  { revalidate: BBS_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
+  { revalidate: BBS_LIST_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
 )
 
 export function getLatestBbsArticle() {

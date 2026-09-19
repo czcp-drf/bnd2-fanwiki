@@ -321,7 +321,7 @@ export async function updateBbsArticle(id: string, input: BbsArticleInput): Prom
   const supabase = await requireAdmin()
   const [{ data: reporter, error: reporterError }, { data: previousArticle, error: previousArticleError }] = await Promise.all([
     supabase.from('characters').select('id').eq('id', validated.data.reporterCharacterId).maybeSingle(),
-    supabase.from('bbs_articles').select('content, thumbnail_url').eq('id', articleId).maybeSingle(),
+    supabase.from('bbs_articles').select('content, thumbnail_url, is_published').eq('id', articleId).maybeSingle(),
   ])
   if (reporterError || !reporter) return { error: '담당기자를 확인하지 못했습니다.' }
   if (previousArticleError || !previousArticle) return { error: '수정할 기사를 찾을 수 없습니다.' }
@@ -356,6 +356,10 @@ export async function updateBbsArticle(id: string, input: BbsArticleInput): Prom
   await removeStoragePaths(supabase, [...previousPaths].filter((path) => !nextPaths.has(path)))
 
   revalidateBbsAdmin()
+  if (previousArticle.is_published || validated.data.isPublished) {
+    revalidateBbsList()
+    revalidateBbsNeighbors()
+  }
   revalidateBbsArticle(articleId)
   return { success: true }
 }
