@@ -1,8 +1,8 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { FileJson, Upload } from 'lucide-react'
-import { importBbsArticles, type BbsImportRow } from './actions'
+import { Download, FileJson, Upload } from 'lucide-react'
+import { importBbsArticleWithOriginalUrls, importBbsArticles, type BbsImportFailure, type BbsImportRow } from './actions'
 
 const categoryLabels: Record<string, string> = { info: 'info', incident: 'incident', economy: 'economy', column: 'column', etc: 'other', other: 'other' }
 
@@ -95,18 +95,61 @@ function parseRows(raw: string): BbsImportRow[] {
   })
 }
 
+function markdownValue(value: string) {
+  return JSON.stringify(value ?? '')
+}
+
+function failedArticleMarkdown(failure: BbsImportFailure) {
+  const { row, reason } = failure
+  return [
+    '---',
+    `external_id: ${markdownValue(row.externalId)}`,
+    `title: ${markdownValue(row.title)}`,
+    `category: ${markdownValue(row.category)}`,
+    `reporter: ${markdownValue(row.reporterName)}`,
+    `reporter_character_id: ${markdownValue(row.reporterCharacterId ?? '')}`,
+    `approved_at: ${markdownValue(row.approvedAt)}`,
+    `thumbnail_url: ${markdownValue(row.thumbnailUrl)}`,
+    `import_error: ${markdownValue(reason)}`,
+    '---',
+    '',
+    row.content.trim() || '<!-- 본문 없음 -->',
+    '',
+  ].join('\n')
+}
+
+function safeFileName(value: string, fallback: string) {
+  const name = value.trim().replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').slice(0, 100)
+  return `${name || fallback}.md`
+}
+
+function downloadMarkdown(failure: BbsImportFailure) {
+  const content = failedArticleMarkdown(failure)
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = safeFileName(failure.row.title, `failed-article-${failure.index}`)
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
 export default function BbsJsonImport() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState(false)
-  const [message, setMessage] = useState('JSON 파일을 선택하면 비공개 기사로 저장합니다.')
+  const [originalUrlPending, setOriginalUrlPending] = useState<string | null>(null)
+  const [failedRows, setFailedRows] = useState<BbsImportFailure[]>([])
+  const [message, setMessage] = useState('JSON 파일의 이미지는 Supabase Storage로 이전한 뒤 비공개 기사로 저장합니다.')
 
   async function handleFile(file: File) {
     setPending(true)
     try {
       const rows = parseRows(await file.text())
       const result = await importBbsArticles(rows)
-      setMessage(`신규 ${result.imported}건 저장 · 중복 ${result.skipped}건 건너뜀${result.errors.length ? ` · 오류 ${result.errors.length}건` : ''}`)
+      setFailedRows(result.failedRows)
+      setMessage(`신규 ${result.imported}건 저장 · 중복 ${result.skipped}건 건너뜀${result.errors.length ? ` · 오류 ${result.errors.length}건` : ''}${result.failedRows.length ? ` · 실패 MD ${result.failedRows.length}건` : ''}`)
     } catch (error) {
+      setFailedRows([])
       setMessage(error instanceof Error ? error.message : 'JSON 파일을 처리하지 못했습니다.')
     } finally {
       setPending(false)
@@ -114,5 +157,17 @@ export default function BbsJsonImport() {
     }
   }
 
-  return <div className="flex flex-wrap items-center gap-2"><input ref={inputRef} type="file" accept=".json,application/json" className="sr-only" disabled={pending} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleFile(file) }} /><button type="button" onClick={() => inputRef.current?.click()} disabled={pending} className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:border-amber-400/60 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-40"><FileJson size={13} />{pending ? '가져오는 중...' : 'JSON 기사 가져오기'}</button><span className="flex items-center gap-1 text-[11px] text-zinc-600"><Upload size={12} />{message}</span></div>
+  async function handleOriginalUrlRegistration(failure: BbsImportFailure) {
+    setOriginalUrlPending(failure.row.externalId)
+    const result = await importBbsArticleWithOriginalUrls(failure.row)
+    if (result.success) {
+      setFailedRows((current) => current.filter((item) => item.row.externalId !== failure.row.externalId))
+      setMessage(`원본 URL 기사 등록 완료 · ${failure.row.title || failure.row.externalId}`)
+    } else {
+      setMessage(result.error ?? '원본 URL 기사로 등록하지 못했습니다.')
+    }
+    setOriginalUrlPending(null)
+  }
+
+  return <div className="space-y-2"><div className="flex flex-wrap items-center gap-2"><input ref={inputRef} type="file" accept=".json,application/json" className="sr-only" disabled={pending} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleFile(file) }} /><button type="button" onClick={() => inputRef.current?.click()} disabled={pending} className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:border-amber-400/60 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-40"><FileJson size={13} />{pending ? '가져오는 중...' : 'JSON 기사 가져오기'}</button><span className="flex items-center gap-1 text-[11px] text-zinc-600"><Upload size={12} />{message}</span></div>{failedRows.length > 0 && <div className="w-full rounded-lg border border-rose-500/20 bg-rose-500/5 p-3"><p className="text-xs font-semibold text-rose-300">가져오기 실패 기사 Markdown</p><p className="mt-1 text-[11px] text-zinc-500">메타데이터와 변환된 본문을 포함한 기사별 문서입니다. 이미지 이전 오류가 포함된 경우 원본 이미지 URL도 유지됩니다.</p><div className="mt-2 space-y-1.5">{failedRows.map((failure) => <div key={`${failure.index}-${failure.row.externalId}`} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-950/60 px-2.5 py-2"><div className="min-w-0"><p className="truncate text-xs text-zinc-300">{failure.row.title || `기사 ${failure.index}`}</p><p className="truncate text-[11px] text-rose-300/80">{failure.reason}</p></div><div className="flex shrink-0 items-center gap-1.5"><button type="button" onClick={() => downloadMarkdown(failure)} className="flex cursor-pointer items-center gap-1 rounded-md border border-zinc-700 px-2 py-1.5 text-[11px] font-semibold text-zinc-300 transition-colors hover:border-amber-400/60 hover:text-amber-300"><Download size={12} />.md 저장</button>{failure.canUseOriginalUrls && <button type="button" onClick={() => void handleOriginalUrlRegistration(failure)} disabled={originalUrlPending !== null} className="cursor-pointer rounded-md border border-amber-400/40 px-2 py-1.5 text-[11px] font-semibold text-amber-300 transition-colors hover:bg-amber-400/10 disabled:cursor-not-allowed disabled:opacity-40">{originalUrlPending === failure.row.externalId ? '등록 중...' : '원본 URL로 등록'}</button>}</div></div>)}</div></div>}</div>
 }

@@ -206,6 +206,8 @@ src/
 - 기사 목록에서 공개·비공개 상태를 직접 전환할 수 있으며, 공개 상태 변경 시 BBS 관련 캐시를 갱신
 - `public/bbs-json-to-markdown.html`에서 기사 JSON의 본문 HTML을 BBS 입력용 Markdown으로 변환하고 첫 본문 이미지 URL을 대표 이미지로 복사 가능
 - 대표 이미지가 비어 있으면 본문 첫 이미지, 첨부 이미지 첫 장 순서로 자동 지정하며 기사 상세에서는 대표 이미지와 중복되는 본문 이미지가 다시 표시되지 않음
+- BBS 공개 화면은 `bbs-media` Supabase Storage 공개 URL을 `unoptimized`로 직접 사용하고, JSON 가져오기는 Fivemanage 원본 이미지를 Storage로 이전한 뒤 비공개 기사로 저장
+- JSON 이미지 이전 실패 시 기사별 Markdown 다운로드와 원본 URL 유지 비공개 등록을 선택할 수 있으며, `scripts/migrate-bbs-external-images.mjs`의 백업 manifest·`scripts/rollback-bbs-external-images.mjs`로 일괄 이전을 확인·롤백
 
 ### 타일 Storage
 
@@ -367,7 +369,7 @@ src/
 - [x] BBS 기사 DB 식별자 rename migration 운영 DB 적용 (`035_rename_bss_tables_to_bbs.sql`, 사용자 확인)
 - [x] 인게임 수집 대비 source·external_id migration 운영 DB 적용 (`040_ingame_ingest_source.sql`, 사용자 확인)
 - [x] BBS 기사 리액션 rate limit migration 운영 DB 적용 (`041_bbs_article_reaction_rate_limit.sql`, 사용자 확인)
-- [x] 이미지 전송 최적화 기반 — 목록·상세 이미지는 원본 표시를 유지하면서 Vercel `next/image` 최적화·캐시를 사용하고, 새 BBS 업로드 파일에는 1년 Storage 캐시를 적용
+- [x] 이미지 전송 최적화 기반 — 일반 목록·상세 이미지는 원본 표시를 유지하면서 Vercel `next/image` 최적화·캐시를 사용하고, BBS 공개 화면은 `bbs-media` Storage URL을 직접 사용하며 새 Storage 파일에는 1년 캐시를 적용
 - [x] 이미지 캐시 기간 확대 — Supabase Storage 이미지의 Next Image 최적화 결과를 30일 캐시
 - [x] 이미지 변형 수 제한 — Next Image의 디바이스·소형 사이즈 후보를 제한하고 WebP로 고정
 - [x] BBS 본문 이미지 삽입 — 첨부 이미지 버튼으로 커서 위치에 마크다운 이미지를 삽입하고 본문에서도 Next Image로 표시
@@ -377,6 +379,7 @@ src/
 - [x] BBS 공개 목록 정렬·무한 스크롤 — 최신순·오래된순을 승인일시 기준으로 선택하고, 12건씩 하단 도달 시 추가 로드
 - [x] BBS 기사 입력 폼 상단 작업 버튼 — 기사 등록·수정·취소 버튼을 상단에도 배치
 - [x] BBS JSON 기사 가져오기 — 어드민에서 `rows` JSON을 일괄 가져와 비공개 기사로 저장하고 원본 ID 중복을 건너뛰며, 본문 최상단 이미지를 대표 이미지로 지정하고 HTML 태그·특수문자를 Markdown으로 안전하게 변환
+- [x] BBS 이미지 이전·복구 도구 — 기존 외부 이미지 일괄 이전 전 원본 URL과 작업 상태를 manifest에 저장하고, 생성 파일만 추적해 롤백하며, 어드민 이미지 이전 실패 시 기사별 Markdown 다운로드·원본 URL 비공개 등록을 지원
 - [x] BBS 필터 복귀 상태 유지 — 기사 상세 이동·뒤로가기 때 카테고리·기자·일차·정렬 조건을 목록 URL로 유지
 - [x] BBS 기사 상세 연속 이동 — 현재 목록 필터를 유지한 채 이전 기사·다음 기사로 이동하고, 상세 대표 이미지는 우선 로드
 - [x] BBS 목록 캐시·스크롤 복귀 — BBS 전용 TanStack Query 캐시와 12건 단위 무한 스크롤을 적용하고, 기사 진입 전 내부 스크롤 위치를 저장해 목록 복귀 시 복원

@@ -4,6 +4,8 @@
 
 ## 변경 기록
 
+- BBS 이미지 Storage 이전 및 가져오기 실패 분기 (`main`, 커밋·푸시 예정): BBS 공개 화면이 `bbs-media` Supabase Storage URL을 직접 사용하도록 연결하고, 기존 외부 이미지 일괄 이전 스크립트에 원본 manifest 백업·중간 작업 기록·롤백 명령을 추가했습니다. 어드민 JSON 가져오기 실패 시 기사별 Markdown을 다운로드하거나 원본 외부 URL을 유지한 비공개 기사로 등록할 수 있습니다. TypeScript·대상 ESLint·프로덕션 빌드·`git diff --check`를 통과했으며 대상 브랜치는 `main`, 원격 `deploy/main` 푸시 전 상태입니다.
+
 - 사건 목록 API 응답 축소 및 오류 진단 (`main`, 커밋·푸시 완료): 사건 목록과 무한 스크롤 API에서 상세 본문용 `content` 필드를 제외해 응답 처리량을 줄였습니다. Supabase 조회 실패 시 오류 코드·메시지·요청 유형·offset을 서버 로그에 기록하도록 보완했습니다. TypeScript·관련 ESLint·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`이며 원격 `deploy/main` 푸시를 완료했습니다.
 
 - 사건 상세 세로 이미지 표시 보정 (`main`, 커밋·푸시 완료): 사건 상세 대표 이미지 영역을 화면 높이의 70%로 제한하고 `object-contain`을 적용해 세로 이미지가 잘리지 않고 원본 비율로 표시되도록 수정했습니다. 가로 이미지와 세로 이미지 모두 컨테이너 안에서 전체가 보이며, TypeScript·관련 ESLint·`git diff --check`를 통과했습니다. 대상 브랜치는 `main`이며 원격 `deploy/main` 푸시를 완료했습니다.
