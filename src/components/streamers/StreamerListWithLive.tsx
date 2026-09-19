@@ -16,6 +16,10 @@ const statusColor: Record<string, string> = {
   hiatus: 'text-yellow-400 bg-yellow-400/10',
 }
 
+function normalizeSearchText(value: string) {
+  return value.toLowerCase().replace(/\s+/g, '')
+}
+
 type Character = {
   id: string
   name: string
@@ -125,13 +129,13 @@ export default function StreamerListWithLive({ streamers }: { streamers: Streame
   const { isRedPill } = useRedPill()
 
   const matchSearch = (streamer: StreamerItem) => {
-    if (!search.trim()) return true
-    const query = search.trim().toLowerCase()
+    const query = normalizeSearchText(search)
+    if (!query) return true
     if (isRedPill) {
-      return streamer.display_name.toLowerCase().includes(query) ||
-        streamer.characters.some((character) => !character.is_name_pending && character.name.toLowerCase().includes(query))
+      return normalizeSearchText(streamer.display_name).includes(query) ||
+        streamer.characters.some((character) => !character.is_name_pending && normalizeSearchText(character.name).includes(query))
     }
-    return streamer.display_name.toLowerCase().includes(query)
+    return normalizeSearchText(streamer.display_name).includes(query)
   }
 
   const allActive = streamers.filter((streamer) => streamer.is_active)

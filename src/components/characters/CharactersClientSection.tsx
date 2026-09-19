@@ -36,6 +36,10 @@ const categoryLabel: Record<string, string> = {
 }
 const categoryOrder = ['city_hall', 'public_service', 'gang', 'business']
 
+function normalizeSearchText(value: string) {
+  return value.toLowerCase().replace(/\s+/g, '')
+}
+
 function buildOrgOptions(organizations: OrgOption[]): SelectOption[] {
   const grouped: Record<string, OrgOption[]> = {}
   for (const o of organizations) {
@@ -105,15 +109,15 @@ export default function CharactersClientSection({
     }
 
     // search filter
-      const q = search.trim().toLowerCase()
+      const q = normalizeSearchText(search)
       if (q) {
         result = result.filter((c) => {
           // 검색어가 있을 때는 빨간약 상태와 관계없이 미정 상태 placeholder를 제외합니다.
           // 실제 이름으로 '미정'을 입력한 캐릭터는 is_name_pending이 false라서 검색됩니다.
           if (c.is_name_pending) return false
-          if (c.name.toLowerCase().includes(q)) return !c.is_name_pending
-          if (c.alias?.some((a) => a.toLowerCase().includes(q))) return !c.is_name_pending
-          if (isRedPill && c.streamers?.display_name.toLowerCase().includes(q)) return true
+          if (normalizeSearchText(c.name).includes(q)) return !c.is_name_pending
+          if (c.alias?.some((a) => normalizeSearchText(a).includes(q))) return !c.is_name_pending
+          if (isRedPill && c.streamers && normalizeSearchText(c.streamers.display_name).includes(q)) return true
           return false
       })
     }
