@@ -1,5 +1,6 @@
 'use server'
 
+import { isMapColor } from '@/lib/map/color'
 import { requireAdmin } from '@/lib/admin/auth'
 import { revalidatePath } from 'next/cache'
 import { invalidateWikiCache } from '@/lib/cache/wiki'
@@ -32,7 +33,7 @@ export async function updateOrgHq(
   const wikiPath = validateWikiPath(data.hq_wiki_path)
   if (!wikiPath.ok) return { error: wikiPath.error }
   const supabase = await requireAdmin()
-  const { data: rows, error } = await supabase.from('organizations').update({ ...data, hq_wiki_path: wikiPath.path }).eq('id', id).select('id')
+  const { data: rows, error } = await supabase.from('organizations').update({ hq_x: data.hq_x, hq_y: data.hq_y, hq_label: data.hq_label, hq_wiki_path: wikiPath.path }).eq('id', id).select('id')
   if (error) return { error: '지도 변경을 저장하지 못했습니다. 다시 시도해주세요.' }
   if (!rows?.length) return { error: '변경할 대상이 없습니다. 목록을 새로고침해주세요.' }
   invalidateAndRevalidate('/admin/map')
@@ -47,7 +48,7 @@ export async function updateOrgBiz(
   data: { biz_x: number | null; biz_y: number | null; biz_label: string | null }
 ) {
   const supabase = await requireAdmin()
-  const { data: rows, error } = await supabase.from('organizations').update(data).eq('id', id).select('id')
+  const { data: rows, error } = await supabase.from('organizations').update({ biz_x: data.biz_x, biz_y: data.biz_y, biz_label: data.biz_label }).eq('id', id).select('id')
   if (error) return { error: '지도 변경을 저장하지 못했습니다. 다시 시도해주세요.' }
   if (!rows?.length) return { error: '변경할 대상이 없습니다. 목록을 새로고침해주세요.' }
   invalidateAndRevalidate('/admin/map')
@@ -69,6 +70,7 @@ export async function addMapLocation(data: {
   const wikiPath = validateWikiPath(data.wiki_path)
   if (!wikiPath.ok) return { error: wikiPath.error }
   const supabase = await requireAdmin()
+  if (!isMapColor(data.color)) return { error: '색상은 #RRGGBB 형식으로 입력해주세요.' }
   const { data: rows, error } = await supabase.from('map_locations').insert({ ...data, wiki_path: wikiPath.path }).select('id')
   if (error) return { error: '지도 변경을 저장하지 못했습니다. 다시 시도해주세요.' }
   if (!rows?.length) return { error: '변경할 대상이 없습니다. 목록을 새로고침해주세요.' }
@@ -84,6 +86,7 @@ export async function updateMapLocation(
   const wikiPath = validateWikiPath(data.wiki_path)
   if (!wikiPath.ok) return { error: wikiPath.error }
   const supabase = await requireAdmin()
+  if (data.color !== undefined && !isMapColor(data.color)) return { error: '색상은 #RRGGBB 형식으로 입력해주세요.' }
   const updateData = data.wiki_path === undefined ? data : { ...data, wiki_path: wikiPath.path }
   const { data: rows, error } = await supabase.from('map_locations').update(updateData).eq('id', id).select('id')
   if (error) return { error: '지도 변경을 저장하지 못했습니다. 다시 시도해주세요.' }

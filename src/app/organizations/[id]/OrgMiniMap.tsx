@@ -3,6 +3,7 @@
 import 'leaflet/dist/leaflet.css'
 import { MapContainer, Marker, Tooltip } from 'react-leaflet'
 import L from 'leaflet'
+import { safeMapColor } from '@/lib/map/color'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { MAP_TILE_URLS, MAP_MAX_BOUNDS, MAP_TILE_BOUNDS, MAP_MIN_ZOOM, MAP_MAX_ZOOM, GTA_CRS_CONFIG, CATEGORY_COLOR } from '@/lib/map/constants'
@@ -37,10 +38,11 @@ function createGtaCRS() {
 const GTA_CRS = createGtaCRS()
 
 function getColor(org: OrgMapData) {
-  return org.color ?? CATEGORY_COLOR[org.category ?? ''] ?? '#71717a'
+  return safeMapColor(org.color, CATEGORY_COLOR[org.category ?? ''])
 }
 
 function createDropIcon(color: string): L.DivIcon {
+  color = safeMapColor(color)
   const w = 22, h = 30
   const cx = w / 2
   const r = cx - 1
@@ -56,6 +58,7 @@ function createDropIcon(color: string): L.DivIcon {
 }
 
 function createBizIcon(color: string): L.DivIcon {
+  color = safeMapColor(color)
   const size = 16, half = size / 2
   const path = `M ${half} 1 L ${size - 1} ${half} L ${half} ${size - 1} L 1 ${half} Z`
   const glow = `drop-shadow(0 0 4px ${color}cc) drop-shadow(0 2px 6px rgba(0,0,0,0.4))`

@@ -1,5 +1,6 @@
 'use server'
 
+import { isMapColor } from '@/lib/map/color'
 import { requireAdmin } from '@/lib/admin/auth'
 import { revalidatePath } from 'next/cache'
 import { invalidateWikiCache } from '@/lib/cache/wiki'
@@ -19,6 +20,7 @@ export async function createOrganization(data: {
   is_active: boolean
 }) {
   const supabase = await requireAdmin()
+  if (data.color !== null && !isMapColor(data.color)) return { error: '색상은 #RRGGBB 형식으로 입력해주세요.' }
   const { error } = await supabase.from('organizations').insert(data)
   if (error) return { error: error.message }
   invalidateAndRevalidate('/admin/organizations')
@@ -47,6 +49,7 @@ export async function updateOrganization(id: string, data: {
   gang_id: string | null
 }) {
   const supabase = await requireAdmin()
+  if (data.color !== null && !isMapColor(data.color)) return { error: '색상은 #RRGGBB 형식으로 입력해주세요.' }
   const { error } = await supabase.from('organizations').update(data).eq('id', id)
   if (error) return { error: error.message }
   invalidateAndRevalidate('/admin/organizations')

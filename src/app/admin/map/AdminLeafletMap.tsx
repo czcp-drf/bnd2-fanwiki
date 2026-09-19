@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css'
 import { MapContainer, CircleMarker, Tooltip, useMapEvents } from 'react-leaflet'
 import MapBaseLayers from '@/components/map/MapBaseLayers'
 import L from 'leaflet'
+import { safeMapColor } from '@/lib/map/color'
 import {
   MAP_MIN_ZOOM, MAP_MAX_ZOOM, MAP_DEFAULT_ZOOM,
   MAP_MAX_BOUNDS, GTA_CRS_CONFIG, CATEGORY_COLOR,
@@ -60,7 +61,7 @@ function MapClickHandler({ active, onMapClick }: { active: boolean; onMapClick: 
 }
 
 function getOrgColor(org: AdminOrg) {
-  return org.color ?? CATEGORY_COLOR[org.category ?? ''] ?? '#71717a'
+  return safeMapColor(org.color, CATEGORY_COLOR[org.category ?? ''])
 }
 
 export default function AdminLeafletMap({
@@ -163,7 +164,7 @@ export default function AdminLeafletMap({
             key={`loc-${loc.id}`}
             center={[loc.y!, loc.x!]}
             radius={7}
-            pathOptions={{ fillColor: loc.color, color: '#fff', fillOpacity: 0.85, weight: 2, dashArray: '3 2' }}
+            pathOptions={{ fillColor: safeMapColor(loc.color), color: '#fff', fillOpacity: 0.85, weight: 2, dashArray: '3 2' }}
           >
             <Tooltip direction="top" offset={[0, -9]}>
               {loc.name}{loc.label ? ` (${loc.label})` : ''}
@@ -176,7 +177,7 @@ export default function AdminLeafletMap({
         <CircleMarker
           center={[selectedLocation.y, selectedLocation.x]}
           radius={9}
-          pathOptions={{ fillColor: selectedLocation.color, color: '#fbbf24', fillOpacity: 0.35, weight: 2, dashArray: '5 4' }}
+          pathOptions={{ fillColor: safeMapColor(selectedLocation.color), color: '#fbbf24', fillOpacity: 0.35, weight: 2, dashArray: '5 4' }}
         >
           <Tooltip direction="top" offset={[0, -11]} permanent>현재 위치</Tooltip>
         </CircleMarker>
@@ -201,7 +202,7 @@ export default function AdminLeafletMap({
         <CircleMarker
           center={[pendingCoords.lat, pendingCoords.lng]}
           radius={10}
-          pathOptions={{ fillColor: selectedLocation?.color ?? '#facc15', color: '#fbbf24', fillOpacity: 1, weight: 3, dashArray: '3 2' }}
+          pathOptions={{ fillColor: safeMapColor(selectedLocation?.color, '#facc15'), color: '#fbbf24', fillOpacity: 1, weight: 3, dashArray: '3 2' }}
         >
           <Tooltip direction="top" offset={[0, -12]} permanent>{selectedLocation?.name ?? '새 위치'}</Tooltip>
         </CircleMarker>

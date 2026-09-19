@@ -5,6 +5,7 @@ import { MapContainer, Marker, Tooltip, Popup, useMapEvents } from 'react-leafle
 import './MapPinPopup.css'
 import MapBaseLayers from '@/components/map/MapBaseLayers'
 import L from 'leaflet'
+import { safeMapColor } from '@/lib/map/color'
 import { useState } from 'react'
 import Link from 'next/link'
 import { MapPin, ArrowUpRight, X } from 'lucide-react'
@@ -62,10 +63,11 @@ function MapClickClose({ onClose }: { onClose: () => void }) {
 }
 
 function getOrgColor(org: OrgMarker) {
-  return org.color ?? CATEGORY_COLOR[org.category ?? ''] ?? '#71717a'
+  return safeMapColor(org.color, CATEGORY_COLOR[org.category ?? ''])
 }
 
 function createDropIcon(color: string, selected: boolean): L.DivIcon {
+  color = safeMapColor(color)
   const w = selected ? 28 : 22
   const h = selected ? 38 : 30
   const cx = w / 2
@@ -82,6 +84,7 @@ function createDropIcon(color: string, selected: boolean): L.DivIcon {
 }
 
 function createBizIcon(color: string, selected: boolean): L.DivIcon {
+  color = safeMapColor(color)
   const size = selected ? 20 : 16
   const half = size / 2
   const path = `M ${half} 1 L ${size - 1} ${half} L ${half} ${size - 1} L 1 ${half} Z`
@@ -91,6 +94,7 @@ function createBizIcon(color: string, selected: boolean): L.DivIcon {
 }
 
 function createLocationIcon(color: string, selected: boolean): L.DivIcon {
+  color = safeMapColor(color)
   const r = selected ? 9 : 7
   const pad = 8
   const size = (r + pad) * 2
@@ -322,7 +326,7 @@ export default function LeafletMap({
             return (
               <>
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: loc.color }} />
+                  <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: safeMapColor(loc.color) }} />
                   <p className="text-sm font-bold text-white pr-4">{loc.name}</p>
                 </div>
                 {loc.label && (
