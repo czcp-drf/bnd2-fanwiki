@@ -206,7 +206,7 @@ src/
 - 기사 목록에서 공개·비공개 상태를 직접 전환할 수 있으며, 공개 상태 변경 시 BBS 관련 캐시를 갱신
 - `public/bbs-json-to-markdown.html`에서 기사 JSON의 본문 HTML을 BBS 입력용 Markdown으로 변환하고 첫 본문 이미지 URL을 대표 이미지로 복사 가능
 - 대표 이미지가 비어 있으면 본문 첫 이미지, 첨부 이미지 첫 장 순서로 자동 지정하며 기사 상세에서는 대표 이미지와 중복되는 본문 이미지가 다시 표시되지 않음
-- BBS 공개 화면은 `bbs-media` Supabase Storage 공개 URL을 `unoptimized`로 직접 사용하고, JSON 가져오기는 Fivemanage 원본 이미지를 Storage로 이전한 뒤 비공개 기사로 저장
+- BBS 공개 화면은 `bbs-media` Supabase Storage 공개 URL을 `unoptimized`로 직접 사용하고, JSON 가져오기는 Fivemanage 원본 이미지를 Storage로 이전한 뒤 비공개 기사로 저장 (`b5f9006`, `deploy/main` 푸시 완료)
 - JSON 이미지 이전 실패 시 기사별 Markdown 다운로드와 원본 URL 유지 비공개 등록을 선택할 수 있으며, `scripts/migrate-bbs-external-images.mjs`의 백업 manifest·`scripts/rollback-bbs-external-images.mjs`로 일괄 이전을 확인·롤백
 
 ### 타일 Storage
