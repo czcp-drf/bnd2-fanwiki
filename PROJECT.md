@@ -208,6 +208,7 @@ src/
 - `public/bbs-json-to-markdown.html`에서 기사 JSON의 본문 HTML을 BBS 입력용 Markdown으로 변환하고 첫 본문 이미지 URL을 대표 이미지로 복사 가능
 - 대표 이미지가 비어 있으면 본문 첫 이미지, 첨부 이미지 첫 장 순서로 자동 지정하며 기사 상세에서는 대표 이미지와 중복되는 본문 이미지가 다시 표시되지 않음
 - BBS 공개 화면은 `bbs-media` Supabase Storage 공개 URL을 `unoptimized`로 직접 사용하고, JSON 가져오기는 Fivemanage 원본 이미지를 Storage로 이전한 뒤 비공개 기사로 저장 (`b5f9006`, `deploy/main` 푸시 완료)
+- 이미지 원본 URL fallback 매핑과 `BBS_MEDIA_MODE` 전환 기능을 추가했습니다 (`a8d51a2`, migration 049 필요, `deploy/main` 푸시 완료)
 - JSON 이미지 이전 실패 시 기사별 Markdown 다운로드와 원본 URL 유지 비공개 등록을 선택할 수 있으며, `scripts/migrate-bbs-external-images.mjs`의 백업 manifest·`scripts/rollback-bbs-external-images.mjs`로 일괄 이전을 확인·롤백
 - `BBS_MEDIA_MODE`가 `storage`이면 Storage URL을 사용하고 `external`이면 `bbs_article_media_sources` 매핑을 통해 원본 URL을 사용합니다. 매핑이 없는 이미지는 Storage URL로 fallback합니다.
 
