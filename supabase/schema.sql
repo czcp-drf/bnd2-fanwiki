@@ -194,8 +194,9 @@ create policy "public read event_participants" on event_participants for select 
 create policy "public read event_organizations" on event_organizations for select using (true);
 create policy "public read event_clips" on event_clips for select using (true);
 
--- 제보는 누구나 insert 가능
-create policy "public insert reports" on reports for insert with check (true);
+-- 제보는 서버 검증을 통과한 service_role 요청만 저장합니다.
+revoke all on table public.reports from public, anon, authenticated;
+grant select, insert, update, delete on table public.reports to service_role;
 
 -- bongstagram_profiles
 -- 기존 캐릭터 1명당 하나의 Bongstagram 프로필을 보장한다.

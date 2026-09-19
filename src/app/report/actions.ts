@@ -1,6 +1,5 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getClientIpHash } from '@/lib/bongstagram/like-ip'
 import { MAP_MAX_BOUNDS } from '@/lib/map/constants'
@@ -9,10 +8,11 @@ import { sendReportDiscordNotification } from '@/lib/discord/report-webhook'
 
 async function isBlocked(ipHash: string): Promise<boolean> {
   const supabase = createAdminClient()
-  const { count } = await supabase
+  const { count, error } = await supabase
     .from('blocked_ips')
     .select('*', { count: 'exact', head: true })
     .eq('ip_hash', ipHash)
+  if (error) throw new Error('Report block check failed')
   return (count ?? 0) > 0
 }
 
@@ -77,8 +77,15 @@ export async function submitReport(
 
   // 차단된 IP 체크
   const ipHash = await getClientIpHash()
-  if (ipHash && await isBlocked(ipHash)) {
-    return { status: 'error', message: '제보가 제한된 환경입니다.' }
+  if (!ipHash) {
+    return { status: 'error', message: '접속 환경을 확인할 수 없어 제보를 처리할 수 없습니다.' }
+  }
+  try {
+    if (await isBlocked(ipHash)) {
+      return { status: 'error', message: '제보가 제한된 환경입니다.' }
+    }
+  } catch {
+    return { status: 'error', message: '제보 요청을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.' }
   }
 
   const type = getString(formData, 'type')
@@ -238,8 +245,8 @@ export async function submitReport(
   } satisfies Database['public']['Tables']['reports']['Insert']
 
   try {
-    const supabase = await createClient()
-    const { error } = await supabase.from('reports').insert(payload as never)
+    const supabase = createAdminClient()
+    const { error } = await supabase.from('reports').insert(payload)
     if (error) {
       return { status: 'error', message: '제출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }
     }

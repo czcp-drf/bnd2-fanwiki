@@ -390,3 +390,11 @@
 - 검증: `npx tsc --noEmit`, `git diff --check` 통과.
 - 대상 브랜치: `main` (`deploy` 원격으로 커밋·푸시 완료)
 
+
+## 2026-09-19 제보 직접 DB 입력 차단
+
+- 서버 검증 후 service_role로 제보를 저장하고 IP 확인·차단 조회 실패 시 등록을 거절합니다.
+- 045_reports_server_only.sql 및 schema.sql: 공개 제보 INSERT 정책 삭제, public/anon/authenticated 권한 회수, service_role CRUD 허용.
+- 검증: 제보 처리 8개 모의 시나리오, npx tsc --noEmit, git diff --check 통과.
+- main → deploy/main 커밋·푸시 준비 상태에서 기록. 푸시 결과는 완료 응답에서 확인하며 배포·마이그레이션 완료는 확인하지 않았습니다.
+- 서버 배포 후 migration 045 적용이 필요합니다. 기존 변환기·JSON 등 별도 작업은 포함하지 않습니다.

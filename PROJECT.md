@@ -546,3 +546,11 @@ src/
 - 검증: `npx tsc --noEmit`, `git diff --check` 통과.
 - 대상 브랜치: `main` (`deploy` 원격으로 커밋·푸시 완료)
 
+
+## 2026-09-19 제보 DB 접근 제한
+
+- 제보는 입력 검증·차단 확인·속도 제한을 통과한 뒤 서버 서비스 롤로 저장합니다. IP 확인 불가 또는 차단 조회 실패 시 저장하지 않습니다.
+- migration 045에서 reports 공개 INSERT 정책과 public/anon/authenticated 테이블 권한을 제거합니다.
+- 검증: 정상 등록·IP 누락·차단·차단 조회 실패·속도 제한·제한 조회 실패·입력 오류·저장 실패의 8개 모의 시나리오, TypeScript 및 diff 검사 통과.
+- 적용 순서: 서버 코드 배포 완료 후 045_reports_server_only.sql 실행. 운영 DB 적용은 미확인입니다.
+- 대상 main → deploy/main. 기록 시점에는 커밋·푸시 준비 상태이며 실제 푸시 결과는 작업 완료 응답에서 확인합니다. 배포 완료는 미확인입니다.
