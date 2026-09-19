@@ -398,3 +398,12 @@
 - 검증: 제보 처리 8개 모의 시나리오, npx tsc --noEmit, git diff --check 통과.
 - main → deploy/main 커밋·푸시 준비 상태에서 기록. 푸시 결과는 완료 응답에서 확인하며 배포·마이그레이션 완료는 확인하지 않았습니다.
 - 서버 배포 후 migration 045 적용이 필요합니다. 기존 변환기·JSON 등 별도 작업은 포함하지 않습니다.
+
+## 2026-09-19 사건 하위 정보 보호 및 신뢰 IP 헤더
+
+- migration 046: 예전 차단 IP 컬럼의 NOT NULL 제약 해제(데이터 보존, 컬럼 부재 시 생략).
+- migration 047 및 기본 스키마: event_participants/event_organizations/event_clips 조회를 공개 사건으로 제한.
+- IP 판별: Vercel이 제공하는 IP 헤더만 사용하고 모호한 IP 체인 및 임의 프록시 헤더를 거절. 해시 알고리즘은 유지.
+- 검증: PGlite 정책 검증 및 재실행, 10개 IP 모의 시나리오, npx tsc --noEmit, git diff --check 통과.
+- 사용자 확인으로 이전 제보 보안 배포·045 적용 및 IP 차단 정상 동작을 기록합니다. 047 적용은 미확인입니다.
+- 대상 main → deploy/main, 커밋·푸시 준비 상태에서 기록. 이번 배포는 아직 확인하지 않았으며 푸시 결과는 완료 응답에서 안내합니다.

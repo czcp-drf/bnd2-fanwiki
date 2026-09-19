@@ -24,15 +24,6 @@ function normalizeIp(value: string): string | null {
   return null
 }
 
-function findIp(value: string | null): string | null {
-  if (!value) return null
-  for (const part of value.split(',')) {
-    const ip = normalizeIp(part)
-    if (ip) return ip
-  }
-  return null
-}
-
 function getIpHashSecret(): string {
   return process.env.IP_HASH_SECRET
     ?? process.env.BONGSTAGRAM_IP_HASH_SECRET
@@ -50,13 +41,17 @@ export function hashStoredIp(value: string): string | null {
 }
 
 export async function getClientIpHash(): Promise<string | null> {
+  // 개발 환경에서는 요청 헤더 대신 로컬 전용 식별자를 사용합니다.
+  if (process.env.VERCEL !== '1') {
+    return process.env.NODE_ENV === 'development' ? hashNormalizedIp('localhost') : null
+  }
+
+  // Vercel이 설정한 헤더만 사용하며 임의의 프록시 헤더로 대체하지 않습니다.
   const headerStore = await headers()
-  const ip = findIp(headerStore.get('cf-connecting-ip'))
-    ?? findIp(headerStore.get('true-client-ip'))
-    ?? findIp(headerStore.get('x-real-ip'))
-    ?? findIp(headerStore.get('x-vercel-forwarded-for'))
-    ?? findIp(headerStore.get('x-forwarded-for'))
-    ?? findIp(headerStore.get('forwarded')?.match(/(?:^|;)\s*for=([^;]+)/i)?.[1] ?? null)
+  const value = headerStore.get('x-vercel-forwarded-for') ?? headerStore.get('x-forwarded-for')
+  // 단일 IP만 허용하고 모호한 체인이나 포트가 포함된 값은 거절합니다.
+  if (!value || !isIP(value.trim())) return null
+  const ip = normalizeIp(value)
 
   if (!ip) return null
   return hashNormalizedIp(ip)

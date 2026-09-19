@@ -190,9 +190,15 @@ create policy "public read organizations" on organizations for select using (tru
 create policy "public read organization_members" on organization_members for select using (true);
 create policy "public read character_relationships" on character_relationships for select using (true);
 create policy "public read events" on events for select using (is_published = true);
-create policy "public read event_participants" on event_participants for select using (true);
-create policy "public read event_organizations" on event_organizations for select using (true);
-create policy "public read event_clips" on event_clips for select using (true);
+create policy "public read event_participants" on event_participants for select using (
+  exists (select 1 from public.events where events.id = event_participants.event_id and events.is_published = true)
+);
+create policy "public read event_organizations" on event_organizations for select using (
+  exists (select 1 from public.events where events.id = event_organizations.event_id and events.is_published = true)
+);
+create policy "public read event_clips" on event_clips for select using (
+  exists (select 1 from public.events where events.id = event_clips.event_id and events.is_published = true)
+);
 
 -- 제보는 서버 검증을 통과한 service_role 요청만 저장합니다.
 revoke all on table public.reports from public, anon, authenticated;
