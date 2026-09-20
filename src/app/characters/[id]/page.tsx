@@ -87,6 +87,15 @@ async function getCharacter(id: string): Promise<CharacterDetail | null> {
 
 type CharacterEvent = {
   role: string | null
+  organizations: Array<{
+    role: string | null
+    organizations: {
+      id: string
+      name: string
+      name_confirmed: boolean
+      type: string | null
+    } | null
+  }>
   events: {
     id: string
     title: string
@@ -99,11 +108,67 @@ type CharacterEvent = {
 
 async function getCharacterEvents(id: string): Promise<CharacterEvent[]> {
   const supabase = createPublicClient()
-  const { data } = await supabase
-    .from('event_participants')
-    .select(`role, events ( id, title, type, occurred_at, summary, is_published )`)
-    .eq('character_id', id)
-  return (data ?? []) as unknown as CharacterEvent[]
+  const [{ data: participantData }, { data: membershipData }] = await Promise.all([
+    supabase
+      .from('event_participants')
+      .select(`role, events ( id, title, type, occurred_at, summary, is_published )`)
+      .eq('character_id', id),
+    supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('character_id', id),
+  ])
+
+  const organizationIds = Array.from(new Set(
+    ((membershipData ?? []) as Array<{ organization_id: string }>).map((membership) => membership.organization_id)
+  ))
+  const { data: organizationEventData } = organizationIds.length
+    ? await supabase
+      .from('event_organizations')
+      .select(`
+        role,
+        organizations ( id, name, name_confirmed, type ),
+        events ( id, title, type, occurred_at, summary, is_published )
+      `)
+      .in('organization_id', organizationIds)
+    : { data: [] }
+
+  const eventsById = new Map<string, CharacterEvent>()
+
+  for (const row of participantData ?? []) {
+    const event = (row as { events: CharacterEvent['events'] | null }).events
+    if (!event) continue
+    eventsById.set(event.id, {
+      role: (row as { role: string | null }).role,
+      organizations: [],
+      events: event,
+    })
+  }
+
+  for (const row of organizationEventData ?? []) {
+    const typedRow = row as {
+      role: string | null
+      organizations: CharacterEvent['organizations'][number]['organizations']
+      events: CharacterEvent['events'] | null
+    }
+    if (!typedRow.events) continue
+
+    const existing = eventsById.get(typedRow.events.id)
+    if (existing) {
+      if (!existing.organizations.some((item) => item.organizations?.id === typedRow.organizations?.id)) {
+        existing.organizations.push({ role: typedRow.role, organizations: typedRow.organizations })
+      }
+      continue
+    }
+
+    eventsById.set(typedRow.events.id, {
+      role: null,
+      organizations: [{ role: typedRow.role, organizations: typedRow.organizations }],
+      events: typedRow.events,
+    })
+  }
+
+  return Array.from(eventsById.values())
 }
 
 async function getRelationships(id: string): Promise<RelationshipRow[]> {
@@ -465,7 +530,7 @@ export default async function CharacterDetailPage({ params }: Props) {
           <p className="text-sm text-zinc-600">참여한 사건이 없습니다.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {events.map(({ role, events: e }) => {
+            {events.map(({ role, organizations, events: e }) => {
               if (!e) return null
               return (
                 <Link
@@ -484,6 +549,20 @@ export default async function CharacterDetailPage({ params }: Props) {
                         {role}
                       </span>
                     )}
+                    {organizations.map((organization) => {
+                      if (!organization.organizations) return null
+                      const organizationName = organization.organizations.name_confirmed
+                        ? organization.organizations.name
+                        : orgTypeLabel[organization.organizations.type ?? ''] ?? '미정'
+                      return (
+                        <span
+                          key={organization.organizations.id}
+                          className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400"
+                        >
+                          {organizationName}{organization.role ? ` · ${organization.role}` : ' 소속'}
+                        </span>
+                      )
+                    })}
                     {e.occurred_at && (
                       <span className="ml-auto text-xs text-zinc-600 whitespace-nowrap">
                         {formatKstDate(e.occurred_at)}
