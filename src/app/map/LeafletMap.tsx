@@ -108,8 +108,21 @@ function getOrgColor(org: OrgMarker) {
   return safeMapColor(org.color, CATEGORY_COLOR[org.category ?? ''])
 }
 
+function getPinContrast(color: string) {
+  const hex = color.slice(1)
+  const red = Number.parseInt(hex.slice(0, 2), 16)
+  const green = Number.parseInt(hex.slice(2, 4), 16)
+  const blue = Number.parseInt(hex.slice(4, 6), 16)
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000
+
+  return brightness >= 190
+    ? { stroke: '#27272a', inner: 'rgba(39,39,42,0.18)' }
+    : { stroke: 'white', inner: 'rgba(255,255,255,0.3)' }
+}
+
 function createDropIcon(color: string, selected: boolean): L.DivIcon {
   color = safeMapColor(color)
+  const contrast = getPinContrast(color)
   const w = selected ? 28 : 22
   const h = selected ? 38 : 30
   const cx = w / 2
@@ -121,28 +134,30 @@ function createDropIcon(color: string, selected: boolean): L.DivIcon {
   const innerR = Math.round(r * 0.36)
   const innerCy = Math.round(cy * 0.88)
   const glow = `drop-shadow(0 0 ${selected ? 8 : 5}px ${color}cc) drop-shadow(0 2px 8px rgba(0,0,0,0.5))`
-  const html = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:${glow}"><path d="${path}" fill="${color}" stroke="white" stroke-width="2"/><circle cx="${cx}" cy="${innerCy}" r="${innerR}" fill="rgba(255,255,255,0.3)"/></svg>`
+  const html = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:${glow}"><path d="${path}" fill="${color}" stroke="${contrast.stroke}" stroke-width="2"/><circle cx="${cx}" cy="${innerCy}" r="${innerR}" fill="${contrast.inner}"/></svg>`
   return L.divIcon({ html, className: '', iconSize: [w, h], iconAnchor: [cx, h], tooltipAnchor: [0, -h] })
 }
 
 function createBizIcon(color: string, selected: boolean): L.DivIcon {
   color = safeMapColor(color)
+  const contrast = getPinContrast(color)
   const size = selected ? 20 : 16
   const half = size / 2
   const path = `M ${half} 1 L ${size - 1} ${half} L ${half} ${size - 1} L 1 ${half} Z`
   const glow = `drop-shadow(0 0 ${selected ? 7 : 4}px ${color}cc) drop-shadow(0 2px 6px rgba(0,0,0,0.4))`
-  const html = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:${glow}"><path d="${path}" fill="${color}" stroke="white" stroke-width="2"/></svg>`
+  const html = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:${glow}"><path d="${path}" fill="${color}" stroke="${contrast.stroke}" stroke-width="2"/></svg>`
   return L.divIcon({ html, className: '', iconSize: [size, size], iconAnchor: [half, half], tooltipAnchor: [0, -half - 4] })
 }
 
 function createLocationIcon(color: string, selected: boolean): L.DivIcon {
   color = safeMapColor(color)
+  const contrast = getPinContrast(color)
   const r = selected ? 9 : 7
   const pad = 8
   const size = (r + pad) * 2
   const c = size / 2
   const glow = `drop-shadow(0 0 ${selected ? 8 : 5}px ${color}dd)`
-  const html = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:${glow}"><circle cx="${c}" cy="${c}" r="${r + 4}" fill="${color}22" stroke="${color}66" stroke-width="1.5"/><circle cx="${c}" cy="${c}" r="${r}" fill="${color}" stroke="white" stroke-width="2"/></svg>`
+  const html = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:${glow}"><circle cx="${c}" cy="${c}" r="${r + 4}" fill="${color}22" stroke="${color}66" stroke-width="1.5"/><circle cx="${c}" cy="${c}" r="${r}" fill="${color}" stroke="${contrast.stroke}" stroke-width="2"/></svg>`
   return L.divIcon({ html, className: '', iconSize: [size, size], iconAnchor: [c, c], tooltipAnchor: [0, -(r + pad)] })
 }
 
