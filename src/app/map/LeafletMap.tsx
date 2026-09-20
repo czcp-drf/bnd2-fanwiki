@@ -20,8 +20,8 @@ export type OrgMarker = {
   name: string
   color: string | null
   category: string | null
-  hq_x: number
-  hq_y: number
+  hq_x: number | null
+  hq_y: number | null
   hq_label: string | null
   hq_wiki_path: string | null
   biz_x: number | null
@@ -29,6 +29,14 @@ export type OrgMarker = {
   biz_label: string | null
   description: string | null
   logo_url: string | null
+  linked_business: {
+    id: string
+    name: string
+    description: string | null
+    hq_label: string | null
+    hq_wiki_path: string | null
+    logo_url: string | null
+  } | null
 }
 
 export type LocationMarker = {
@@ -163,8 +171,21 @@ export default function LeafletMap({
   focusCoordinates: { x: number; y: number } | null
 }) {
   const focusedOrg = orgs.find((org) => org.id === focusOrgId)
+  const focusedPosition = focusedOrg
+    ? focusedOrg.hq_x !== null && focusedOrg.hq_y !== null
+      ? [focusedOrg.hq_y, focusedOrg.hq_x] as [number, number]
+      : focusedOrg.biz_x !== null && focusedOrg.biz_y !== null
+        ? [focusedOrg.biz_y, focusedOrg.biz_x] as [number, number]
+        : null
+    : null
   const [selected, setSelected] = useState<Selected | null>(
-    focusedOrg ? { type: 'org', data: focusedOrg } : null
+    focusedOrg
+      ? focusedOrg.hq_x !== null && focusedOrg.hq_y !== null
+        ? { type: 'org', data: focusedOrg }
+        : focusedOrg.biz_x !== null && focusedOrg.biz_y !== null
+          ? { type: 'biz', data: focusedOrg }
+          : null
+      : null
   )
 
   const visibleOrgs = activeCategory
@@ -180,8 +201,8 @@ export default function LeafletMap({
       <MapContainer
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         crs={GTA_CRS as any}
-        center={focusCoordinates ? [focusCoordinates.y, focusCoordinates.x] : focusedOrg ? [focusedOrg.hq_y, focusedOrg.hq_x] : [0, 0]}
-        zoom={focusCoordinates || focusedOrg ? 4 : MAP_DEFAULT_ZOOM}
+        center={focusCoordinates ? [focusCoordinates.y, focusCoordinates.x] : focusedPosition ?? [0, 0]}
+        zoom={focusCoordinates || focusedPosition ? 4 : MAP_DEFAULT_ZOOM}
         minZoom={MAP_MIN_ZOOM}
         maxZoom={MAP_MAX_ZOOM}
         maxBounds={MAP_MAX_BOUNDS}
@@ -207,6 +228,7 @@ export default function LeafletMap({
 
         {/* 조직 거점 마커 */}
         {showOrgs && visibleOrgs.map((org) => {
+          if (org.hq_x === null || org.hq_y === null) return null
           const isSelected = selected?.type === 'org' && selected.data.id === org.id
           return (
             <Marker
@@ -235,7 +257,7 @@ export default function LeafletMap({
             <Marker
               key={`biz-${org.id}`}
               position={[org.biz_y!, org.biz_x!]}
-              icon={createBizIcon(getOrgColor(org), isSelected)}
+              icon={org.linked_business ? createDropIcon(getOrgColor(org), isSelected) : createBizIcon(getOrgColor(org), isSelected)}
               bubblingMouseEvents={false}
               eventHandlers={{
                 click: (e) => {
@@ -246,7 +268,7 @@ export default function LeafletMap({
                 },
               }}
             >
-              {!isSelected && <Tooltip direction="top">{org.name} — {org.biz_label || '사업체'}</Tooltip>}
+              {!isSelected && <Tooltip direction="top">{org.name}{org.linked_business ? ` — ${org.linked_business.name}` : ` — ${org.biz_label || '사업체'}`}</Tooltip>}
             </Marker>
           )
         })}
@@ -278,17 +300,17 @@ export default function LeafletMap({
       {/* 선택 카드 */}
       {selected && (
         selected.type === 'org' ? showOrgs && visibleOrgs.some((o) => o.id === selected.data.id) :
-        selected.type === 'biz' ? showOrgs && visibleOrgs.some((o) => o.id === selected.data.id && o.biz_x !== null) :
+          selected.type === 'biz' ? showOrgs && visibleOrgs.some((o) => o.id === selected.data.id && o.biz_x !== null && o.biz_y !== null) :
         showLocations && visibleLocations.some((l) => l.id === selected.data.id)
       ) && (
         <MapPinPopup
           key={`${selected.type}-${selected.data.id}`}
           position={
-            selected.type === 'org' ? [selected.data.hq_y, selected.data.hq_x] :
+            selected.type === 'org' ? [selected.data.hq_y!, selected.data.hq_x!] :
             selected.type === 'biz' ? [selected.data.biz_y!, selected.data.biz_x!] :
             [selected.data.y, selected.data.x]
           }
-          offset={selected.type === 'org' ? [0, -40] : selected.type === 'biz' ? [0, -16] : [0, -20]}
+          offset={selected.type === 'org' || (selected.type === 'biz' && selected.data.linked_business) ? [0, -40] : selected.type === 'biz' ? [0, -16] : [0, -20]}
         >
         <div onKeyDown={(event) => { if (event.key === 'Escape') setSelected(null) }} className="relative w-72 max-w-[calc(100vw-5rem)] max-h-[50vh] overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-md p-5 shadow-2xl">
           <button onClick={() => setSelected(null)} aria-label="설명 카드 닫기"
@@ -329,6 +351,7 @@ export default function LeafletMap({
 
           {selected.type === 'biz' && (() => {
             const org = selected.data
+            const business = org.linked_business
             return (
               <>
                 <div className="flex items-center gap-3 pr-5">
@@ -340,11 +363,27 @@ export default function LeafletMap({
                     <p className="text-base font-bold text-white break-words">{org.name}</p>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-800/70 px-3 py-2 text-xs text-zinc-300"><MapPin size={14} className="shrink-0 text-purple-400" />{org.biz_label || '불법 사업체'}</div>
+                <div className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-800/70 px-3 py-2 text-xs text-zinc-300"><MapPin size={14} className="shrink-0 text-amber-400" />조직 거점</div>
+                <div className="mt-3 rounded-lg border border-zinc-700/80 bg-zinc-800/50 px-3 py-2.5">
+                  <p className="text-[10px] font-semibold text-purple-300">불법 사업체</p>
+                  <p className="mt-1 text-sm font-semibold text-white break-words">{business?.name || org.biz_label || '불법 사업체'}</p>
+                  {business?.hq_label && <p className="mt-1 text-xs text-zinc-400">{business.hq_label}</p>}
+                  {business?.description && <p className="mt-2 line-clamp-4 text-xs leading-relaxed text-zinc-400">{business.description}</p>}
+                </div>
                 <Link href={`/organizations/${org.id}`}
                   className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2.5 text-xs font-semibold text-amber-400 hover:bg-amber-400/20 transition-colors">
                   조직 상세 보기 <ArrowUpRight size={14} />
                 </Link>
+                {business?.hq_wiki_path && (
+                  <Link
+                    href={business.hq_wiki_path}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="map-wiki-link mt-2 flex items-center justify-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2.5 text-xs font-semibold text-amber-400 hover:bg-amber-400/20 transition-colors"
+                  >
+                    위키 바로가기 <ArrowUpRight size={14} />
+                  </Link>
+                )}
               </>
             )
           })()}

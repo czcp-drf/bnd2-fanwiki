@@ -14,38 +14,47 @@ async function getOrgsWithHq(): Promise<OrgMarker[]> {
   const supabase = createAdminClient()
 
   const [{ data: orgs }, { data: linkedBizOrgs }] = await Promise.all([
-    // 거점이 있는 모든 조직 (gang_id 있는 불법 org 제외 — 아래에서 부모 갱단의 biz로 표시)
+    // 조직 거점 또는 연결된 불법 사업체 위치가 있는 부모 조직
     supabase
       .from('organizations')
       .select('id, name, color, category, hq_x, hq_y, hq_label, hq_wiki_path, biz_x, biz_y, biz_label, description, logo_url')
       .eq('is_active', true)
       .eq('is_disbanded', false)
-      .not('hq_x', 'is', null)
-      .not('hq_y', 'is', null)
       .is('gang_id', null),
 
-    // gang_id로 갱단과 연결된 불법 사업체 org (좌표 있는 것)
+    // 갱단과 연결된 불법 사업체 정보. 지도에서는 부모 갱단의 조직 거점으로 표시한다.
     supabase
       .from('organizations')
-      .select('id, name, hq_x, hq_y, gang_id')
+      .select('id, name, description, hq_x, hq_y, hq_label, hq_wiki_path, logo_url, gang_id')
       .eq('is_active', true)
       .eq('is_disbanded', false)
-      .not('gang_id', 'is', null)
-      .not('hq_x', 'is', null)
-      .not('hq_y', 'is', null),
+      .eq('category', 'illegal')
+      .not('gang_id', 'is', null),
   ])
 
   const bizByGang = new Map((linkedBizOrgs ?? []).map((b) => [b.gang_id, b]))
 
   return (orgs ?? []).map((org) => {
-    // 수동 biz_x/biz_y가 있으면 우선 사용, 없으면 연결된 불법 org 좌표로 채움
-    if (org.biz_x !== null) return org as OrgMarker
     const linked = bizByGang.get(org.id)
-    if (linked) {
-      return { ...org, biz_x: linked.hq_x, biz_y: linked.hq_y, biz_label: linked.name } as OrgMarker
-    }
-    return org as OrgMarker
-  })
+    // 연결된 불법 사업체는 부모 갱단의 조직 거점 핀으로 표시한다.
+    return {
+      ...org,
+      biz_x: org.biz_x ?? linked?.hq_x ?? null,
+      biz_y: org.biz_y ?? linked?.hq_y ?? null,
+      biz_label: org.biz_label ?? linked?.name ?? null,
+      linked_business: linked ? {
+        id: linked.id,
+        name: linked.name,
+        description: linked.description,
+        hq_label: linked.hq_label,
+        hq_wiki_path: linked.hq_wiki_path,
+        logo_url: linked.logo_url,
+      } : null,
+    } as OrgMarker
+  }).filter((org) => (
+    (org.hq_x !== null && org.hq_y !== null) ||
+    (org.biz_x !== null && org.biz_y !== null)
+  ))
 }
 
 async function getLocations(): Promise<LocationMarker[]> {
