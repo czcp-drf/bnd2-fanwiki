@@ -59,7 +59,7 @@ src/
 │   │   ├── page.tsx            # 서버 컴포넌트 (orgs + locations 패치)
 │   │   ├── MapView.tsx         # 클라이언트 래퍼 (카테고리 필터, 위치 토글)
 │   │   ├── LeafletMap.tsx      # Leaflet 지도 본체 (SSR 제외, dynamic import, 타일 bounds·줌 제한)
-│   │   └── MapPinPopup.css     # 팝업 opacity 전환 제거 (꼬리표 지연 없는 닫기)
+│   │   └── MapPinPopup.css     # 상단 공간 부족 시 핀 아래로 표시하는 팝업 위치·말꼬리 스타일
 │   ├── search/page.tsx         # 통합 검색
 │   ├── schedule/               # 방송 일정
 │   ├── guide/                  # 입문 가이드
@@ -600,3 +600,10 @@ src/
 - 별도 DB 마이그레이션은 필요하지 않습니다.
 - 검증: npx tsc --noEmit, npm run build, git diff --check 통과.
 - 대상 브랜치: main. 커밋 ee1d539를 deploy/main에 푸시 완료했습니다.
+
+## 2026-09-21 지도 팝업 위치 보완
+
+- 지도 핀을 상단에서 선택했을 때 팝업이 지도 영역 밖으로 잘리지 않도록, 상단 여유 공간이 부족하면 핀 아래에 표시하도록 수정했습니다.
+- 팝업 상단을 핀 하단에 맞추고, 말꼬리를 팝업 뒤 레이어에 배치해 핀과 카드가 자연스럽게 연결되도록 조정했습니다.
+- 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
+- 대상 브랜치: `main` → `deploy/main` 푸시 예정.

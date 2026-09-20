@@ -21,6 +21,29 @@
 .map-pin-popup .leaflet-popup-content p.mt-3 { margin-top: 12px; }
 .map-pin-popup .leaflet-popup-content p.mt-1 { margin-top: 4px; }
 
+/* Leaflet positions regular popups above their anchor. Keep the card below
+   the pin when there is not enough space above it. */
+.map-pin-popup-below {
+  top: 8px !important;
+  bottom: auto !important;
+  margin-bottom: 0;
+}
+
+.map-pin-popup-below .leaflet-popup-tip-container {
+  top: -14px;
+  margin-top: 0;
+  z-index: 0;
+}
+
+.map-pin-popup-below .leaflet-popup-tip {
+  margin: 10px auto 0;
+}
+
+.map-pin-popup-below .leaflet-popup-content-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
 .map-pin-popup .leaflet-popup-tip {
   background: #18181b;
   border-bottom: 1px solid #3f3f46;

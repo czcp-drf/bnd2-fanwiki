@@ -1,12 +1,12 @@
 'use client'
 
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, Marker, Tooltip, Popup, useMapEvents } from 'react-leaflet'
+import { MapContainer, Marker, Tooltip, Popup, useMap, useMapEvents } from 'react-leaflet'
 import './MapPinPopup.css'
 import MapBaseLayers from '@/components/map/MapBaseLayers'
 import L from 'leaflet'
 import { safeMapColor } from '@/lib/map/color'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { MapPin, ArrowUpRight, X } from 'lucide-react'
 import AppImage from '@/components/ui/AppImage'
@@ -60,6 +60,40 @@ const GTA_CRS = createGtaCRS()
 function MapClickClose({ onClose }: { onClose: () => void }) {
   useMapEvents({ click: onClose, keydown: (event) => { if (event.originalEvent.key === 'Escape') onClose() } })
   return null
+}
+
+function MapPinPopup({
+  position,
+  offset,
+  children,
+}: {
+  position: [number, number]
+  offset: [number, number]
+  children: ReactNode
+}) {
+  const map = useMap()
+  const showBelowPin = (() => {
+    const point = map.latLngToContainerPoint(position)
+    const topSpaceRequired = 420
+    return point.y < topSpaceRequired
+  })()
+  const popupOffset: [number, number] = showBelowPin ? [offset[0], 0] : offset
+
+  return (
+    <Popup
+      position={position}
+      offset={popupOffset}
+      className={`map-pin-popup${showBelowPin ? ' map-pin-popup-below' : ''}`}
+      closeButton={false}
+      closeOnClick={false}
+      closeOnEscapeKey={false}
+      maxWidth={320}
+      autoPan={!showBelowPin}
+      autoPanPadding={[20, 20]}
+    >
+      {children}
+    </Popup>
+  )
 }
 
 function getOrgColor(org: OrgMarker) {
@@ -247,7 +281,7 @@ export default function LeafletMap({
         selected.type === 'biz' ? showOrgs && visibleOrgs.some((o) => o.id === selected.data.id && o.biz_x !== null) :
         showLocations && visibleLocations.some((l) => l.id === selected.data.id)
       ) && (
-        <Popup
+        <MapPinPopup
           key={`${selected.type}-${selected.data.id}`}
           position={
             selected.type === 'org' ? [selected.data.hq_y, selected.data.hq_x] :
@@ -255,12 +289,6 @@ export default function LeafletMap({
             [selected.data.y, selected.data.x]
           }
           offset={selected.type === 'org' ? [0, -40] : selected.type === 'biz' ? [0, -16] : [0, -20]}
-          className="map-pin-popup"
-          closeButton={false}
-          closeOnClick={false}
-          closeOnEscapeKey={false}
-          maxWidth={320}
-          autoPanPadding={[20, 20]}
         >
         <div onKeyDown={(event) => { if (event.key === 'Escape') setSelected(null) }} className="relative w-72 max-w-[calc(100vw-5rem)] max-h-[50vh] overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-md p-5 shadow-2xl">
           <button onClick={() => setSelected(null)} aria-label="설명 카드 닫기"
@@ -349,7 +377,7 @@ export default function LeafletMap({
             )
           })()}
         </div>
-        </Popup>
+        </MapPinPopup>
       )}
       </MapContainer>
     </div>
