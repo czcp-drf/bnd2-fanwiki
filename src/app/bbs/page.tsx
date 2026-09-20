@@ -3,7 +3,7 @@ import BbsCategoryNav from './components/BbsCategoryNav'
 import BbsHeader from './components/BbsHeader'
 import BbsArticleInfiniteList from './components/BbsArticleInfiniteList'
 import { BBS_CATEGORIES, type BbsCategory } from '@/lib/bbs/articles'
-import { getAvailableBbsDayKeys, getBbsReporterOptions, getPublishedBbsArticlesPage, type BbsSortOrder } from '@/lib/bbs/data'
+import { getAvailableBbsDayKeys, getBbsReporterOptions, getPublishedBbsArticlesPage, getPublishedBbsListRevision, type BbsSortOrder } from '@/lib/bbs/data'
 import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
 
 export const metadata: Metadata = {
@@ -22,10 +22,11 @@ export default async function BbsPage({ searchParams }: Props) {
   const activeReporterIds = [...new Set(reporterValue.split(',').map((value) => value.trim()).filter(Boolean))]
   const activeDay = BBS_DAYS.some((item) => item.key === day) ? day as BbsDayKey : undefined
   const activeSort: BbsSortOrder = order === 'oldest' ? 'oldest' : 'latest'
-  const [articlePage, reporters, availableDayKeys] = await Promise.all([
+  const [articlePage, reporters, availableDayKeys, listRevision] = await Promise.all([
     getPublishedBbsArticlesPage(activeCategory === '전체' ? undefined : activeCategory, activeReporterIds.length ? activeReporterIds : undefined, 1, 12, activeDay, activeSort),
     getBbsReporterOptions(),
     getAvailableBbsDayKeys(),
+    getPublishedBbsListRevision(),
   ])
 
   return (
@@ -37,7 +38,7 @@ export default async function BbsPage({ searchParams }: Props) {
               <div className="rounded-2xl border border-[var(--bbs-border)] bg-[var(--bbs-card)] px-5 py-20 text-center text-sm text-[var(--bbs-subtle-text)]">등록된 기사가 없습니다.</div>
             ) : (
               <>
-                <BbsArticleInfiniteList key={`${activeCategory}:${activeReporterIds.join(',')}:${activeDay ?? ''}:${activeSort}`} initialArticles={articlePage.articles} total={articlePage.total} totalPages={articlePage.totalPages} category={activeCategory} reporterIds={activeReporterIds} day={activeDay} sortOrder={activeSort} />
+                <BbsArticleInfiniteList key={`${activeCategory}:${activeReporterIds.join(',')}:${activeDay ?? ''}:${activeSort}`} initialArticles={articlePage.articles} total={articlePage.total} totalPages={articlePage.totalPages} category={activeCategory} reporterIds={activeReporterIds} day={activeDay} sortOrder={activeSort} listRevision={listRevision} />
               </>
             )}
           </main>

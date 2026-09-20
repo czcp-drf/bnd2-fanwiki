@@ -6,7 +6,7 @@ import type { BbsArticle } from '@/lib/bbs/articles'
 import type { BbsDayKey } from '@/lib/bbs/days'
 import type { BbsSortOrder } from '@/lib/bbs/data'
 import { getBbsArticlesPageAction } from '../actions'
-import BbsArticleCard, { BBS_SCROLL_STATE_PREFIX } from './BbsArticleCard'
+import BbsArticleCard, { BBS_LIST_REVISION_STORAGE_KEY, BBS_SCROLL_STATE_PREFIX } from './BbsArticleCard'
 
 type Props = {
   initialArticles: BbsArticle[]
@@ -16,9 +16,10 @@ type Props = {
   reporterIds: string[]
   day?: BbsDayKey
   sortOrder: BbsSortOrder
+  listRevision: string
 }
 
-export default function BbsArticleInfiniteList({ initialArticles, total, totalPages, category, reporterIds, day, sortOrder }: Props) {
+export default function BbsArticleInfiniteList({ initialArticles, total, totalPages, category, reporterIds, day, sortOrder, listRevision }: Props) {
   const sentinelRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
   const queryKey = useMemo(() => ['bbs-articles', category, [...reporterIds].sort(), day ?? null, sortOrder] as const, [category, day, reporterIds, sortOrder])
@@ -41,6 +42,10 @@ export default function BbsArticleInfiniteList({ initialArticles, total, totalPa
   })
   const articles = query.data.pages.flatMap((page) => page.articles)
   const hasMore = Boolean(query.hasNextPage)
+
+  useEffect(() => {
+    sessionStorage.setItem(BBS_LIST_REVISION_STORAGE_KEY, listRevision)
+  }, [listRevision])
 
   useEffect(() => {
     queryClient.setQueryData(queryKey, (current: typeof query.data | undefined) => {

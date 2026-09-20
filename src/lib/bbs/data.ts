@@ -37,6 +37,7 @@ export type BbsArticlePage = {
 }
 
 export type BbsArticleNeighbor = { id: string; title: string } | null
+export type BbsListRevision = string
 
 type ArticleRow = {
   id: string
@@ -210,6 +211,41 @@ async function loadArticles(categoryKey?: BbsCategoryKey, articleId?: string, re
 
 export async function getPublishedBbsArticles(category?: string, reporterIds?: string[]) {
   return (await loadArticles(getBbsCategoryKey(category) ?? undefined, undefined, reporterIds)).articles
+}
+
+async function loadPublishedBbsListRevision(): Promise<BbsListRevision> {
+  const supabase = createPublicClient()
+  const [{ count, error: countError }, { data: latestRows, error: latestError }] = await Promise.all([
+    supabase
+      .from('bbs_articles')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_published', true)
+      .not('approved_at', 'is', null),
+    supabase
+      .from('bbs_articles')
+      .select('id, updated_at')
+      .eq('is_published', true)
+      .not('approved_at', 'is', null)
+      .order('updated_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  if (countError) throw new Error(countError.message)
+  if (latestError) throw new Error(latestError.message)
+  const latest = (latestRows as { id: string; updated_at: string }[] | null)?.[0]
+  return `${count ?? 0}:${latest?.updated_at ?? ''}:${latest?.id ?? ''}`
+}
+
+const getPublishedBbsListRevisionCached = unstable_cache(
+  loadPublishedBbsListRevision,
+  ['bbs-public-list-revision'],
+  { revalidate: BBS_LIST_CACHE_REVALIDATE_SECONDS, tags: [BBS_ARTICLE_LIST_TAG] },
+)
+
+export async function getPublishedBbsListRevision() {
+  return getPublishedBbsListRevisionCached()
 }
 
 export async function getPublishedBbsArticle(id: string) {

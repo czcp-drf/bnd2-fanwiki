@@ -9,6 +9,7 @@ import BbsArticleVisual from './BbsArticleVisual'
 import { BBS_READ_ARTICLES_KEY, getReadArticleIds } from './BbsArticleReadState'
 
 export const BBS_SCROLL_STATE_PREFIX = 'bbs-scroll-state:'
+export const BBS_LIST_REVISION_STORAGE_KEY = 'bbs-list-revision'
 
 function getScrollContainer() {
   const main = document.querySelector<HTMLElement>('[data-bbs-scroll-container="main"]')

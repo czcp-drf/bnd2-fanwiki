@@ -622,3 +622,11 @@ src/
 - 어두운 색상 핀은 기존 흰색 외곽선을 유지합니다.
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 이번 변경과 문서 기록을 함께 커밋·푸시합니다.
+
+## 2026-09-21 BBS 공개 목록 버전 확인
+
+- 메인 화면에서 BBS 전체보기로 이동할 때 공개 목록 버전을 가볍게 확인하도록 개선했습니다.
+- 공개 기사 수와 최신 `updated_at`을 조합한 버전을 사용하며, 버전이 같으면 클라이언트 이동을 유지하고 변경되었거나 확인에 실패하면 전체 갱신합니다.
+- `/api/bbs/revision`을 추가하고, BBS 진입 시 현재 버전을 세션 저장소에 기록합니다. 기존 `bbs-article-list` 캐시 태그와 `updated_at`을 사용하므로 DB 마이그레이션은 필요하지 않습니다.
+- 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
+- 대상 브랜치: `main` → `deploy/main`. 이번 변경과 문서 기록을 함께 커밋·푸시합니다.
