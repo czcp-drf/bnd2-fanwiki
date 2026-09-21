@@ -639,9 +639,9 @@ src/
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 코드 변경과 migration, 문서 기록을 함께 커밋·푸시합니다.
 
-## 2026-09-22 조직원 삭제 처리
+## 2026-09-22 조직원 탈퇴·삭제 처리
 
-- 조직 관리의 현재 멤버 일괄 처리를 `탈퇴`에서 `삭제`로 변경했습니다. 선택한 활성 멤버의 `organization_members` 연결 레코드를 삭제하며, 삭제 전 확인창을 표시합니다.
+- 조직 관리에서 현재 멤버를 `탈퇴` 처리하면 `left_at`을 기록하고, `삭제` 처리하면 `organization_members` 연결 레코드를 삭제하도록 두 동작을 분리했습니다. 삭제 전 확인창을 표시합니다.
 - 기존에 `left_at`이 기록된 과거 멤버 이력과 복귀 기능은 유지합니다. 별도 DB 마이그레이션은 필요하지 않습니다.
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 코드 변경과 문서 기록을 함께 커밋·푸시합니다.

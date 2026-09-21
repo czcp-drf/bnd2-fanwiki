@@ -2,8 +2,8 @@
 
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, X, UserMinus, UserPlus, ChevronDown, ChevronUp, Pencil, RotateCcw, Save, GripVertical, ChevronsUpDown } from 'lucide-react'
-import { addOrgMembers, updateOrgMember, deleteOrgMembers, restoreMember, reorderMembers } from './actions'
+import { Check, X, UserMinus, UserPlus, Trash2, ChevronDown, ChevronUp, Pencil, RotateCcw, Save, GripVertical, ChevronsUpDown } from 'lucide-react'
+import { addOrgMembers, updateOrgMember, setMembersLeft, deleteOrgMembers, restoreMember, reorderMembers } from './actions'
 
 export type MemberRow = {
   character_id: string
@@ -53,8 +53,9 @@ export default function MemberManageClient({
 
   const activeMembers = orderedMembers
 
-  // Bulk selection for deletion
+  // Bulk selection for departure or deletion
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [leaveMsg, setLeaveMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const [deleteMsg, setDeleteMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   // Inline role editing
@@ -211,6 +212,19 @@ export default function MemberManageClient({
     setSelected(next)
   }
 
+  function handleBulkLeave() {
+    const ids = Array.from(selected)
+    if (!ids.length) return
+    setLeaveMsg(null)
+    startTransition(async () => {
+      const res = await setMembersLeft(orgId, ids)
+      if (res.error) { setLeaveMsg({ type: 'err', text: res.error }); return }
+      setSelected(new Set())
+      setLeaveMsg({ type: 'ok', text: `${ids.length}명 탈퇴 처리 완료` })
+      router.refresh()
+    })
+  }
+
   function handleBulkDelete() {
     const ids = Array.from(selected)
     if (!ids.length) return
@@ -314,11 +328,21 @@ export default function MemberManageClient({
             )}
             {selected.size > 0 && (
               <button
+                onClick={handleBulkLeave}
+                disabled={isPending}
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-400/20 disabled:opacity-50"
+              >
+                <UserMinus size={12} />
+                선택 {selected.size}명 탈퇴
+              </button>
+            )}
+            {selected.size > 0 && (
+              <button
                 onClick={handleBulkDelete}
                 disabled={isPending}
                 className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
               >
-                <UserMinus size={12} />
+                <Trash2 size={12} />
                 선택 {selected.size}명 삭제
               </button>
             )}
@@ -333,6 +357,11 @@ export default function MemberManageClient({
         {deleteMsg && (
           <p className={`text-xs ${deleteMsg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
             {deleteMsg.text}
+          </p>
+        )}
+        {leaveMsg && (
+          <p className={`text-xs ${leaveMsg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
+            {leaveMsg.text}
           </p>
         )}
 

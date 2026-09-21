@@ -68,6 +68,20 @@ export async function deleteOrgMembers(orgId: string, characterIds: string[]) {
   return { success: true }
 }
 
+export async function setMembersLeft(orgId: string, characterIds: string[]) {
+  if (characterIds.length === 0) return { success: true }
+  const supabase = await requireAdmin()
+  const { error } = await supabase
+    .from('organization_members')
+    .update({ left_at: new Date().toISOString() })
+    .eq('organization_id', orgId)
+    .in('character_id', characterIds)
+    .is('left_at', null)
+  if (error) return { error: error.message }
+  paths(orgId)
+  return { success: true }
+}
+
 export async function restoreMember(orgId: string, characterId: string) {
   const supabase = await requireAdmin()
   const { error } = await supabase
