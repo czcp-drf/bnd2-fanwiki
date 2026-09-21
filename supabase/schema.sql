@@ -40,6 +40,7 @@ create table organizations (
   description text,
   logo_url    text,
   color       text,
+  pin_border_color text,
   is_active   boolean default true,
   created_at  timestamptz default now(),
   updated_at  timestamptz default now()

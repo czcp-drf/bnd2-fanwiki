@@ -56,6 +56,23 @@ export async function updateOrgBiz(
   return { success: true }
 }
 
+export async function updateOrgPinStyle(id: string, data: { pin_border_color: string | null }) {
+  const supabase = await requireAdmin()
+  if (data.pin_border_color !== null && !isMapColor(data.pin_border_color)) {
+    return { error: '외곽선 색상은 #RRGGBB 형식으로 입력해주세요.' }
+  }
+  const { data: rows, error } = await supabase
+    .from('organizations')
+    .update({ pin_border_color: data.pin_border_color })
+    .eq('id', id)
+    .select('id')
+  if (error) return { error: '핀 외곽선 색상을 저장하지 못했습니다. 다시 시도해주세요.' }
+  if (!rows?.length) return { error: '변경할 대상이 없습니다. 목록을 새로고침해주세요.' }
+  invalidateAndRevalidate('/admin/map')
+  invalidateAndRevalidate('/map')
+  return { success: true }
+}
+
 // ── 주요 장소 ──────────────────────────────────────────
 
 export async function addMapLocation(data: {

@@ -630,3 +630,11 @@ src/
 - `/api/bbs/revision`을 추가하고, BBS 진입 시 현재 버전을 세션 저장소에 기록합니다. 기존 `bbs-article-list` 캐시 태그와 `updated_at`을 사용하므로 DB 마이그레이션은 필요하지 않습니다.
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 이번 변경과 문서 기록을 함께 커밋·푸시합니다.
+
+## 2026-09-21 관리자 지도 핀 외곽선 색상 설정
+
+- 관리자 지도에서 조직별 핀 외곽선 색상을 직접 지정하거나 `자동`으로 되돌릴 수 있도록 추가했습니다. 값이 없으면 기존 자동 대비 방식이 기본 선택됩니다.
+- 공개 지도와 관리자 지도 미리보기의 조직 거점·연결된 불법 사업체 핀에 설정 색상을 적용합니다. 주요 장소 핀은 기존 자동 대비를 유지합니다.
+- `organizations.pin_border_color` nullable 컬럼과 `#RRGGBB` 형식 제약조건을 migration 051에 추가했습니다. 기존 조직은 NULL 상태로 유지됩니다.
+- 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
+- 대상 브랜치: `main` → `deploy/main`. 코드 변경과 migration, 문서 기록을 함께 커밋·푸시합니다.

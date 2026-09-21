@@ -11,6 +11,7 @@ import type { AdminOrg, AdminLocation } from './AdminLeafletMap'
 
 const updateOrgHq = (...args: Parameters<typeof actions.updateOrgHq>) => unwrapMutation(actions.updateOrgHq(...args))
 const updateOrgBiz = (...args: Parameters<typeof actions.updateOrgBiz>) => unwrapMutation(actions.updateOrgBiz(...args))
+const updateOrgPinStyle = (...args: Parameters<typeof actions.updateOrgPinStyle>) => unwrapMutation(actions.updateOrgPinStyle(...args))
 const addMapLocation = (...args: Parameters<typeof actions.addMapLocation>) => unwrapMutation(actions.addMapLocation(...args))
 const updateMapLocation = (...args: Parameters<typeof actions.updateMapLocation>) => unwrapMutation(actions.updateMapLocation(...args))
 const deleteMapLocation = (...args: Parameters<typeof actions.deleteMapLocation>) => unwrapMutation(actions.deleteMapLocation(...args))
@@ -58,6 +59,59 @@ function CoordInputs({
   )
 }
 
+function PinBorderColorField({
+  value,
+  onChange,
+  onSave,
+  onReset,
+  disabled,
+}: {
+  value: string
+  onChange: (value: string) => void
+  onSave: () => void
+  onReset: () => void
+  disabled: boolean
+}) {
+  const hasCustomColor = /^#[0-9A-Fa-f]{6}$/.test(value.trim())
+
+  return (
+    <div className="space-y-1.5 rounded-lg border border-zinc-800 bg-zinc-950/40 p-2.5">
+      <p className="text-[10px] font-medium text-zinc-500">핀 외곽선 색상</p>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value || '#ffffff'}
+          onChange={(event) => onChange(event.target.value)}
+          disabled={disabled}
+          className="h-7 w-7 shrink-0 cursor-pointer rounded border-0 bg-transparent disabled:cursor-not-allowed"
+          aria-label="핀 외곽선 색상 선택"
+        />
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="자동 대비 또는 #RRGGBB"
+          disabled={disabled}
+          className="min-w-0 flex-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600 disabled:opacity-50"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button type="button" onClick={onSave} disabled={disabled}
+          className="flex-1 rounded bg-sky-400/90 py-1 text-[10px] font-semibold text-zinc-950 hover:bg-sky-300 disabled:opacity-50 cursor-pointer">
+          저장
+        </button>
+        <button type="button" onClick={onReset} disabled={disabled} aria-pressed={!hasCustomColor}
+          className={`rounded border px-2 py-1 text-[10px] cursor-pointer disabled:opacity-50 ${
+            hasCustomColor
+              ? 'border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+              : 'border-amber-400/50 bg-amber-400/15 text-amber-300'
+          }`}>
+          자동
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── 조직 거점 탭 ────────────────────────────────────────
 
 function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocation[] }) {
@@ -68,6 +122,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [label, setLabel] = useState('')
   const [wikiPath, setWikiPath] = useState('')
+  const [pinBorderColor, setPinBorderColor] = useState('')
   const [coordX, setCoordX] = useState('')
   const [coordY, setCoordY] = useState('')
 
@@ -75,7 +130,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
 
   function handleSelectOrg(org: AdminOrg) {
     if (selectedOrgId === org.id) {
-      setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setCoordX(''); setCoordY('')
+      setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setPinBorderColor(''); setCoordX(''); setCoordY('')
     } else {
       setSelectedOrgId(org.id); setPendingCoords(null)
       syncFields(org, orgMode)
@@ -86,11 +141,13 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
     if (mode === 'hq') {
       setLabel(org.hq_label ?? '')
       setWikiPath(org.hq_wiki_path ?? '')
+      setPinBorderColor(org.pin_border_color ?? '')
       setCoordX(org.hq_x != null ? String(org.hq_x) : '')
       setCoordY(org.hq_y != null ? String(org.hq_y) : '')
     } else {
       setLabel(org.biz_label ?? '')
       setWikiPath('')
+      setPinBorderColor(org.pin_border_color ?? '')
       setCoordX(org.biz_x != null ? String(org.biz_x) : '')
       setCoordY(org.biz_y != null ? String(org.biz_y) : '')
     }
@@ -136,7 +193,24 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
         if (Number.isNaN(x) || Number.isNaN(y)) return
         await updateOrgBiz(selectedOrgId, { biz_x: x, biz_y: y, biz_label: label.trim() || null })
       }
-      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setCoordX(''); setCoordY('')
+      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setPinBorderColor(''); setCoordX(''); setCoordY('')
+    })
+  }
+
+  function handleSavePinStyle() {
+    if (!selectedOrgId) return
+    startTransition(async () => {
+      await updateOrgPinStyle(selectedOrgId, { pin_border_color: pinBorderColor.trim() || null })
+      router.refresh()
+    })
+  }
+
+  function handleResetPinStyle() {
+    if (!selectedOrgId) return
+    startTransition(async () => {
+      await updateOrgPinStyle(selectedOrgId, { pin_border_color: null })
+      setPinBorderColor('')
+      router.refresh()
     })
   }
 
@@ -148,7 +222,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
       } else {
         await updateOrgBiz(selectedOrgId, { biz_x: null, biz_y: null, biz_label: null })
       }
-      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setCoordX(''); setCoordY('')
+      router.refresh(); setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setPinBorderColor(''); setCoordX(''); setCoordY('')
     })
   }
 
@@ -230,6 +304,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
                 className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
             )}
             <CoordInputs x={coordX} y={coordY} onX={handleCoordX} onY={handleCoordY} />
+            <PinBorderColorField value={pinBorderColor} onChange={setPinBorderColor} onSave={handleSavePinStyle} onReset={handleResetPinStyle} disabled={isPending} />
             <p className="text-[10px] text-zinc-600">지도 클릭 또는 좌표 수정으로 위치를 조정할 수 있습니다</p>
             <div className="flex gap-2">
               <button onClick={handleSave} disabled={isPending}
@@ -242,7 +317,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
                   삭제
                 </button>
               )}
-              <button onClick={() => { setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setCoordX(''); setCoordY('') }}
+              <button onClick={() => { setSelectedOrgId(null); setPendingCoords(null); setLabel(''); setWikiPath(''); setPinBorderColor(''); setCoordX(''); setCoordY('') }}
                 className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 cursor-pointer transition-colors">
                 취소
               </button>
@@ -260,6 +335,7 @@ function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocatio
                 className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600" />
             )}
             <CoordInputs x={coordX} y={coordY} onX={handleCoordX} onY={handleCoordY} />
+            <PinBorderColorField value={pinBorderColor} onChange={setPinBorderColor} onSave={handleSavePinStyle} onReset={handleResetPinStyle} disabled={isPending} />
             {(orgMode === 'hq' ? selectedOrg?.hq_x : selectedOrg?.biz_x) !== null && (
               <button onClick={handleSave} disabled={isPending}
                 className="w-full rounded bg-amber-400 py-1.5 text-[10px] font-semibold text-zinc-900 hover:bg-amber-300 disabled:opacity-50 cursor-pointer transition-colors">

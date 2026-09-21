@@ -14,6 +14,7 @@ export type AdminOrg = {
   id: string
   name: string
   color: string | null
+  pin_border_color: string | null
   category: string | null
   hq_x: number | null
   hq_y: number | null
@@ -64,6 +65,10 @@ function getOrgColor(org: AdminOrg) {
   return safeMapColor(org.color, CATEGORY_COLOR[org.category ?? ''])
 }
 
+function getOrgBorderColor(org: AdminOrg) {
+  return safeMapColor(org.pin_border_color, '#ffffff')
+}
+
 export default function AdminLeafletMap({
   orgs,
   locations,
@@ -112,7 +117,7 @@ export default function AdminLeafletMap({
             key={`org-${org.id}`}
             center={[org.hq_y!, org.hq_x!]}
             radius={8}
-            pathOptions={{ fillColor: getOrgColor(org), color: '#fff', fillOpacity: 0.8, weight: 2 }}
+            pathOptions={{ fillColor: getOrgColor(org), color: getOrgBorderColor(org), fillOpacity: 0.8, weight: 2 }}
           >
             <Tooltip direction="top" offset={[0, -10]}>
               {org.name}{org.hq_label ? ` — ${org.hq_label}` : ''}
@@ -128,7 +133,7 @@ export default function AdminLeafletMap({
             key={`biz-${org.id}`}
             center={[org.biz_y!, org.biz_x!]}
             radius={6}
-            pathOptions={{ fillColor: getOrgColor(org), color: '#fff', fillOpacity: 0.8, weight: 2, dashArray: '2 2' }}
+            pathOptions={{ fillColor: getOrgColor(org), color: getOrgBorderColor(org), fillOpacity: 0.8, weight: 2, dashArray: '2 2' }}
           >
             <Tooltip direction="top" offset={[0, -8]}>
               {org.name} — {org.biz_label || '사업체'}

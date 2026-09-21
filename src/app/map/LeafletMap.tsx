@@ -19,6 +19,7 @@ export type OrgMarker = {
   id: string
   name: string
   color: string | null
+  pin_border_color: string | null
   category: string | null
   hq_x: number | null
   hq_y: number | null
@@ -108,21 +109,25 @@ function getOrgColor(org: OrgMarker) {
   return safeMapColor(org.color, CATEGORY_COLOR[org.category ?? ''])
 }
 
-function getPinContrast(color: string) {
+function getPinContrast(color: string, borderColor?: string | null) {
   const hex = color.slice(1)
   const red = Number.parseInt(hex.slice(0, 2), 16)
   const green = Number.parseInt(hex.slice(2, 4), 16)
   const blue = Number.parseInt(hex.slice(4, 6), 16)
   const brightness = (red * 299 + green * 587 + blue * 114) / 1000
 
-  return brightness >= 190
+  const automatic = brightness >= 190
     ? { stroke: '#27272a', inner: 'rgba(39,39,42,0.18)' }
     : { stroke: 'white', inner: 'rgba(255,255,255,0.3)' }
+  return {
+    stroke: borderColor ? safeMapColor(borderColor, automatic.stroke) : automatic.stroke,
+    inner: automatic.inner,
+  }
 }
 
-function createDropIcon(color: string, selected: boolean): L.DivIcon {
+function createDropIcon(color: string, selected: boolean, borderColor?: string | null): L.DivIcon {
   color = safeMapColor(color)
-  const contrast = getPinContrast(color)
+  const contrast = getPinContrast(color, borderColor)
   const w = selected ? 28 : 22
   const h = selected ? 38 : 30
   const cx = w / 2
@@ -138,9 +143,9 @@ function createDropIcon(color: string, selected: boolean): L.DivIcon {
   return L.divIcon({ html, className: '', iconSize: [w, h], iconAnchor: [cx, h], tooltipAnchor: [0, -h] })
 }
 
-function createBizIcon(color: string, selected: boolean): L.DivIcon {
+function createBizIcon(color: string, selected: boolean, borderColor?: string | null): L.DivIcon {
   color = safeMapColor(color)
-  const contrast = getPinContrast(color)
+  const contrast = getPinContrast(color, borderColor)
   const size = selected ? 20 : 16
   const half = size / 2
   const path = `M ${half} 1 L ${size - 1} ${half} L ${half} ${size - 1} L 1 ${half} Z`
@@ -249,7 +254,7 @@ export default function LeafletMap({
             <Marker
               key={`org-${org.id}`}
               position={[org.hq_y, org.hq_x]}
-              icon={createDropIcon(getOrgColor(org), isSelected)}
+              icon={createDropIcon(getOrgColor(org), isSelected, org.pin_border_color)}
               bubblingMouseEvents={false}
               eventHandlers={{
                 click: (e) => {
@@ -272,7 +277,7 @@ export default function LeafletMap({
             <Marker
               key={`biz-${org.id}`}
               position={[org.biz_y!, org.biz_x!]}
-              icon={org.linked_business ? createDropIcon(getOrgColor(org), isSelected) : createBizIcon(getOrgColor(org), isSelected)}
+              icon={org.linked_business ? createDropIcon(getOrgColor(org), isSelected, org.pin_border_color) : createBizIcon(getOrgColor(org), isSelected, org.pin_border_color)}
               bubblingMouseEvents={false}
               eventHandlers={{
                 click: (e) => {

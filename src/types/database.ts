@@ -55,6 +55,7 @@ export type Database = {
           description: string | null
           logo_url: string | null
           color: string | null
+          pin_border_color: string | null
           is_active: boolean
           is_disbanded: boolean
           name_confirmed: boolean

@@ -17,7 +17,7 @@ async function getOrgsWithHq(): Promise<OrgMarker[]> {
     // 조직 거점 또는 연결된 불법 사업체 위치가 있는 부모 조직
     supabase
       .from('organizations')
-      .select('id, name, color, category, hq_x, hq_y, hq_label, hq_wiki_path, biz_x, biz_y, biz_label, description, logo_url')
+      .select('id, name, color, pin_border_color, category, hq_x, hq_y, hq_label, hq_wiki_path, biz_x, biz_y, biz_label, description, logo_url')
       .eq('is_active', true)
       .eq('is_disbanded', false)
       .is('gang_id', null),
