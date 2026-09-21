@@ -1,7 +1,7 @@
 'use client'
 
 import { Maximize2, Minimize2, Pause, Play, Volume2, VolumeX } from 'lucide-react'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const BBS_VIDEO_VOLUME_KEY = 'bbs-video-volume'
 const BBS_VIDEO_VOLUME_EVENT = 'bbs-video-volume-change'
@@ -31,7 +31,10 @@ export default function BbsVideoPlayer({ src }: { src: string }) {
 
     const updateTime = () => setCurrentTime(video.currentTime)
     const updateDuration = () => setDuration(video.duration)
-    const updatePlayback = () => setIsPlaying(!video.paused && !video.ended)
+    const updatePlayback = () => {
+      setIsPlaying(!video.paused && !video.ended)
+      if (video.ended && Number.isFinite(video.duration)) setCurrentTime(video.duration)
+    }
     const updateVolume = () => {
       setVolume(video.volume)
       setIsMuted(video.muted || video.volume === 0)
@@ -130,15 +133,13 @@ export default function BbsVideoPlayer({ src }: { src: string }) {
     else await player.requestFullscreen()
   }
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
-
   return (
     <span ref={playerRef} onPointerEnter={() => setShowControls(true)} onPointerLeave={() => { if (isPlaying) setShowControls(false) }} className="my-3 block w-full overflow-hidden rounded-xl bg-black text-white shadow-[0_3px_12px_rgba(0,0,0,0.12)]">
       <span className="relative block aspect-video bg-black">
         <video ref={videoRef} src={src} preload="metadata" playsInline className="h-full w-full object-contain" aria-label="기사 첨부 영상" onClick={togglePlay} />
         {!isPlaying && <button type="button" onClick={togglePlay} aria-label="영상 재생" className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e14b32]/90 text-white shadow-lg transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468] focus-visible:ring-offset-2 focus-visible:ring-offset-black active:ring-2 active:ring-[#f08468]"><Play size={24} fill="currentColor" className="ml-0.5" /></button>}
         <span className={`absolute inset-x-0 bottom-0 block bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-2.5 pt-8 transition-opacity duration-200 ${showControls ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
-          <input type="range" min="0" max={duration || 0} step="0.1" value={Math.min(currentTime, duration || 0)} onChange={(event) => seek(Number(event.target.value))} aria-label="영상 재생 위치" className="mb-1.5 h-1.5 w-full cursor-pointer accent-[#e14b32] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468]" style={{ '--bbs-video-progress': `${progress}%` } as CSSProperties} />
+          <input type="range" min="0" max={duration || 0} step="any" value={Math.min(currentTime, duration || 0)} onChange={(event) => seek(Number(event.target.value))} aria-label="영상 재생 위치" className="mb-1.5 h-1.5 w-full cursor-pointer accent-[#e14b32] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468]" />
           <span className="flex items-center gap-2">
             <button type="button" onClick={togglePlay} aria-label={isPlaying ? '영상 일시정지' : '영상 재생'} className="cursor-pointer rounded-md p-1 text-white transition-colors hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468] active:ring-2 active:ring-[#f08468]">{isPlaying ? <Pause size={17} fill="currentColor" /> : <Play size={17} fill="currentColor" className="ml-0.5" />}</button>
             <button type="button" onClick={toggleMute} aria-label={isMuted ? '음량 켜기' : '음소거'} className="cursor-pointer rounded-md p-1 text-white transition-colors hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468] active:ring-2 active:ring-[#f08468]">{isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}</button>
