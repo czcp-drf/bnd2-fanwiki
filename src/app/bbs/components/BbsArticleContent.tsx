@@ -2,6 +2,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import BbsZoomableImage from './BbsZoomableImage'
+import BbsVideoPlayer from './BbsVideoPlayer'
 import { isAllowedBbsVideoUrl } from '@/lib/bbs/media-url'
 
 const markdownComponents = {
@@ -16,7 +17,7 @@ const markdownComponents = {
   em: ({ children }: { children?: ReactNode }) => <em className="italic">{children}</em>,
   del: ({ children }: { children?: ReactNode }) => <del className="text-[var(--bbs-subtle-text)]">{children}</del>,
   a: ({ children, href }: { children?: ReactNode; href?: string }) => isAllowedBbsVideoUrl(href ?? '')
-    ? <video src={href} controls preload="metadata" playsInline className="my-3 w-full max-h-[70vh] rounded-xl bg-black" aria-label="기사 첨부 영상" />
+    ? <BbsVideoPlayer src={href ?? ''} />
     : <a href={href} className="text-[var(--bbs-accent-text)] underline underline-offset-2" target="_blank" rel="noreferrer">{children}</a>,
   img: ({ src, alt }: ImgHTMLAttributes<HTMLImageElement>) => typeof src === 'string' ? <BbsZoomableImage src={src} alt={alt ?? ''} intrinsic previewClassName="max-w-full rounded-xl" sizes="(max-width: 768px) 100vw, 768px" /> : null,
 }
