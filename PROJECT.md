@@ -647,3 +647,10 @@ src/
 - 신규 migration `20260921054125_map_location_pin_border_color.sql`을 추가했습니다.
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 코드 변경과 migration, 문서 기록을 함께 커밋·푸시합니다.
+
+## 2026-09-21 지도 팝업 라이트 모드 대비 보완
+
+- 라이트 모드에서 지도 팝업의 밝은 주황·보라색 요소, 테두리, 배경 대비를 조정했습니다.
+- 조직 색상을 팝업의 뱃지와 로고 fallback 배경에 적용하고, 색상 밝기에 따라 글자를 검정 또는 흰색으로 자동 선택하도록 수정했습니다. 흰색 상징색의 조직명 첫 글자도 라이트 모드에서 표시됩니다.
+- 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
+- 대상 브랜치: `main` → `deploy/main`. 코드 변경과 문서 기록을 함께 커밋·푸시합니다.

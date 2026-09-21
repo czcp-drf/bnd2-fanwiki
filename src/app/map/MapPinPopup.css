@@ -56,6 +56,26 @@ html[data-bongstagram-theme="light"] .wiki-theme .map-pin-popup .leaflet-popup-t
   border-right-color: #d4d4d8;
 }
 
+html[data-bongstagram-theme="light"] .wiki-theme .map-pin-popup .text-amber-400 {
+  color: #b45309;
+}
+
+html[data-bongstagram-theme="light"] .wiki-theme .map-pin-popup .text-purple-300 {
+  color: #7e22ce;
+}
+
+html[data-bongstagram-theme="light"] .wiki-theme .map-pin-popup .border-zinc-700\/80 {
+  border-color: #d4d4d8;
+}
+
+html[data-bongstagram-theme="light"] .wiki-theme .map-pin-popup .border-amber-400\/25 {
+  border-color: #fde68a;
+}
+
+html[data-bongstagram-theme="light"] .wiki-theme .map-pin-popup .bg-amber-400\/10 {
+  background-color: #fffbeb;
+}
+
 .map-pin-popup .leaflet-popup-content a {
   color: #fbbf24;
 }

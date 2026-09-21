@@ -110,6 +110,16 @@ function getOrgColor(org: OrgMarker) {
   return safeMapColor(org.color, CATEGORY_COLOR[org.category ?? ''])
 }
 
+function getReadableTextColor(color: string) {
+  const safeColor = safeMapColor(color)
+  const hex = safeColor.slice(1)
+  const red = Number.parseInt(hex.slice(0, 2), 16)
+  const green = Number.parseInt(hex.slice(2, 4), 16)
+  const blue = Number.parseInt(hex.slice(4, 6), 16)
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000
+  return brightness >= 190 ? '#18181b' : '#ffffff'
+}
+
 function getPinContrast(color: string, borderColor?: string | null) {
   const hex = color.slice(1)
   const red = Number.parseInt(hex.slice(0, 2), 16)
@@ -339,14 +349,16 @@ export default function LeafletMap({
 
           {selected.type === 'org' && (() => {
             const org = selected.data
+            const orgColor = getOrgColor(org)
+            const readableTextColor = getReadableTextColor(orgColor)
             return (
               <>
                 <div className="flex items-center gap-3 pr-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800 text-xl font-black" style={{ color: getOrgColor(org) }}>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-xl font-black" style={{ backgroundColor: orgColor, color: readableTextColor }}>
                     {org.logo_url ? <AppImage src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : org.name.charAt(0)}
                   </div>
                   <div className="min-w-0 space-y-1.5">
-                    {org.category && <span className="inline-block rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold" style={{ color: getOrgColor(org) }}>{CATEGORY_LABEL[org.category] ?? org.category}</span>}
+                    {org.category && <span className="inline-block rounded-full border border-zinc-700 px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: orgColor, color: readableTextColor }}>{CATEGORY_LABEL[org.category] ?? org.category}</span>}
                     <p className="text-base font-bold text-white break-words">{org.name}</p>
                   </div>
                 </div>
@@ -373,14 +385,16 @@ export default function LeafletMap({
           {selected.type === 'biz' && (() => {
             const org = selected.data
             const business = org.linked_business
+            const orgColor = getOrgColor(org)
+            const readableTextColor = getReadableTextColor(orgColor)
             return (
               <>
                 <div className="flex items-center gap-3 pr-5">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800 text-xl font-black" style={{ color: getOrgColor(org) }}>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-xl font-black" style={{ backgroundColor: orgColor, color: readableTextColor }}>
                     {org.logo_url ? <AppImage src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : org.name.charAt(0)}
                   </div>
                   <div className="min-w-0 space-y-1.5">
-                    {org.category && <span className="inline-block rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold" style={{ color: getOrgColor(org) }}>{CATEGORY_LABEL[org.category] ?? org.category}</span>}
+                    {org.category && <span className="inline-block rounded-full border border-zinc-700 px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: orgColor, color: readableTextColor }}>{CATEGORY_LABEL[org.category] ?? org.category}</span>}
                     <p className="text-base font-bold text-white break-words">{org.name}</p>
                   </div>
                 </div>
