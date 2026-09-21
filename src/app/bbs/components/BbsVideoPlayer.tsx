@@ -16,7 +16,7 @@ function formatTime(value: number) {
 
 export default function BbsVideoPlayer({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const playerRef = useRef<HTMLDivElement>(null)
+  const playerRef = useRef<HTMLSpanElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -56,10 +56,13 @@ export default function BbsVideoPlayer({ src }: { src: string }) {
     document.addEventListener('fullscreenchange', updateFullscreen)
     window.addEventListener(BBS_VIDEO_VOLUME_EVENT, updateSharedVolume)
     try {
-      const savedVolume = Number(window.localStorage.getItem(BBS_VIDEO_VOLUME_KEY))
-      if (Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1) {
-        video.volume = savedVolume
-        video.muted = savedVolume === 0
+      const savedVolumeValue = window.localStorage.getItem(BBS_VIDEO_VOLUME_KEY)
+      if (savedVolumeValue !== null) {
+        const savedVolume = Number(savedVolumeValue)
+        if (Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1) {
+          video.volume = savedVolume
+          video.muted = savedVolume === 0
+        }
       }
     } catch {
       // 저장소 접근이 제한된 환경에서는 기본 음량을 사용합니다.
@@ -130,21 +133,21 @@ export default function BbsVideoPlayer({ src }: { src: string }) {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <div ref={playerRef} onPointerEnter={() => setShowControls(true)} onPointerLeave={() => { if (isPlaying) setShowControls(false) }} className="my-3 w-full overflow-hidden rounded-xl bg-black text-white shadow-[0_3px_12px_rgba(0,0,0,0.12)]">
-      <div className="relative aspect-video bg-black">
+    <span ref={playerRef} onPointerEnter={() => setShowControls(true)} onPointerLeave={() => { if (isPlaying) setShowControls(false) }} className="my-3 block w-full overflow-hidden rounded-xl bg-black text-white shadow-[0_3px_12px_rgba(0,0,0,0.12)]">
+      <span className="relative block aspect-video bg-black">
         <video ref={videoRef} src={src} preload="metadata" playsInline className="h-full w-full object-contain" aria-label="기사 첨부 영상" onClick={togglePlay} />
-        {!isPlaying && <button type="button" onClick={togglePlay} aria-label="영상 재생" className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e14b32]/90 text-white shadow-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#f08468] focus:ring-offset-2 focus:ring-offset-black"><Play size={24} fill="currentColor" className="ml-0.5" /></button>}
-        <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-2.5 pt-8 transition-opacity duration-200 ${showControls ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
-          <input type="range" min="0" max={duration || 0} step="0.1" value={Math.min(currentTime, duration || 0)} onChange={(event) => seek(Number(event.target.value))} aria-label="영상 재생 위치" className="mb-1.5 h-1.5 w-full cursor-pointer accent-[#e14b32]" style={{ '--bbs-video-progress': `${progress}%` } as CSSProperties} />
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={togglePlay} aria-label={isPlaying ? '영상 일시정지' : '영상 재생'} className="cursor-pointer rounded-md p-1 text-white transition-colors hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-[#f08468]">{isPlaying ? <Pause size={17} fill="currentColor" /> : <Play size={17} fill="currentColor" className="ml-0.5" />}</button>
-            <button type="button" onClick={toggleMute} aria-label={isMuted ? '음량 켜기' : '음소거'} className="cursor-pointer rounded-md p-1 text-white transition-colors hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-[#f08468]">{isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}</button>
-            <input type="range" min="0" max="1" step="0.05" value={isMuted ? 0 : volume} onChange={(event) => changeVolume(Number(event.target.value))} aria-label="영상 음량" className="h-1 w-16 cursor-pointer accent-[#e14b32] sm:w-20" />
+        {!isPlaying && <button type="button" onClick={togglePlay} aria-label="영상 재생" className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-[#e14b32]/90 text-white shadow-lg transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468] focus-visible:ring-offset-2 focus-visible:ring-offset-black active:ring-2 active:ring-[#f08468]"><Play size={24} fill="currentColor" className="ml-0.5" /></button>}
+        <span className={`absolute inset-x-0 bottom-0 block bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-2.5 pt-8 transition-opacity duration-200 ${showControls ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
+          <input type="range" min="0" max={duration || 0} step="0.1" value={Math.min(currentTime, duration || 0)} onChange={(event) => seek(Number(event.target.value))} aria-label="영상 재생 위치" className="mb-1.5 h-1.5 w-full cursor-pointer accent-[#e14b32] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468]" style={{ '--bbs-video-progress': `${progress}%` } as CSSProperties} />
+          <span className="flex items-center gap-2">
+            <button type="button" onClick={togglePlay} aria-label={isPlaying ? '영상 일시정지' : '영상 재생'} className="cursor-pointer rounded-md p-1 text-white transition-colors hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468] active:ring-2 active:ring-[#f08468]">{isPlaying ? <Pause size={17} fill="currentColor" /> : <Play size={17} fill="currentColor" className="ml-0.5" />}</button>
+            <button type="button" onClick={toggleMute} aria-label={isMuted ? '음량 켜기' : '음소거'} className="cursor-pointer rounded-md p-1 text-white transition-colors hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468] active:ring-2 active:ring-[#f08468]">{isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}</button>
+            <input type="range" min="0" max="1" step="0.05" value={isMuted ? 0 : volume} onChange={(event) => changeVolume(Number(event.target.value))} aria-label="영상 음량" className="h-1 w-16 cursor-pointer accent-[#e14b32] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468] sm:w-20" />
             <span className="ml-1 text-[10px] tabular-nums text-white/80">{formatTime(currentTime)} / {formatTime(duration)}</span>
-            <button type="button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? '전체화면 나가기' : '전체화면'} className="ml-auto cursor-pointer rounded-md p-1 text-white transition-colors hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-[#f08468]">{isFullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}</button>
-          </div>
-        </div>
-      </div>
-    </div>
+            <button type="button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? '전체화면 나가기' : '전체화면'} className="ml-auto cursor-pointer rounded-md p-1 text-white transition-colors hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f08468] active:ring-2 active:ring-[#f08468]">{isFullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}</button>
+          </span>
+        </span>
+      </span>
+    </span>
   )
 }

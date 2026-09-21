@@ -248,7 +248,7 @@ function ArticleForm({ article, reporters, onDone }: { article?: Article; report
         <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">담당기자 (언론 조직 소속) *</span><Select value={reporterId} onChange={setReporterId} options={reporterOptions} placeholder="담당기자 선택" searchable searchPlaceholder="기자 캐릭터 검색" fullWidth disabled={isPending || uploading} /></label>
         <label className="space-y-1.5"><span className="text-xs font-medium text-zinc-500">승인일시 (KST) {isPublished && '*'}</span><input type="datetime-local" value={approvedAt} onChange={(event) => setApprovedAt(event.target.value)} className={`${inputClass} [color-scheme:dark]`} disabled={isPending || uploading} /></label>
         <label className="flex items-end gap-2 pb-2 text-sm text-zinc-400"><input type="checkbox" checked={isPublished} onChange={(event) => setIsPublished(event.target.checked)} className="accent-amber-400" disabled={isPending || uploading} /> 공개 기사로 표시</label>
-        <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-zinc-500">본문</span><MarkdownEditor value={content} onChange={setContent} media={media} disabled={isPending || uploading} /><span className="block text-right text-[11px] text-zinc-600">{content.length}/50000</span></label>
+        <div className="space-y-1.5 md:col-span-2"><span className="text-xs font-medium text-zinc-500">본문</span><MarkdownEditor value={content} onChange={setContent} media={media} disabled={isPending || uploading} /><span className="block text-right text-[11px] text-zinc-600">{content.length}/50000</span></div>
       </div>
 
       <div className="space-y-2">
