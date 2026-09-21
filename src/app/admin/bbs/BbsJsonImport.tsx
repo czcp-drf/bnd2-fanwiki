@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { Download, FileJson, Upload } from 'lucide-react'
 import { importBbsArticleWithOriginalUrls, importBbsArticles, type BbsImportFailure, type BbsImportRow } from './actions'
+import { isHttpUrl } from '@/lib/bbs/media-url'
 
 const categoryLabels: Record<string, string> = { info: 'info', incident: 'incident', economy: 'economy', column: 'column', etc: 'other', other: 'other' }
 
@@ -13,6 +14,7 @@ function escapeText(value: string) {
 function inline(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) return escapeText(node.textContent ?? '')
   if (!(node instanceof HTMLElement)) return [...node.childNodes].map(inline).join('')
+  if (node.tagName.toLowerCase() === 'video') return videoMarkdown(node)
   const content = [...node.childNodes].map(inline).join('')
   const tag = node.tagName.toLowerCase()
   if (tag === 'strong' || tag === 'b') return content.trim() ? `**${content.trim()}**` : ''
@@ -31,10 +33,16 @@ function inline(node: Node): string {
   return content
 }
 
+function videoMarkdown(node: HTMLElement) {
+  const src = node.getAttribute('src') ?? node.querySelector('source[src]')?.getAttribute('src') ?? ''
+  return isHttpUrl(src) ? `[기사 영상](<${src}>)` : ''
+}
+
 function block(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) return escapeText((node.textContent ?? '').replace(/\s+/g, ' ').trim())
   if (!(node instanceof HTMLElement)) return [...node.childNodes].map(block).filter(Boolean).join('\n\n')
   const tag = node.tagName.toLowerCase()
+  if (tag === 'video') return videoMarkdown(node)
   if (['script', 'style', 'noscript', 'iframe', 'svg', 'form', 'input', 'button'].includes(tag)) return ''
   if (/^h[1-3]$/.test(tag)) {
     const content = inline(node).trim()

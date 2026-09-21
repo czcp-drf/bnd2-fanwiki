@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { isHttpUrl } from './media-url'
 
 export const BBS_MEDIA_BUCKET = 'bbs-media'
 export const BBS_MEDIA_CACHE_CONTROL = '31536000'
@@ -16,7 +17,6 @@ export const BBS_ALLOWED_IMAGE_TYPES = new Map([
 ])
 
 const STORAGE_PATH_PATTERN = /^articles\/[0-9a-f-]+\/(?:[0-9a-f-]+|[0-9a-f]{64})\.(jpg|png|webp|gif|avif)$/i
-const EXTERNAL_SOURCE_HOST_PATTERN = /(?:^|\.)fivemanage\.com$/i
 
 type BbsSupabaseClient = SupabaseClient<Database>
 
@@ -33,13 +33,7 @@ export type BbsImageSourceMapping = {
 }
 
 function normalizeImageUrl(value: string) {
-  try {
-    const url = new URL(value.trim())
-    if (!['http:', 'https:'].includes(url.protocol)) return null
-    return url.toString()
-  } catch {
-    return null
-  }
+  return isHttpUrl(value) ? new URL(value.trim()).toString() : null
 }
 
 export function isBbsStorageUrl(value: string) {
@@ -61,7 +55,7 @@ export function isAllowedBbsExternalImageUrl(value: string) {
 
   try {
     const url = new URL(normalized)
-    return url.protocol === 'https:' && EXTERNAL_SOURCE_HOST_PATTERN.test(url.hostname)
+    return url.protocol === 'https:' && /(?:^|\.)fivemanage\.com$/i.test(url.hostname)
   } catch {
     return false
   }

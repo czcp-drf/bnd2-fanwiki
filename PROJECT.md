@@ -669,3 +669,11 @@ src/
 - `organizations.emoji` nullable 컬럼과 16자 이내 제약조건을 migration 053에 추가했습니다. 기존 조직은 NULL 상태로 유지됩니다.
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 코드 변경과 migration, 문서 기록을 함께 커밋·푸시합니다.
+
+## 2026-09-22 BBS 영상 본문 지원
+
+- JSON 본문의 `<video>` 태그를 가져오기에서 보존하고 `[기사 영상](<URL>)` 형식으로 변환합니다.
+- 허용된 Fivemanage `phone.videos` 영상 URL은 공개 기사 상세와 관리자 본문 미리보기에서 인라인 플레이어로 표시합니다.
+- 영상은 외부 URL로 재생해 기존 이미지 Storage 이전 흐름과 분리했으며, DB 마이그레이션은 필요하지 않습니다.
+- 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
+- 대상 브랜치: `main` → `deploy/main`. 커밋·푸시 상태는 완료 응답에서 확인합니다.

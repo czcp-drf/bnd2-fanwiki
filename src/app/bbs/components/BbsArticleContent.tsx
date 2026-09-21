@@ -2,6 +2,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import BbsZoomableImage from './BbsZoomableImage'
+import { isAllowedBbsVideoUrl } from '@/lib/bbs/media-url'
 
 const markdownComponents = {
   h1: ({ children }: { children?: ReactNode }) => <h1 className="mt-8 text-2xl font-black leading-tight tracking-tight first:mt-0 sm:text-3xl">{children}</h1>,
@@ -14,7 +15,9 @@ const markdownComponents = {
   strong: ({ children }: { children?: ReactNode }) => <strong className="font-bold">{children}</strong>,
   em: ({ children }: { children?: ReactNode }) => <em className="italic">{children}</em>,
   del: ({ children }: { children?: ReactNode }) => <del className="text-[var(--bbs-subtle-text)]">{children}</del>,
-  a: ({ children, href }: { children?: ReactNode; href?: string }) => <a href={href} className="text-[var(--bbs-accent-text)] underline underline-offset-2" target="_blank" rel="noreferrer">{children}</a>,
+  a: ({ children, href }: { children?: ReactNode; href?: string }) => isAllowedBbsVideoUrl(href ?? '')
+    ? <video src={href} controls preload="metadata" playsInline className="my-3 w-full max-h-[70vh] rounded-xl bg-black" aria-label="기사 첨부 영상" />
+    : <a href={href} className="text-[var(--bbs-accent-text)] underline underline-offset-2" target="_blank" rel="noreferrer">{children}</a>,
   img: ({ src, alt }: ImgHTMLAttributes<HTMLImageElement>) => typeof src === 'string' ? <BbsZoomableImage src={src} alt={alt ?? ''} intrinsic previewClassName="max-w-full rounded-xl" sizes="(max-width: 768px) 100vw, 768px" /> : null,
 }
 
