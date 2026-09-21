@@ -190,7 +190,9 @@ function OrgCard({
           className="h-10 w-10 shrink-0 rounded-lg flex items-center justify-center text-sm font-black"
           style={{ backgroundColor: `${org.color ?? '#52525b'}30`, color: org.color ?? '#a1a1aa' }}
         >
-          {org.logo_url ? (
+          {org.emoji ? (
+            <span aria-label={`${org.name} 대표 이모지`} className="text-xl leading-none">{org.emoji}</span>
+          ) : org.logo_url ? (
             <AppImage src={org.logo_url} alt={org.name} className="h-10 w-10 rounded-lg object-cover" />
           ) : (
             (org.name_confirmed ? org.name : typeLabel[org.type ?? ''] ?? '?').charAt(0)
@@ -229,10 +231,14 @@ function OrgCard({
             const bizType = b.name_confirmed && b.type ? typeLabel[b.type] : null
             return (
               <div key={b.id} className="flex items-center gap-2">
-                <span
-                  className="h-1.5 w-1.5 rounded-sm shrink-0 rotate-45"
-                  style={{ backgroundColor: b.color ?? '#71717a' }}
-                />
+                {b.emoji ? (
+                  <span className="w-4 shrink-0 text-center text-sm leading-none">{b.emoji}</span>
+                ) : (
+                  <span
+                    className="h-1.5 w-1.5 rounded-sm shrink-0 rotate-45"
+                    style={{ backgroundColor: b.color ?? '#71717a' }}
+                  />
+                )}
                 <span className="text-xs text-zinc-400 truncate">
                   {bizName ?? <span className="text-zinc-600">미정</span>}
                 </span>

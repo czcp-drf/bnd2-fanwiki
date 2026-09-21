@@ -19,7 +19,7 @@ type CharacterWithRelations = Character & {
   organization_members: Array<{
     is_primary: boolean
     role: string | null
-    organizations: Pick<Organization, 'id' | 'name' | 'color'> | null
+    organizations: Pick<Organization, 'id' | 'name' | 'color' | 'emoji'> | null
   }>
 }
 
@@ -33,7 +33,7 @@ async function getAllCharacters() {
       organization_members (
         is_primary,
         role,
-        organizations ( id, name, color )
+        organizations ( id, name, color, emoji )
       )
     `)
     .order('name')

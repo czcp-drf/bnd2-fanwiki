@@ -47,7 +47,7 @@ type EventDetail = {
   event_organizations: Array<{
     sort_order: number
     role: string | null
-    organizations: { id: string; name: string; type: string | null; category: string | null; color: string | null } | null
+    organizations: { id: string; name: string; type: string | null; category: string | null; color: string | null; emoji: string | null } | null
   }>
   event_clips: Array<{
     id: string
@@ -81,7 +81,7 @@ async function getEvent(id: string): Promise<EventDetail | null> {
       ),
       event_organizations (
         sort_order, role,
-        organizations ( id, name, type, category, color )
+        organizations ( id, name, type, category, color, emoji )
       ),
       event_clips (
         id, clip_url, label, sort_order,
@@ -249,7 +249,7 @@ export default async function EventDetailPage({ params }: Props) {
           <div className="grid gap-2 sm:grid-cols-2">
             {organizations.map((item) => item.organizations && (
               <Link key={item.organizations.id} href={`/organizations/${item.organizations.id}`} className="group flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition-colors hover:border-zinc-700 hover:bg-zinc-800/50">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: item.organizations.color ?? '#3f3f46' }}>{item.organizations.name.charAt(0)}</span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: item.organizations.color ?? '#3f3f46' }}>{item.organizations.emoji ?? item.organizations.name.charAt(0)}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-white group-hover:text-amber-400">{item.organizations.name}</span>
                   {(item.role || item.organizations.category) && <span className="block truncate text-xs text-zinc-500">{item.role ?? (CATEGORY_LABEL[item.organizations.category ?? ''] ?? item.organizations.category)}</span>}

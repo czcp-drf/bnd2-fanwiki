@@ -30,6 +30,7 @@ export type OrgMarker = {
   biz_label: string | null
   description: string | null
   logo_url: string | null
+  emoji: string | null
   linked_business: {
     id: string
     name: string
@@ -37,6 +38,7 @@ export type OrgMarker = {
     hq_label: string | null
     hq_wiki_path: string | null
     logo_url: string | null
+    emoji: string | null
   } | null
 }
 
@@ -355,7 +357,7 @@ export default function LeafletMap({
               <>
                 <div className="flex items-center gap-3 pr-5">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-xl font-black" style={{ backgroundColor: orgColor, color: readableTextColor }}>
-                    {org.logo_url ? <AppImage src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : org.name.charAt(0)}
+                    {org.emoji ? <span aria-label={`${org.name} 대표 이모지`}>{org.emoji}</span> : org.logo_url ? <AppImage src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : org.name.charAt(0)}
                   </div>
                   <div className="min-w-0 space-y-1.5">
                     {org.category && <span className="inline-block rounded-full border border-zinc-700 px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: orgColor, color: readableTextColor }}>{CATEGORY_LABEL[org.category] ?? org.category}</span>}
@@ -391,7 +393,7 @@ export default function LeafletMap({
               <>
                 <div className="flex items-center gap-3 pr-5">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-xl font-black" style={{ backgroundColor: orgColor, color: readableTextColor }}>
-                    {org.logo_url ? <AppImage src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : org.name.charAt(0)}
+                    {org.emoji ? <span aria-label={`${org.name} 대표 이모지`}>{org.emoji}</span> : org.logo_url ? <AppImage src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : org.name.charAt(0)}
                   </div>
                   <div className="min-w-0 space-y-1.5">
                     {org.category && <span className="inline-block rounded-full border border-zinc-700 px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: orgColor, color: readableTextColor }}>{CATEGORY_LABEL[org.category] ?? org.category}</span>}

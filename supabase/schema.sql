@@ -39,6 +39,7 @@ create table organizations (
               )),
   description text,
   logo_url    text,
+  emoji       text check (emoji is null or char_length(btrim(emoji)) between 1 and 16),
   color       text,
   pin_border_color text,
   is_active   boolean default true,

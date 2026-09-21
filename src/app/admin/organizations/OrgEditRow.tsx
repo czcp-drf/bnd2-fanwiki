@@ -16,6 +16,7 @@ type Org = {
   type: string | null
   category: string | null
   color: string | null
+  emoji: string | null
   description: string | null
   is_active: boolean
   is_disbanded: boolean
@@ -29,6 +30,7 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
   const [nameConfirmed, setNameConfirmed] = useState(org.name_confirmed)
   const [description, setDescription] = useState(org.description ?? '')
   const [color, setColor] = useState(org.color ?? '')
+  const [emoji, setEmoji] = useState(org.emoji ?? '')
   const [isActive, setIsActive] = useState(org.is_active)
   const [isDisbanded, setIsDisbanded] = useState(org.is_disbanded)
   const [gangId, setGangId] = useState(org.gang_id ?? '')
@@ -52,6 +54,7 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
       name_confirmed: nameConfirmed,
       description: description.trim() || null,
       color: color.trim() || null,
+      emoji: emoji.trim() || null,
       is_active: isDisbanded ? false : isActive,
       is_disbanded: isDisbanded,
       gang_id: isIllegal ? (gangId || null) : null,
@@ -95,6 +98,7 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
     setNameConfirmed(org.name_confirmed)
     setDescription(org.description ?? '')
     setColor(org.color ?? '')
+    setEmoji(org.emoji ?? '')
     setIsActive(org.is_active)
     setIsDisbanded(org.is_disbanded)
     setGangId(org.gang_id ?? '')
@@ -128,6 +132,13 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
               onChange={(e) => setName(e.target.value)}
               autoFocus
               className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none"
+            />
+            <input
+              value={emoji}
+              onChange={(e) => setEmoji(e.target.value)}
+              maxLength={16}
+              placeholder="대표 이모지"
+              className="w-28 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
             />
             <div className="flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-1.5 text-xs text-zinc-500 cursor-pointer">
@@ -210,6 +221,7 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
       </td>
       <td className="px-4 py-2.5 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
+          {org.emoji && <span className="text-base leading-none" title="대표 이모지">{org.emoji}</span>}
           <span className={`text-xs font-medium truncate ${org.is_disbanded ? 'text-zinc-600 line-through' : 'text-white'}`}>
             {org.name}
           </span>

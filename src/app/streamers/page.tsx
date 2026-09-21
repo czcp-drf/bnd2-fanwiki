@@ -9,7 +9,7 @@ import type { Streamer } from '@/types/database'
 import StreamerFilters from '@/components/streamers/StreamerFilters'
 import StreamerListWithLive, { type StreamerItem } from '@/components/streamers/StreamerListWithLive'
 
-type OrgInfo = { id: string; name: string; color: string | null }
+type OrgInfo = { id: string; name: string; color: string | null; emoji: string | null }
 
 type StreamerWithCharacters = Streamer & {
   characters: Array<{
@@ -44,7 +44,7 @@ async function getStreamers(sort: string): Promise<StreamerWithCharacters[]> {
   const { data: memberships } = charIds.length
     ? await supabase
         .from('organization_members')
-        .select('character_id, is_primary, organizations ( id, name, color )')
+        .select('character_id, is_primary, organizations ( id, name, color, emoji )')
         .in('character_id', charIds)
         .is('left_at', null)
     : { data: [] }

@@ -20,6 +20,7 @@ export default function OrgAddForm() {
   const [category, setCategory] = useState('gang')
   const [description, setDescription] = useState('')
   const [color, setColor] = useState('')
+  const [emoji, setEmoji] = useState('')
   const [saving, setSaving] = useState(false)
 
   async function save() {
@@ -31,6 +32,7 @@ export default function OrgAddForm() {
       category,
       description: description.trim() || null,
       color: color.trim() || null,
+      emoji: emoji.trim() || null,
       is_active: true,
     })
     setSaving(false)
@@ -44,6 +46,7 @@ export default function OrgAddForm() {
     setCategory('gang')
     setDescription('')
     setColor('')
+    setEmoji('')
   }
 
   function cancel() {
@@ -126,6 +129,18 @@ export default function OrgAddForm() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="조직 설명"
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
+          />
+        </div>
+
+        {/* 대표 이모지 */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-zinc-500">대표 이모지 (선택)</label>
+          <input
+            value={emoji}
+            onChange={(e) => setEmoji(e.target.value)}
+            maxLength={16}
+            placeholder="예: 🦴"
             className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
           />
         </div>

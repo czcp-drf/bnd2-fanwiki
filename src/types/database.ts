@@ -52,9 +52,10 @@ export type Database = {
             | 'information_dealer' | 'gunsmith' | 'money_laundering' | 'smuggling'
             | 'black_market' | 'illegal_medical' | 'illegal_tuning'
             | 'other' | null
-          description: string | null
-          logo_url: string | null
-          color: string | null
+            description: string | null
+            logo_url: string | null
+            emoji: string | null
+            color: string | null
           pin_border_color: string | null
           is_active: boolean
           is_disbanded: boolean

@@ -17,7 +17,7 @@ async function getOrgsWithHq(): Promise<OrgMarker[]> {
     // 조직 거점 또는 연결된 불법 사업체 위치가 있는 부모 조직
     supabase
       .from('organizations')
-      .select('id, name, color, pin_border_color, category, hq_x, hq_y, hq_label, hq_wiki_path, biz_x, biz_y, biz_label, description, logo_url')
+      .select('id, name, color, pin_border_color, category, hq_x, hq_y, hq_label, hq_wiki_path, biz_x, biz_y, biz_label, description, logo_url, emoji')
       .eq('is_active', true)
       .eq('is_disbanded', false)
       .is('gang_id', null),
@@ -25,7 +25,7 @@ async function getOrgsWithHq(): Promise<OrgMarker[]> {
     // 갱단과 연결된 불법 사업체 정보. 지도에서는 부모 갱단의 조직 거점으로 표시한다.
     supabase
       .from('organizations')
-      .select('id, name, description, hq_x, hq_y, hq_label, hq_wiki_path, logo_url, gang_id')
+      .select('id, name, description, hq_x, hq_y, hq_label, hq_wiki_path, logo_url, emoji, gang_id')
       .eq('is_active', true)
       .eq('is_disbanded', false)
       .eq('category', 'illegal')
@@ -49,6 +49,7 @@ async function getOrgsWithHq(): Promise<OrgMarker[]> {
         hq_label: linked.hq_label,
         hq_wiki_path: linked.hq_wiki_path,
         logo_url: linked.logo_url,
+        emoji: linked.emoji,
       } : null,
     } as OrgMarker
   }).filter((org) => (

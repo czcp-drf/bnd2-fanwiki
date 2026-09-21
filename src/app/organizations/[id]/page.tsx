@@ -37,13 +37,13 @@ type OrgDetail = Organization & {
       organization_members: Array<{
         is_primary: boolean
         left_at: string | null
-        organizations: { id: string; name: string; color: string | null } | null
+        organizations: { id: string; name: string; color: string | null; emoji: string | null } | null
       }>
     } | null
   }>
 }
 
-type BusinessSummary = { id: string; name: string; name_confirmed: boolean; color: string | null; type: string | null; is_disbanded: boolean }
+type BusinessSummary = { id: string; name: string; name_confirmed: boolean; color: string | null; emoji: string | null; type: string | null; is_disbanded: boolean }
 
 const typeLabel: Record<string, string> = {
   police:               '경찰',
@@ -106,7 +106,7 @@ async function getOrganization(id: string) {
         characters (
           id, name, alias, job, status,
           streamers ( id, display_name ),
-          organization_members ( is_primary, left_at, organizations ( id, name, color ) )
+          organization_members ( is_primary, left_at, organizations ( id, name, color, emoji ) )
         )
       )
     `)
@@ -121,7 +121,7 @@ async function getOrganization(id: string) {
   if (org.category === 'gang') {
     const { data: biz } = await supabase
       .from('organizations')
-      .select('id, name, name_confirmed, color, type, is_disbanded')
+      .select('id, name, name_confirmed, color, emoji, type, is_disbanded')
       .eq('gang_id', id)
       .order('name')
     businesses = (biz ?? []) as BusinessSummary[]
@@ -243,7 +243,9 @@ export default async function OrganizationDetailPage({ params }: Props) {
             className="h-16 w-16 shrink-0 rounded-xl flex items-center justify-center text-2xl font-black"
             style={{ backgroundColor: `${org.color ?? '#52525b'}20`, color: org.color ?? '#a1a1aa' }}
           >
-            {org.logo_url ? (
+            {org.emoji ? (
+              <span aria-label={`${orgName} 대표 이모지`} className="text-3xl leading-none">{org.emoji}</span>
+            ) : org.logo_url ? (
               <AppImage src={org.logo_url} alt={orgName} className="h-16 w-16 rounded-xl object-cover" />
             ) : (
               orgName.charAt(0)
@@ -330,9 +332,11 @@ export default async function OrganizationDetailPage({ params }: Props) {
                 className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 hover:border-zinc-700 hover:bg-zinc-800/50 transition-colors group"
               >
                 <div
-                  className="h-6 w-6 shrink-0 rounded-full"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm leading-none"
                   style={{ backgroundColor: `${b.color ?? '#52525b'}40` }}
-                />
+                >
+                  {b.emoji ?? ''}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white group-hover:text-amber-400 transition-colors truncate">
                     {b.name_confirmed ? b.name : <span className="text-zinc-500">미정</span>}
@@ -350,7 +354,9 @@ export default async function OrganizationDetailPage({ params }: Props) {
                 href={`/organizations/${b.id}`}
                 className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 hover:border-zinc-700 transition-colors opacity-50 group"
               >
-                <div className="h-6 w-6 shrink-0 rounded-full bg-zinc-800" />
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-sm leading-none">
+                  {b.emoji ?? ''}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-zinc-500 line-through truncate">
                     {b.name_confirmed ? b.name : '미정'}
@@ -481,7 +487,7 @@ function MemberRow({
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          {primaryOrg && <span className="text-xs text-zinc-500">{primaryOrg.name}</span>}
+          {primaryOrg && <span className="flex items-center gap-1 text-xs text-zinc-500"><span>{primaryOrg.emoji ?? ''}</span>{primaryOrg.name}</span>}
           {member.role && (
             <>
               {primaryOrg && <span className="text-zinc-700">·</span>}

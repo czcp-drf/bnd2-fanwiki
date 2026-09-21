@@ -18,7 +18,7 @@ type OrgMember = {
   character_id: string
   role: string | null
   is_primary: boolean
-  organizations: { id: string; name: string; type: string; color: string | null } | null
+  organizations: { id: string; name: string; type: string; color: string | null; emoji: string | null } | null
 }
 
 type StreamerDetail = Streamer & {
@@ -56,7 +56,7 @@ async function getStreamer(id: string): Promise<StreamerDetail | null> {
   const { data: memberships } = charIds.length
     ? await supabase
         .from('organization_members')
-        .select('character_id, role, is_primary, organizations ( id, name, type, color )')
+        .select('character_id, role, is_primary, organizations ( id, name, type, color, emoji )')
         .in('character_id', charIds)
         .is('left_at', null)
     : { data: [] }
@@ -227,6 +227,7 @@ export default async function StreamerDetailPage({ params }: Props) {
                               : {}
                           }
                         >
+                          {m.organizations?.emoji && <span className="mr-1">{m.organizations.emoji}</span>}
                           {m.organizations?.name}
                           {m.role && ` · ${m.role}`}
                         </span>

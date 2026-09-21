@@ -43,6 +43,7 @@ type CharacterDetail = {
       type: string | null
       category: string | null
       color: string | null
+      emoji: string | null
       description: string | null
       hq_x: number | null
       hq_y: number | null
@@ -76,7 +77,7 @@ async function getCharacter(id: string): Promise<CharacterDetail | null> {
         is_primary,
         joined_at,
         left_at,
-        organizations ( id, name, name_confirmed, type, category, color, description, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label )
+        organizations ( id, name, name_confirmed, type, category, color, emoji, description, hq_x, hq_y, hq_label, biz_x, biz_y, biz_label )
       )
     `)
     .eq('id', id)
@@ -94,6 +95,7 @@ type CharacterEvent = {
       name: string
       name_confirmed: boolean
       type: string | null
+      emoji: string | null
     } | null
   }>
   events: {
@@ -127,7 +129,7 @@ async function getCharacterEvents(id: string): Promise<CharacterEvent[]> {
       .from('event_organizations')
       .select(`
         role,
-        organizations ( id, name, name_confirmed, type ),
+        organizations ( id, name, name_confirmed, type, emoji ),
         events ( id, title, type, occurred_at, summary, is_published )
       `)
       .in('organization_id', organizationIds)
@@ -438,6 +440,7 @@ export default async function CharacterDetailPage({ params }: Props) {
                         href={`/organizations/${m.organizations?.id}`}
                         className="font-semibold text-white hover:text-amber-400 transition-colors text-sm"
                       >
+                        {m.organizations?.emoji && <span className="mr-1">{m.organizations.emoji}</span>}
                         {m.organizations?.name}
                       </Link>
                       {m.organizations?.type && (
@@ -462,7 +465,7 @@ export default async function CharacterDetailPage({ params }: Props) {
                 <div key={i} className="flex items-center gap-3 rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-3 opacity-60">
                   <div className="h-6 w-1 shrink-0 rounded-full bg-zinc-700" />
                   <div>
-                    <p className="text-sm text-zinc-400">{m.organizations?.name}</p>
+                    <p className="text-sm text-zinc-400">{m.organizations?.emoji && <span className="mr-1">{m.organizations.emoji}</span>}{m.organizations?.name}</p>
                     {m.role && <p className="text-xs text-zinc-600">{m.role}</p>}
                   </div>
                   {m.left_at && (
@@ -559,6 +562,7 @@ export default async function CharacterDetailPage({ params }: Props) {
                           key={organization.organizations.id}
                           className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400"
                         >
+                          {organization.organizations.emoji && <span className="mr-1">{organization.organizations.emoji}</span>}
                           {organizationName}{organization.role ? ` · ${organization.role}` : ' 소속'}
                         </span>
                       )
