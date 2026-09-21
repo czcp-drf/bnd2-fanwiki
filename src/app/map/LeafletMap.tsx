@@ -46,6 +46,7 @@ export type LocationMarker = {
   label: string | null
   description: string | null
   color: string
+  pin_border_color: string | null
   x: number
   y: number
   wiki_path: string | null
@@ -154,9 +155,9 @@ function createBizIcon(color: string, selected: boolean, borderColor?: string | 
   return L.divIcon({ html, className: '', iconSize: [size, size], iconAnchor: [half, half], tooltipAnchor: [0, -half - 4] })
 }
 
-function createLocationIcon(color: string, selected: boolean): L.DivIcon {
+function createLocationIcon(color: string, selected: boolean, borderColor?: string | null): L.DivIcon {
   color = safeMapColor(color)
-  const contrast = getPinContrast(color)
+  const contrast = getPinContrast(color, borderColor)
   const r = selected ? 9 : 7
   const pad = 8
   const size = (r + pad) * 2
@@ -300,7 +301,7 @@ export default function LeafletMap({
             <Marker
               key={`loc-${loc.id}`}
               position={[loc.y, loc.x]}
-              icon={createLocationIcon(loc.color, isSelected)}
+              icon={createLocationIcon(loc.color, isSelected, loc.pin_border_color)}
               bubblingMouseEvents={false}
               eventHandlers={{
                 click: (e) => {

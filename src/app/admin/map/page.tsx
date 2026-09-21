@@ -44,7 +44,7 @@ async function getAllLocations(): Promise<AdminLocation[]> {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('map_locations')
-    .select('id, name, label, color, x, y, wiki_path')
+    .select('id, name, label, color, pin_border_color, x, y, wiki_path')
     .order('name')
   return (data ?? []) as AdminLocation[]
 }

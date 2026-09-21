@@ -30,6 +30,7 @@ export type AdminLocation = {
   name: string
   label: string | null
   color: string
+  pin_border_color: string | null
   x: number | null
   y: number | null
   wiki_path: string | null
@@ -67,6 +68,17 @@ function getOrgColor(org: AdminOrg) {
 
 function getOrgBorderColor(org: AdminOrg) {
   return safeMapColor(org.pin_border_color, '#ffffff')
+}
+
+function getLocationBorderColor(location: AdminLocation) {
+  const color = safeMapColor(location.color, '#facc15')
+  const hex = color.slice(1)
+  const red = Number.parseInt(hex.slice(0, 2), 16)
+  const green = Number.parseInt(hex.slice(2, 4), 16)
+  const blue = Number.parseInt(hex.slice(4, 6), 16)
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000
+  const automatic = brightness >= 190 ? '#27272a' : '#ffffff'
+  return safeMapColor(location.pin_border_color, automatic)
 }
 
 export default function AdminLeafletMap({
@@ -169,7 +181,7 @@ export default function AdminLeafletMap({
             key={`loc-${loc.id}`}
             center={[loc.y!, loc.x!]}
             radius={7}
-            pathOptions={{ fillColor: safeMapColor(loc.color), color: '#fff', fillOpacity: 0.85, weight: 2, dashArray: '3 2' }}
+            pathOptions={{ fillColor: safeMapColor(loc.color), color: getLocationBorderColor(loc), fillOpacity: 0.85, weight: 2, dashArray: '3 2' }}
           >
             <Tooltip direction="top" offset={[0, -9]}>
               {loc.name}{loc.label ? ` (${loc.label})` : ''}

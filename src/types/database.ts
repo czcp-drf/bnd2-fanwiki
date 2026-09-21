@@ -246,6 +246,7 @@ export type Database = {
           label: string | null
           description: string | null
           color: string
+          pin_border_color: string | null
           x: number | null
           y: number | null
           wiki_path: string | null

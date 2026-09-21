@@ -638,3 +638,12 @@ src/
 - `organizations.pin_border_color` nullable 컬럼과 `#RRGGBB` 형식 제약조건을 migration 051에 추가했습니다. 기존 조직은 NULL 상태로 유지됩니다.
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 코드 변경과 migration, 문서 기록을 함께 커밋·푸시합니다.
+
+## 2026-09-21 주요 장소 핀 외곽선 및 조직 상세 중복 핀 보완
+
+- 주요 장소도 관리자에서 핀 외곽선 색상을 지정하거나 `자동`으로 되돌릴 수 있도록 확장했습니다. `map_locations.pin_border_color`는 NULL이면 자동 대비를 사용합니다.
+- 공개 지도와 관리자 지도 미리보기에 주요 장소의 지정 외곽선을 적용하고, 새 장소 추가·기존 장소 수정에서 색상을 설정할 수 있습니다.
+- 불법 사업체 조직 상세에서는 hq가 대표 위치이므로 biz 핀을 별도로 표시하지 않으며, 동일 좌표 중복도 방지합니다.
+- 신규 migration `20260921054125_map_location_pin_border_color.sql`을 추가했습니다.
+- 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
+- 대상 브랜치: `main` → `deploy/main`. 코드 변경과 migration, 문서 기록을 함께 커밋·푸시합니다.

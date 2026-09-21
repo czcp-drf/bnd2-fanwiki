@@ -112,6 +112,49 @@ function PinBorderColorField({
   )
 }
 
+function PinBorderColorInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string
+  onChange: (value: string) => void
+  disabled: boolean
+}) {
+  const hasCustomColor = /^#[0-9A-Fa-f]{6}$/.test(value.trim())
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-medium text-zinc-500">핀 외곽선 색상</p>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value || '#ffffff'}
+          onChange={(event) => onChange(event.target.value)}
+          disabled={disabled}
+          className="h-6 w-6 shrink-0 cursor-pointer rounded border-0 bg-transparent disabled:cursor-not-allowed"
+          aria-label="핀 외곽선 색상 선택"
+        />
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="자동 대비 또는 #RRGGBB"
+          disabled={disabled}
+          className="min-w-0 flex-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none placeholder:text-zinc-600 disabled:opacity-50"
+        />
+        <button type="button" onClick={() => onChange('')} disabled={disabled} aria-pressed={!hasCustomColor}
+          className={`shrink-0 rounded border px-2 py-1 text-[10px] cursor-pointer disabled:opacity-50 ${
+            hasCustomColor
+              ? 'border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+              : 'border-amber-400/50 bg-amber-400/15 text-amber-300'
+          }`}>
+          자동
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── 조직 거점 탭 ────────────────────────────────────────
 
 function OrgTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLocation[] }) {
@@ -367,6 +410,7 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
   const [newLabel, setNewLabel] = useState('')
   const [newWikiPath, setNewWikiPath] = useState('')
   const [newColor, setNewColor] = useState('#facc15')
+  const [newPinBorderColor, setNewPinBorderColor] = useState('')
   const [newDesc, setNewDesc] = useState('')
   const [newCoordX, setNewCoordX] = useState('')
   const [newCoordY, setNewCoordY] = useState('')
@@ -383,17 +427,18 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
   const [editLabel, setEditLabel] = useState('')
   const [editWikiPath, setEditWikiPath] = useState('')
   const [editColor, setEditColor] = useState('#facc15')
+  const [editPinBorderColor, setEditPinBorderColor] = useState('')
 
   const selectedLocation = locations.find((l) => l.id === selectedId)
 
   function startAddNew() {
     setAddingNew(true); setSelectedId(null); setPendingCoords(null); setEditingId(null)
-    setNewName(''); setNewLabel(''); setNewWikiPath(''); setNewColor('#facc15'); setNewDesc('')
+    setNewName(''); setNewLabel(''); setNewWikiPath(''); setNewColor('#facc15'); setNewPinBorderColor(''); setNewDesc('')
     setNewCoordX(''); setNewCoordY('')
   }
 
   function cancelAdd() {
-    setAddingNew(false); setPendingCoords(null); setNewCoordX(''); setNewCoordY('')
+    setAddingNew(false); setPendingCoords(null); setNewPinBorderColor(''); setNewCoordX(''); setNewCoordY('')
   }
 
   function handleSelectLocation(loc: AdminLocation) {
@@ -447,11 +492,12 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
       await addMapLocation({
         name: newName.trim(), label: newLabel.trim() || null,
         description: newDesc.trim() || null, color: newColor,
+        pin_border_color: newPinBorderColor.trim() || null,
         x: pendingCoords.lng, y: pendingCoords.lat,
         wiki_path: newWikiPath.trim() || null,
       })
       router.refresh(); setAddingNew(false); setPendingCoords(null)
-      setNewName(''); setNewLabel(''); setNewWikiPath(''); setNewColor('#facc15'); setNewDesc('')
+      setNewName(''); setNewLabel(''); setNewWikiPath(''); setNewColor('#facc15'); setNewPinBorderColor(''); setNewDesc('')
       setNewCoordX(''); setNewCoordY('')
     })
   }
@@ -475,20 +521,20 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
   }
 
   function startEdit(loc: AdminLocation) {
-    setEditingId(loc.id); setEditName(loc.name); setEditLabel(loc.label ?? ''); setEditWikiPath(loc.wiki_path ?? ''); setEditColor(loc.color)
+    setEditingId(loc.id); setEditName(loc.name); setEditLabel(loc.label ?? ''); setEditWikiPath(loc.wiki_path ?? ''); setEditColor(loc.color); setEditPinBorderColor(loc.pin_border_color ?? '')
     setSelectedId(null); setAddingNew(false); setPendingCoords(null)
   }
 
   function handleSaveEdit() {
     if (!editingId || !editName.trim()) return
     startTransition(async () => {
-      await updateMapLocation(editingId, { name: editName.trim(), label: editLabel.trim() || null, wiki_path: editWikiPath.trim() || null, color: editColor })
+      await updateMapLocation(editingId, { name: editName.trim(), label: editLabel.trim() || null, wiki_path: editWikiPath.trim() || null, color: editColor, pin_border_color: editPinBorderColor.trim() || null })
       router.refresh(); setEditingId(null)
     })
   }
 
   const previewLocations: AdminLocation[] = addingNew && pendingCoords
-    ? [...locations, { id: '__new__', name: newName || '새 위치', label: newLabel || null, wiki_path: newWikiPath.trim() || null, color: newColor, x: pendingCoords.lng, y: pendingCoords.lat }]
+    ? [...locations, { id: '__new__', name: newName || '새 위치', label: newLabel || null, wiki_path: newWikiPath.trim() || null, color: newColor, pin_border_color: newPinBorderColor.trim() || null, x: pendingCoords.lng, y: pendingCoords.lat }]
     : locations
 
   return (
@@ -516,6 +562,7 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
                 className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent flex-shrink-0" />
               <span className="text-[10px] text-zinc-500">마커 색상</span>
             </div>
+            <PinBorderColorInput value={newPinBorderColor} onChange={setNewPinBorderColor} disabled={isPending} />
             <CoordInputs x={newCoordX} y={newCoordY} onX={handleNewCoordX} onY={handleNewCoordY} />
             <p className="text-[10px] text-zinc-500">
               {pendingCoords ? '아래 저장 버튼을 눌러주세요.' : '지도 클릭 또는 위 좌표 입력으로 위치를 설정하세요.'}
@@ -555,6 +602,7 @@ function LocationTab({ orgs, locations }: { orgs: AdminOrg[]; locations: AdminLo
                       className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent" />
                     <span className="text-[10px] text-zinc-500">색상</span>
                   </div>
+                  <PinBorderColorInput value={editPinBorderColor} onChange={setEditPinBorderColor} disabled={isPending} />
                   <div className="flex gap-1.5">
                     <button onClick={handleSaveEdit} disabled={isPending}
                       className="flex-1 rounded bg-amber-400 py-1 text-[10px] font-semibold text-zinc-900 hover:bg-amber-300 disabled:opacity-50 cursor-pointer">저장</button>

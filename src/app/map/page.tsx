@@ -61,7 +61,7 @@ async function getLocations(): Promise<LocationMarker[]> {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('map_locations')
-    .select('id, name, label, description, color, x, y, wiki_path')
+    .select('id, name, label, description, color, pin_border_color, x, y, wiki_path')
     .not('x', 'is', null)
     .not('y', 'is', null)
     .order('name')

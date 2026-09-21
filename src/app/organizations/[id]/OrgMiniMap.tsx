@@ -68,7 +68,10 @@ function createBizIcon(color: string): L.DivIcon {
 
 export default function OrgMiniMap({ org }: { org: OrgMapData }) {
   const color = getColor(org)
-  const hasBiz = org.biz_x !== null && org.biz_y !== null
+  // 불법 사업체 조직은 hq가 곧 해당 조직의 위치이므로 biz 핀을 중복 표시하지 않는다.
+  const hasBiz = org.category !== 'illegal' &&
+    org.biz_x !== null && org.biz_y !== null &&
+    (org.biz_x !== org.hq_x || org.biz_y !== org.hq_y)
 
   return (
     <div className="relative isolate z-0 overflow-hidden rounded-xl border border-zinc-800" style={{ height: 260 }}>
