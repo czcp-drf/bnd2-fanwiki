@@ -639,6 +639,13 @@ src/
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 코드 변경과 migration, 문서 기록을 함께 커밋·푸시합니다.
 
+## 2026-09-22 조직원 삭제 처리
+
+- 조직 관리의 현재 멤버 일괄 처리를 `탈퇴`에서 `삭제`로 변경했습니다. 선택한 활성 멤버의 `organization_members` 연결 레코드를 삭제하며, 삭제 전 확인창을 표시합니다.
+- 기존에 `left_at`이 기록된 과거 멤버 이력과 복귀 기능은 유지합니다. 별도 DB 마이그레이션은 필요하지 않습니다.
+- 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
+- 대상 브랜치: `main` → `deploy/main`. 코드 변경과 문서 기록을 함께 커밋·푸시합니다.
+
 ## 2026-09-21 주요 장소 핀 외곽선 및 조직 상세 중복 핀 보완
 
 - 주요 장소도 관리자에서 핀 외곽선 색상을 지정하거나 `자동`으로 되돌릴 수 있도록 확장했습니다. `map_locations.pin_border_color`는 NULL이면 자동 대비를 사용합니다.

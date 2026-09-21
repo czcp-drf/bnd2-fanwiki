@@ -54,12 +54,12 @@ export async function updateOrgMember(
   return { success: true }
 }
 
-export async function setMembersLeft(orgId: string, characterIds: string[]) {
+export async function deleteOrgMembers(orgId: string, characterIds: string[]) {
   if (characterIds.length === 0) return { success: true }
   const supabase = await requireAdmin()
   const { error } = await supabase
     .from('organization_members')
-    .update({ left_at: new Date().toISOString() })
+    .delete()
     .eq('organization_id', orgId)
     .in('character_id', characterIds)
     .is('left_at', null)

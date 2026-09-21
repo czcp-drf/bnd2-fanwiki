@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, X, UserMinus, UserPlus, ChevronDown, ChevronUp, Pencil, RotateCcw, Save, GripVertical, ChevronsUpDown } from 'lucide-react'
-import { addOrgMembers, updateOrgMember, setMembersLeft, restoreMember, reorderMembers } from './actions'
+import { addOrgMembers, updateOrgMember, deleteOrgMembers, restoreMember, reorderMembers } from './actions'
 
 export type MemberRow = {
   character_id: string
@@ -53,9 +53,9 @@ export default function MemberManageClient({
 
   const activeMembers = orderedMembers
 
-  // Bulk selection for departure
+  // Bulk selection for deletion
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [leaveMsg, setLeaveMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [deleteMsg, setDeleteMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   // Inline role editing
   const [editing, setEditing] = useState<string | null>(null)
@@ -211,15 +211,16 @@ export default function MemberManageClient({
     setSelected(next)
   }
 
-  function handleBulkLeave() {
+  function handleBulkDelete() {
     const ids = Array.from(selected)
     if (!ids.length) return
-    setLeaveMsg(null)
+    if (!window.confirm(`${ids.length}명의 조직원 연결을 삭제할까요? 삭제 후 복구할 수 없습니다.`)) return
+    setDeleteMsg(null)
     startTransition(async () => {
-      const res = await setMembersLeft(orgId, ids)
-      if (res.error) { setLeaveMsg({ type: 'err', text: res.error }); return }
+      const res = await deleteOrgMembers(orgId, ids)
+      if (res.error) { setDeleteMsg({ type: 'err', text: res.error }); return }
       setSelected(new Set())
-      setLeaveMsg({ type: 'ok', text: `${ids.length}명 탈퇴 처리 완료` })
+      setDeleteMsg({ type: 'ok', text: `${ids.length}명 삭제 완료` })
       router.refresh()
     })
   }
@@ -313,12 +314,12 @@ export default function MemberManageClient({
             )}
             {selected.size > 0 && (
               <button
-                onClick={handleBulkLeave}
+                onClick={handleBulkDelete}
                 disabled={isPending}
                 className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
               >
                 <UserMinus size={12} />
-                선택 {selected.size}명 탈퇴 처리
+                선택 {selected.size}명 삭제
               </button>
             )}
           </div>
@@ -329,9 +330,9 @@ export default function MemberManageClient({
             {orderMsg.text}
           </p>
         )}
-        {leaveMsg && (
-          <p className={`text-xs ${leaveMsg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
-            {leaveMsg.text}
+        {deleteMsg && (
+          <p className={`text-xs ${deleteMsg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
+            {deleteMsg.text}
           </p>
         )}
 
