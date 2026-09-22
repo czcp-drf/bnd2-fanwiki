@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, type CSSProperties } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Search, X, ExternalLink } from 'lucide-react'
@@ -35,6 +35,20 @@ const categoryLabel: Record<string, string> = {
   business: '사업체',
 }
 const categoryOrder = ['city_hall', 'public_service', 'gang', 'business']
+
+const statusLabel: Record<string, string> = {
+  active: '활동',
+  dead: '사망',
+  retired: '은퇴',
+  hiatus: '휴식',
+}
+
+const statusColor: Record<string, string> = {
+  active: 'text-green-400 bg-green-400/10',
+  dead: 'text-red-400 bg-red-400/10',
+  retired: 'text-zinc-400 bg-zinc-400/10',
+  hiatus: 'text-yellow-400 bg-yellow-400/10',
+}
 
 function normalizeSearchText(value: string) {
   return value.toLowerCase().replace(/\s+/g, '')
@@ -252,6 +266,9 @@ export default function CharactersClientSection({
                     <p className="font-bold text-white group-hover:text-amber-400 transition-colors truncate">
                       {c.name}
                     </p>
+                    <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${statusColor[c.status] ?? 'text-zinc-400 bg-zinc-400/10'}`}>
+                      {statusLabel[c.status] ?? c.status}
+                    </span>
                     {c.job === '가이드' && (
                       <span className="shrink-0 rounded-full border border-teal-400/30 bg-teal-400/10 px-1.5 py-0.5 text-[10px] font-medium text-teal-400">
                         가이드
@@ -279,8 +296,8 @@ export default function CharactersClientSection({
                       return (
                         <span key={i} className="flex items-center gap-1.5">
                           <span
-                            className="rounded-full border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400"
-                            style={o.color ? { borderColor: `${o.color}50`, color: o.color } : {}}
+                            className="organization-color-badge rounded-full border border-zinc-700 px-2 py-0.5 text-xs"
+                            style={o.color ? { '--organization-color': o.color } as CSSProperties : undefined}
                           >
                             {o.name}
                           </span>

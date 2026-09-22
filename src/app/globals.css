@@ -312,6 +312,13 @@ html[data-bongstagram-theme="light"] .wiki-theme {
 .wiki-theme .hover\:text-zinc-200:hover,
 .wiki-theme .hover\:text-zinc-300:hover { color: var(--wiki-text-secondary); }
 
+/* Organization colors are used as an accent while the label text follows the active theme. */
+.wiki-theme .organization-color-badge {
+  border-color: color-mix(in srgb, var(--organization-color, var(--wiki-border-strong)) 55%, var(--wiki-muted));
+  background-color: color-mix(in srgb, var(--organization-color, var(--wiki-raised)) 12%, var(--wiki-surface));
+  color: var(--wiki-text-secondary);
+}
+
 .wiki-theme .events-featured-card .text-white { color: #ffffff; }
 .wiki-theme .events-featured-card .text-zinc-400 { color: rgb(244 244 245 / 0.85); }
 .wiki-theme .events-featured-card .text-zinc-500 { color: rgb(228 228 231 / 0.75); }

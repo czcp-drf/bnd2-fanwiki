@@ -143,7 +143,7 @@ export default async function StreamerDetailPage({ params }: Props) {
             <h1 className="text-2xl font-black text-white">{streamer.display_name}</h1>
             {!streamer.is_active && (
               <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-xs text-zinc-500">
-                비활동
+                활동 전
               </span>
             )}
           </div>

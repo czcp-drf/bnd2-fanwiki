@@ -43,6 +43,16 @@ function StreamerCard({ streamer }: { streamer: StreamerItem }) {
   const { isRedPill } = useRedPill()
   const characters = streamer.characters ?? []
   const activeChars = characters.filter((character) => character.status === 'active' && !character.is_name_pending)
+  const inactiveCharacterSummary = Object.entries(
+    characters
+      .filter((character) => !character.is_name_pending && character.status !== 'active')
+      .reduce<Record<string, number>>((counts, character) => {
+        counts[character.status] = (counts[character.status] ?? 0) + 1
+        return counts
+      }, {})
+  )
+    .map(([status, count]) => `${statusLabel[status] ?? status} ${count}명`)
+    .join(' · ')
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition-colors hover:border-[#00FFA3]">
@@ -62,7 +72,14 @@ function StreamerCard({ streamer }: { streamer: StreamerItem }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="min-w-0 truncate font-bold text-white">{streamer.display_name}</p>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="min-w-0 truncate font-bold text-white">{streamer.display_name}</p>
+            {!streamer.is_active && (
+              <span className="shrink-0 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-500">
+                활동 전
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -81,11 +98,11 @@ function StreamerCard({ streamer }: { streamer: StreamerItem }) {
               <div className="flex min-w-0 items-center gap-2">
                 <User size={12} className="shrink-0 text-zinc-500" />
                 <span className="truncate text-sm font-medium text-zinc-200">{character.name}</span>
-                {(character.job || character.organizations?.length === 0) && (
+                {(character.job || (character.organizations?.length ?? 0) > 0) && (
                   <span className="hidden truncate text-xs text-zinc-500 sm:block">
                     · {character.organizations?.length
                       ? character.organizations.map((organization) => organization.name).join(' · ')
-                      : '무소속'}
+                      : character.job}
                   </span>
                 )}
               </div>
@@ -95,9 +112,9 @@ function StreamerCard({ streamer }: { streamer: StreamerItem }) {
             </Link>
           ))
         )}
-        {isRedPill && characters.length > activeChars.length && (
+        {isRedPill && inactiveCharacterSummary && (
           <p className="pt-1 text-xs text-zinc-600">
-            +{characters.length - activeChars.length}개 비활동 캐릭터
+            {inactiveCharacterSummary}
           </p>
         )}
       </div>
@@ -179,7 +196,7 @@ export default function StreamerListWithLive({ streamers }: { streamers: Streame
       {inactiveStreamers.length > 0 && (
         <section className="space-y-4">
           <h2 className="text-sm font-semibold text-zinc-500">
-            비활동 <span className="font-normal">({inactiveStreamers.length}명{search.trim() ? ` / 전체 ${allInactive.length}명` : ''})</span>
+            활동 전 스트리머 <span className="font-normal">({inactiveStreamers.length}명{search.trim() ? ` / 전체 ${allInactive.length}명` : ''})</span>
           </h2>
           <div className="grid gap-4 opacity-60 sm:grid-cols-2 lg:grid-cols-3">
             {inactiveStreamers.map((streamer) => (
