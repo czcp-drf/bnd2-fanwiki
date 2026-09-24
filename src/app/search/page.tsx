@@ -19,7 +19,7 @@ const statusColor: Record<string, string> = {
   hiatus: 'text-yellow-400 bg-yellow-400/10',
 }
 const statusLabel: Record<string, string> = {
-  active: '활동', dead: '사망', retired: '은퇴', hiatus: '휴식',
+  active: '활동', dead: '사망', retired: '활동 종료', hiatus: '휴식',
 }
 
 const orgAliases: { keywords: string[]; type: string }[] = [

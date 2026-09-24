@@ -222,7 +222,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const statusLabel: Record<string, string> = {
   active: '활동',
   dead: '사망',
-  retired: '은퇴',
+  retired: '활동 종료',
   hiatus: '휴식',
 }
 

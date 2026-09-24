@@ -3,7 +3,7 @@ import AdminCharactersClient from './AdminCharactersClient'
 import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
 const statusLabels: Record<string, string> = {
-  active: '활동', dead: '사망', retired: '은퇴', hiatus: '휴식',
+  active: '활동', dead: '사망', retired: '활동 종료', hiatus: '휴식',
 }
 
 const columns = [

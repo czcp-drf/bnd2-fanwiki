@@ -85,7 +85,7 @@ const categoryColor: Record<string, string> = {
 }
 
 const statusLabel: Record<string, string> = {
-  active: '활동', dead: '사망', retired: '은퇴', hiatus: '휴식',
+  active: '활동', dead: '사망', retired: '활동 종료', hiatus: '휴식',
 }
 const statusColor: Record<string, string> = {
   active: 'text-green-400 bg-green-400/10',

@@ -16,7 +16,7 @@ const statusOptions = [
   { value: '', label: '전체' },
   { value: 'active', label: '활동' },
   { value: 'dead', label: '사망' },
-  { value: 'retired', label: '은퇴' },
+  { value: 'retired', label: '활동 종료' },
   { value: 'hiatus', label: '휴식' },
 ]
 
