@@ -25,6 +25,7 @@ type OrgOption = { id: string; name: string }
 type CharacterData = {
   id: string
   name: string
+  alias: string[] | null
   job: string | null
   status: string
   streamer_display_name: string
@@ -42,6 +43,7 @@ type Props = {
 export default function CharacterEditRow({ character: c, organizations }: Props) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(c.name)
+  const [alias, setAlias] = useState(c.alias?.join(', ') ?? '')
   const [job, setJob] = useState(c.job ?? '')
   const [status, setStatus] = useState(c.status)
   const [orgId, setOrgId] = useState(c.org_id ?? '')
@@ -70,6 +72,7 @@ export default function CharacterEditRow({ character: c, organizations }: Props)
     try {
     const result = await saveCharacter(c.id, {
         name: name.trim(),
+        alias: alias.split(/[,\n]/).map((value) => value.trim()).filter(Boolean),
         job: job.trim() || null,
         status,
         orgId: orgId || null,
@@ -87,6 +90,7 @@ export default function CharacterEditRow({ character: c, organizations }: Props)
     if (inFlight.current) return
     setError(null)
     setName(c.name)
+    setAlias(c.alias?.join(', ') ?? '')
     setJob(c.job ?? '')
     setStatus(c.status)
     setOrgId(c.org_id ?? '')
@@ -123,6 +127,13 @@ export default function CharacterEditRow({ character: c, organizations }: Props)
             onChange={(e) => setName(e.target.value)}
             autoFocus
             className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none"
+          />
+          <input
+            value={alias}
+            disabled={saving}
+            onChange={(e) => setAlias(e.target.value)}
+            placeholder="이전 닉네임 (쉼표 구분)"
+            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-400 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
           />
         </td>
         <td className="px-4 py-2">

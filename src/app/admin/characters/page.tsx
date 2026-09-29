@@ -17,7 +17,7 @@ const columns = [
 async function getCharacters(filter: string, sort: string, org: string, page: number, pageSize: number) {
   const supabase = createAdminClient()
   const safePageSize = [10, 20, 30, 40, 50].includes(pageSize) ? pageSize : 50
-  const select = org ? `id, name, is_name_pending, job, status, created_at, streamers ( display_name ), organization_members!inner ( role, is_primary, organization_id, organizations ( name ) )` : `id, name, is_name_pending, job, status, created_at, streamers ( display_name ), organization_members ( role, is_primary, organization_id, organizations ( name ) )`
+  const select = org ? `id, name, is_name_pending, alias, job, status, created_at, streamers ( display_name ), organization_members!inner ( role, is_primary, organization_id, organizations ( name ) )` : `id, name, is_name_pending, alias, job, status, created_at, streamers ( display_name ), organization_members ( role, is_primary, organization_id, organizations ( name ) )`
   let query = supabase.from('characters').select(select, { count: 'exact' }).order('name')
   if (filter === 'unnamed') query = query.eq('is_name_pending', true)
   if (org) query = query.eq('organization_members.organization_id', org)
@@ -28,6 +28,7 @@ async function getCharacters(filter: string, sort: string, org: string, page: nu
     created_at: string
     name: string
     is_name_pending: boolean
+    alias: string[] | null
     job: string | null
     status: string
     streamers: { display_name: string } | null
@@ -49,6 +50,7 @@ async function getCharacters(filter: string, sort: string, org: string, page: nu
         created_at: r.created_at,
         name: r.name,
         is_name_pending: r.is_name_pending,
+        alias: r.alias,
         job: r.job,
         status: r.status,
         streamer_display_name: r.streamers?.display_name ?? '—',

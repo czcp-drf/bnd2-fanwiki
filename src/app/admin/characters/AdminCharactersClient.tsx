@@ -28,6 +28,7 @@ type Character = {
   id: string
   created_at: string
   name: string
+  alias: string[] | null
   job: string | null
   status: string
   streamer_display_name: string

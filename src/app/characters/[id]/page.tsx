@@ -55,16 +55,6 @@ type CharacterDetail = {
   }>
 }
 
-type RelationshipRow = {
-  id: string
-  type: string
-  description: string | null
-  character_a_id: string
-  character_b_id: string
-  character_a: { id: string; name: string; job: string | null; status: string } | null
-  character_b: { id: string; name: string; job: string | null; status: string } | null
-}
-
 async function getCharacter(id: string): Promise<CharacterDetail | null> {
   const supabase = createPublicClient()
   const { data } = await supabase
@@ -173,24 +163,6 @@ async function getCharacterEvents(id: string): Promise<CharacterEvent[]> {
   return Array.from(eventsById.values())
 }
 
-async function getRelationships(id: string): Promise<RelationshipRow[]> {
-  const supabase = createPublicClient()
-  const { data } = await supabase
-    .from('character_relationships')
-    .select(`
-      id,
-      type,
-      description,
-      character_a_id,
-      character_b_id,
-      character_a:characters!character_a_id ( id, name, job, status ),
-      character_b:characters!character_b_id ( id, name, job, status )
-    `)
-    .or(`character_a_id.eq.${id},character_b_id.eq.${id}`)
-
-  return (data ?? []) as unknown as RelationshipRow[]
-}
-
 const getCharacterCached = unstable_cache(getCharacter, ['wiki-character-detail'], {
   revalidate: WIKI_DETAIL_CACHE_REVALIDATE,
   tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.streamers, WIKI_CACHE_TAGS.organizations],
@@ -199,11 +171,6 @@ const getCharacterEventsCached = unstable_cache(getCharacterEvents, ['wiki-chara
   revalidate: WIKI_DETAIL_CACHE_REVALIDATE,
   tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.events],
 })
-const getRelationshipsCached = unstable_cache(getRelationships, ['wiki-character-relationships'], {
-  revalidate: WIKI_DETAIL_CACHE_REVALIDATE,
-  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.characters, WIKI_CACHE_TAGS.relationships],
-})
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const character = await getCharacterCached(id)
@@ -233,30 +200,6 @@ const statusColor: Record<string, string> = {
   hiatus: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
 }
 
-const relationTypeLabel: Record<string, string> = {
-  friend: '친구',
-  enemy: '적',
-  rival: '라이벌',
-  family: '가족',
-  romantic: '연인',
-  ally: '동맹',
-  mentor: '사제',
-  colleague: '동료',
-  neutral: '중립',
-}
-
-const relationTypeColor: Record<string, string> = {
-  friend: 'text-blue-400 bg-blue-400/10',
-  enemy: 'text-red-400 bg-red-400/10',
-  rival: 'text-orange-400 bg-orange-400/10',
-  family: 'text-purple-400 bg-purple-400/10',
-  romantic: 'text-pink-400 bg-pink-400/10',
-  ally: 'text-green-400 bg-green-400/10',
-  mentor: 'text-yellow-400 bg-yellow-400/10',
-  colleague: 'text-cyan-400 bg-cyan-400/10',
-  neutral: 'text-zinc-400 bg-zinc-400/10',
-}
-
 const orgTypeLabel: Record<string, string> = {
   police: '경찰',
   gang: '갱단',
@@ -269,9 +212,8 @@ const orgTypeLabel: Record<string, string> = {
 
 export default async function CharacterDetailPage({ params }: Props) {
   const { id } = await params
-  const [character, relationships, participations] = await Promise.all([
+  const [character, participations] = await Promise.all([
     getCharacterCached(id),
-    getRelationshipsCached(id),
     getCharacterEventsCached(id),
   ])
 
@@ -327,12 +269,6 @@ export default async function CharacterDetailPage({ params }: Props) {
                 </span>
               )}
             </div>
-
-            {character.alias && character.alias.length > 0 && (
-              <p className="text-sm text-zinc-400">
-                별명: {character.alias.join(', ')}
-              </p>
-            )}
 
             {character.job && (
               <p className="text-sm text-zinc-300 font-medium">{character.job}</p>
@@ -479,43 +415,19 @@ export default async function CharacterDetailPage({ params }: Props) {
           )}
         </section>
 
-        {/* 관계도 */}
+        {/* 이전 이름 */}
         <section className="space-y-4">
-          <h2 className="text-base font-bold text-white">인물 관계</h2>
+          <h2 className="text-base font-bold text-white">이전 이름</h2>
 
-          {relationships.length === 0 ? (
-            <p className="text-sm text-zinc-600">등록된 관계 없음</p>
+          {!character.alias || character.alias.length === 0 ? (
+            <p className="text-sm text-zinc-600">등록된 이전 이름 없음</p>
           ) : (
-            <div className="space-y-2">
-              {relationships.map((r) => {
-                const other = r.character_a_id === id ? r.character_b : r.character_a
-
-                return (
-                  <div key={r.id} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-3">
-                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${relationTypeColor[r.type]}`}>
-                      {relationTypeLabel[r.type]}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      {other ? (
-                        <Link
-                          href={`/characters/${other.id}`}
-                          className="text-sm font-medium text-zinc-200 hover:text-amber-400 transition-colors"
-                        >
-                          {other.name}
-                          {other.job && (
-                            <span className="ml-1.5 text-xs text-zinc-500 font-normal">{other.job}</span>
-                          )}
-                        </Link>
-                      ) : (
-                        <span className="text-sm text-zinc-500">알 수 없음</span>
-                      )}
-                      {r.description && (
-                        <p className="mt-0.5 text-xs text-zinc-600 line-clamp-1">{r.description}</p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="flex flex-wrap gap-2">
+              {character.alias.map((alias) => (
+                <span key={alias} className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300">
+                  {alias}
+                </span>
+              ))}
             </div>
           )}
         </section>

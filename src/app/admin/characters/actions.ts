@@ -11,11 +11,17 @@ function invalidateAndRevalidate(path: string, type?: 'page' | 'layout') {
 }
 
 export async function saveCharacter(id: string, data: {
-  name: string; job: string | null; status: string; orgId: string | null; orgRole: string | null
+  name: string; alias: string[] | null; job: string | null; status: string; orgId: string | null; orgRole: string | null
 }) {
   const supabase = await requireAdmin()
   const name = data.name.trim()
   if (!['active', 'dead', 'retired', 'hiatus'].includes(data.status)) return { error: '캐릭터 상태를 확인해 주세요.' }
+  const { data: currentCharacter, error: currentCharacterError } = await supabase
+    .from('characters')
+    .select('name, alias, is_name_pending')
+    .eq('id', id)
+    .maybeSingle()
+  if (currentCharacterError || !currentCharacter) return { error: '캐릭터 정보를 확인하지 못했습니다. 목록을 새로고침해 주세요.' }
   const { error } = await supabase.rpc('save_character', {
     p_character_id: id, p_name: name || '미정', p_is_name_pending: !name, p_job: data.job?.trim() || null,
     p_status: data.status, p_org_id: data.orgId || null, p_role: data.orgRole?.trim() || null,
@@ -25,6 +31,17 @@ export async function saveCharacter(id: string, data: {
     if (error.code === 'PGRST202') return { error: '저장 기능의 DB 업데이트가 필요합니다. 관리자에게 문의해 주세요.' }
     if (error.code === '23503' || error.code === 'P0002') return { error: '캐릭터 또는 소속이 존재하지 않습니다. 목록을 새로고침해 주세요.' }
     return { error: '저장하지 못했습니다. 입력값을 확인한 후 다시 시도해 주세요.' }
+  }
+  const aliases = Array.from(new Set((data.alias ?? []).map((alias) => alias.trim()).filter(Boolean)))
+  const previousName = currentCharacter.is_name_pending ? null : currentCharacter.name.trim()
+  if (previousName && previousName !== name && !aliases.includes(previousName)) aliases.unshift(previousName)
+  const { error: aliasError } = await supabase
+    .from('characters')
+    .update({ alias: aliases.length > 0 ? aliases : null })
+    .eq('id', id)
+  if (aliasError) {
+    console.error('Character aliases save failed:', aliasError.code, aliasError.message)
+    return { error: '이전 닉네임을 저장하지 못했습니다. 다시 시도해 주세요.' }
   }
   invalidateAndRevalidate('/', 'layout')
   return { success: true }
@@ -57,7 +74,20 @@ export async function createCharacter(data: {
 export async function renameCharacter(id: string, name: string) {
   const trimmed = name.trim()
   const supabase = await requireAdmin()
-  const { error } = await supabase.from('characters').update({ name: trimmed || '미정', is_name_pending: !trimmed }).eq('id', id)
+  const { data: currentCharacter, error: currentCharacterError } = await supabase
+    .from('characters')
+    .select('name, alias, is_name_pending')
+    .eq('id', id)
+    .maybeSingle()
+  if (currentCharacterError || !currentCharacter) return { error: '캐릭터 정보를 확인하지 못했습니다. 목록을 새로고침해 주세요.' }
+  const nextName = trimmed || '미정'
+  const aliases = Array.from(new Set((currentCharacter.alias ?? []).map((alias: string) => alias.trim()).filter(Boolean)))
+  const previousName = currentCharacter.is_name_pending ? null : currentCharacter.name.trim()
+  if (previousName && previousName !== nextName && !aliases.includes(previousName)) aliases.unshift(previousName)
+  const { error } = await supabase
+    .from('characters')
+    .update({ name: nextName, is_name_pending: !trimmed, alias: aliases.length > 0 ? aliases : null })
+    .eq('id', id)
   if (error) return { error: '저장하지 못했습니다.' }
   invalidateAndRevalidate('/', 'layout')
   return { success: true }
