@@ -16,12 +16,13 @@ async function getOrganizations() {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('organizations')
-    .select('id, name, name_confirmed, type, category, color, emoji, description, is_active, is_disbanded, gang_id')
+    .select('id, name, previous_names, name_confirmed, type, category, color, emoji, description, is_active, is_disbanded, gang_id')
     .order('category')
     .order('name')
   return (data ?? []) as {
     id: string
     name: string
+    previous_names: string[] | null
     name_confirmed: boolean
     type: string | null
     category: string | null

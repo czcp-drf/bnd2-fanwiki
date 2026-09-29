@@ -678,6 +678,14 @@ src/
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 커밋·푸시 상태는 완료 응답에서 확인합니다.
 
+## 2026-09-30 조직 이전 명칭 표시·저장
+
+- 조직 상세에 이전 명칭을 표시하고, 관리자 조직 수정 화면에서 여러 이전 명칭을 쉼표·줄바꿈으로 저장할 수 있도록 추가했습니다.
+- 조직명 변경 시 기존 명칭을 organizations.previous_names 이력에 자동으로 추가합니다.
+- previous_names text[] 컬럼을 migration 054에 추가했으며, 사용자가 DB 마이그레이션을 실행했습니다.
+- 검증: npx tsc --noEmit, git diff --check 통과.
+- 대상 브랜치: `main` → `deploy/main`. 커밋·푸시 완료를 확인했습니다.
+
 ## 2026-09-22 BBS 영상 플레이어 컨트롤
 
 - 브라우저 기본 영상 컨트롤 대신 BBS 색상에 맞춘 재생·일시정지, 진행바, 시간, 음량·음소거, 전체화면 컨트롤을 제공합니다.

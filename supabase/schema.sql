@@ -33,6 +33,7 @@ create table characters (
 create table organizations (
   id          uuid primary key default gen_random_uuid(),
   name        text not null,
+  previous_names text[],
   type        text check (type in (
                 'police', 'gang', 'medical', 'legal',
                 'government', 'civilian', 'other'

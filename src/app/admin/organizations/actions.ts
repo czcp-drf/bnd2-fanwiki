@@ -50,6 +50,7 @@ export async function deleteOrganization(id: string) {
 
 export async function updateOrganization(id: string, data: {
   name: string
+  previousNames: string[] | null
   name_confirmed: boolean
   description: string | null
   color: string | null
@@ -62,7 +63,23 @@ export async function updateOrganization(id: string, data: {
   if (data.color !== null && !isMapColor(data.color)) return { error: '색상은 #RRGGBB 형식으로 입력해주세요.' }
   const emoji = normalizeEmoji(data.emoji)
   if (emoji.error) return { error: emoji.error }
-  const { error } = await supabase.from('organizations').update({ ...data, emoji: emoji.value }).eq('id', id)
+  const { data: currentOrganization, error: currentOrganizationError } = await supabase
+    .from('organizations')
+    .select('name, previous_names')
+    .eq('id', id)
+    .maybeSingle()
+  if (currentOrganizationError || !currentOrganization) return { error: '조직 정보를 확인하지 못했습니다. 목록을 새로고침해 주세요.' }
+  const previousNames = Array.from(new Set((data.previousNames ?? []).map((value) => value.trim()).filter(Boolean)))
+  const currentName = currentOrganization.name.trim()
+  const nextName = data.name.trim() || currentName
+  if (currentName && currentName !== '미정' && currentName !== nextName && !previousNames.includes(currentName)) {
+    previousNames.unshift(currentName)
+  }
+  const { previousNames: _previousNames, ...organizationData } = data
+  const { error } = await supabase
+    .from('organizations')
+    .update({ ...organizationData, name: nextName, previous_names: previousNames.length > 0 ? previousNames : null, emoji: emoji.value })
+    .eq('id', id)
   if (error) return { error: error.message }
   invalidateAndRevalidate('/admin/organizations')
   invalidateAndRevalidate('/admin/map')

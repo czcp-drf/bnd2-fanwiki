@@ -44,6 +44,7 @@ export type Database = {
         Row: {
           id: string
           name: string
+          previous_names: string[] | null
           category: 'city_hall' | 'public_service' | 'gang' | 'business' | 'illegal' | null
           type:
             | 'police' | 'ems' | 'journalist' | 'traffic' | 'city_hall'

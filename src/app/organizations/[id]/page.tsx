@@ -281,6 +281,12 @@ export default async function OrganizationDetailPage({ params }: Props) {
               )}
             </div>
 
+            {org.previous_names && org.previous_names.length > 0 && (
+              <p className="text-sm text-zinc-400">
+                이전 명칭: {org.previous_names.join(', ')}
+              </p>
+            )}
+
           </div>
 
           <div className="text-right text-sm text-zinc-500 shrink-0">

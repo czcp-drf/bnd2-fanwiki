@@ -12,6 +12,7 @@ type GangOption = { id: string; name: string }
 type Org = {
   id: string
   name: string
+  previous_names: string[] | null
   name_confirmed: boolean
   type: string | null
   category: string | null
@@ -27,6 +28,7 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [name, setName] = useState(org.name)
+  const [previousNames, setPreviousNames] = useState(org.previous_names?.join(', ') ?? '')
   const [nameConfirmed, setNameConfirmed] = useState(org.name_confirmed)
   const [description, setDescription] = useState(org.description ?? '')
   const [color, setColor] = useState(org.color ?? '')
@@ -51,6 +53,7 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
     setSaving(true)
     await updateOrganization(org.id, {
       name: name.trim() || org.name,
+      previousNames: previousNames.split(/[,\n]/).map((value) => value.trim()).filter(Boolean),
       name_confirmed: nameConfirmed,
       description: description.trim() || null,
       color: color.trim() || null,
@@ -95,6 +98,7 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
 
   function cancel() {
     setName(org.name)
+    setPreviousNames(org.previous_names?.join(', ') ?? '')
     setNameConfirmed(org.name_confirmed)
     setDescription(org.description ?? '')
     setColor(org.color ?? '')
@@ -132,6 +136,12 @@ export default function OrgEditRow({ org, gangs = [] }: { org: Org; gangs?: Gang
               onChange={(e) => setName(e.target.value)}
               autoFocus
               className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400/50 focus:outline-none"
+            />
+            <input
+              value={previousNames}
+              onChange={(e) => setPreviousNames(e.target.value)}
+              placeholder="이전 명칭 (쉼표 구분)"
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-400 placeholder:text-zinc-600 focus:border-amber-400/50 focus:outline-none"
             />
             <input
               value={emoji}
