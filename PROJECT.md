@@ -742,4 +742,4 @@ src/
 - 어드민 사건 관리에 `사건 목록 캐시 갱신` 버튼을 추가했습니다. 전용 캐시 태그를 통해 `/events`와 `/api/events` 목록만 갱신하며, 사건 상세 캐시는 별도로 유지합니다.
 - 별도 DB 마이그레이션은 필요하지 않습니다.
 - 검증: `npx tsc --noEmit`, `npm run build`, `git diff --check` 통과.
-- 대상 브랜치: `main` → `deploy/main`. 커밋·푸시 결과는 작업 완료 후 확인합니다.
+- 대상 브랜치: `main` → `deploy/main`. 커밋 `9606bbd` 생성 및 `deploy/main` 푸시 완료를 확인했습니다.
