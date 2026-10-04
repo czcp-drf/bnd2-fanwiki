@@ -6,6 +6,7 @@ import { invalidateWikiCache } from '@/lib/cache/wiki'
 
 function invalidateAndRevalidate(path: string, type?: 'page' | 'layout') {
   invalidateWikiCache()
+  revalidatePath('/api/events')
   if (type) revalidatePath(path, type)
   else revalidatePath(path)
 }

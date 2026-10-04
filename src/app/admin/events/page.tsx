@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import AdminEventsClient from './AdminEventsClient'
+import EventListCacheRefreshButton from './EventListCacheRefreshButton'
 import CacheRefreshButton from '@/components/admin/CacheRefreshButton'
 
 const EVENT_TYPES = ['war', 'crime', 'political', 'social', 'accident', 'highlight', 'other'] as const
@@ -42,6 +43,7 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
           <p className="text-sm text-zinc-500 mt-0.5">총 {data.total}건 · {page}/{data.totalPages}페이지</p>
         </div>
         <div className="flex items-center gap-2">
+          <EventListCacheRefreshButton />
           <CacheRefreshButton scope="events" />
           <Link
             href="/admin/events/new"

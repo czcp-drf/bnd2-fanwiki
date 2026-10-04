@@ -39,8 +39,7 @@ export default function EventArchiveFeed({ initialEvents, type, day, initialHasM
     },
     initialPageParam: 0,
     initialData: { pages: [{ events: initialEvents, total, hasMore: initialHasMore }], pageParams: [0] },
-    getNextPageParam: (lastPage, allPages) => lastPage.hasMore ? allPages.reduce((count, page) => count + page.events.length, 0) : undefined,
-    maxPages: 10,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => lastPage.hasMore ? lastPageParam + lastPage.events.length : undefined,
   })
   const events = query.data.pages.flatMap((page) => page.events)
   const hasMore = Boolean(query.hasNextPage)

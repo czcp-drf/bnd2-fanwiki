@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient } from '@/lib/supabase/public'
 import { BBS_DAYS, type BbsDayKey } from '@/lib/bbs/days'
 
-export const revalidate = 86400
+export const revalidate = 60
 
 const PAGE_SIZE = 12
 const eventTypes = new Set(['war', 'crime', 'political', 'social', 'accident', 'highlight', 'other'])
@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
     .from('events')
     .select('id, title, summary, type, thumbnail_url, occurred_at, is_published, location_x, location_y, created_at, updated_at', { count: 'exact' })
     .eq('is_published', true)
-    .order('occurred_at', { ascending: false })
+    .order('occurred_at', { ascending: false, nullsFirst: false })
+    .order('id', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)
 
   if (type) query = query.eq('type', type)
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
     if (!countError) {
       return NextResponse.json(
         { events: [], total: refreshedCount ?? 0, hasMore: false },
-        { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } },
+        { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60', 'Vercel-CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60' } },
       )
     }
   }
@@ -52,6 +53,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     { events: data ?? [], total: count ?? 0, hasMore: offset + (data?.length ?? 0) < (count ?? 0) },
-    { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' } },
+    { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60', 'Vercel-CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=60' } },
   )
 }

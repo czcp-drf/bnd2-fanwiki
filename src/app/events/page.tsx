@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
+import { WIKI_CACHE_REVALIDATE, WIKI_CACHE_TAGS, WIKI_EVENT_LIST_TAG, WIKI_PUBLIC_TAG } from '@/lib/cache/wiki'
 import type { Metadata } from 'next'
 import type { Event } from '@/types/database'
 import EventTypeFilter from '@/components/events/EventTypeFilter'
@@ -36,7 +36,8 @@ async function getEvents(type: string, dayKey?: BbsDayKey) {
     .from('events')
     .select('id, title, summary, type, thumbnail_url, occurred_at, is_published, location_x, location_y, created_at, updated_at', { count: 'exact' })
     .eq('is_published', true)
-    .order('occurred_at', { ascending: false })
+    .order('occurred_at', { ascending: false, nullsFirst: false })
+    .order('id', { ascending: false })
 
   if (type) query = query.eq('type', type)
   if (dayKey) {
@@ -50,7 +51,7 @@ async function getEvents(type: string, dayKey?: BbsDayKey) {
 
 const getEventsCached = unstable_cache(getEvents, ['wiki-events-list-v2'], {
   revalidate: WIKI_CACHE_REVALIDATE,
-  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events],
+  tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, WIKI_EVENT_LIST_TAG],
 })
 
 const getAvailableEventDayKeys = unstable_cache(async (): Promise<BbsDayKey[]> => {
@@ -68,7 +69,7 @@ const getAvailableEventDayKeys = unstable_cache(async (): Promise<BbsDayKey[]> =
     .map((event) => event.occurred_at)
     .filter((value): value is string => Boolean(value))
   return BBS_DAYS.filter((day) => occurredTimes.some((occurredAt) => isWithinBbsDay(occurredAt, day))).map((day) => day.key)
-}, ['events-available-days-v2'], { revalidate: WIKI_CACHE_REVALIDATE, tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events] })
+}, ['events-available-days-v2'], { revalidate: WIKI_CACHE_REVALIDATE, tags: [WIKI_PUBLIC_TAG, WIKI_CACHE_TAGS.events, WIKI_EVENT_LIST_TAG] })
 
 export default async function EventsPage({ searchParams }: Props) {
   const { type = '', day: dayValue } = await searchParams

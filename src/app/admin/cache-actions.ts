@@ -2,7 +2,7 @@
 
 import { revalidatePath, updateTag } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/auth'
-import { WIKI_CACHE_TAGS, type WikiCacheScope } from '@/lib/cache/wiki'
+import { WIKI_CACHE_TAGS, WIKI_EVENT_LIST_TAG, type WikiCacheScope } from '@/lib/cache/wiki'
 
 const scopes = new Set<WikiCacheScope>(Object.keys(WIKI_CACHE_TAGS) as WikiCacheScope[])
 
@@ -10,7 +10,7 @@ const publicPaths: Record<WikiCacheScope, string[]> = {
   characters: ['/', '/characters', '/characters/[id]', '/search'],
   streamers: ['/', '/streamers', '/streamers/[id]', '/search'],
   organizations: ['/', '/organizations', '/organizations/[id]', '/events/timeline', '/search'],
-  events: ['/', '/events', '/events/[id]', '/events/timeline', '/search'],
+  events: ['/', '/events', '/events/[id]', '/events/timeline', '/search', '/api/events'],
   map: ['/map'],
   relationships: ['/characters/[id]'],
   reports: ['/report'],
@@ -37,5 +37,13 @@ export async function refreshWikiCache(scope: WikiCacheScope): Promise<{ success
   for (const path of adminPaths[scope]) {
     revalidatePath(path, path.includes('[') ? 'page' : undefined)
   }
+  return { success: true }
+}
+
+export async function refreshEventListCache(): Promise<{ success?: true; error?: string }> {
+  await requireAdmin()
+  updateTag(WIKI_EVENT_LIST_TAG)
+  revalidatePath('/events')
+  revalidatePath('/api/events')
   return { success: true }
 }

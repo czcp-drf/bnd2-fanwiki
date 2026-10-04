@@ -4,6 +4,7 @@ import { updateTag } from 'next/cache'
 export const WIKI_PUBLIC_TAG = 'wiki-public'
 export const WIKI_CACHE_REVALIDATE = 60 * 60 * 24
 export const WIKI_DETAIL_CACHE_REVALIDATE = 60 * 60 * 24 * 30
+export const WIKI_EVENT_LIST_TAG = 'wiki-event-list'
 
 export const WIKI_CACHE_TAGS = {
   characters: 'wiki-characters',
