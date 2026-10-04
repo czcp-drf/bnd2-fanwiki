@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import BbsArticleManager from './BbsArticleManager'
 import BbsCacheRefreshButton from './BbsCacheRefreshButton'
+import BbsListCacheRefreshButton from './BbsListCacheRefreshButton'
 
 export const metadata: Metadata = { title: 'BBS 기사 관리' }
 export const dynamic = 'force-dynamic'
@@ -173,5 +174,5 @@ export default async function AdminBbsPage({ searchParams }: { searchParams: Pro
   const page = Number.parseInt(get('page'), 10) || 1
   const filters = { search: get('search'), category: get('category') || 'all', status: get('status') || 'all', reporterId: get('reporter') || 'all', reactionFilter: get('reaction') || 'all', sort: get('sort') || 'latest', pageSize: [10, 20, 30, 40, 50].includes(Number(get('pageSize'))) ? Number(get('pageSize')) : 50 }
   const data = await getBbsAdminData({ page, ...filters })
-  return <div className="space-y-6 p-8"><div className="flex items-start justify-between gap-4"><div><h1 className="text-xl font-black text-white">BBS 기사 관리</h1><p className="mt-1 text-sm text-zinc-500">인게임 기사 등록, 공개 상태와 첨부 이미지를 관리합니다.</p></div><BbsCacheRefreshButton /></div><BbsArticleManager key={`${filters.search}:${filters.category}:${filters.status}:${filters.reporterId}:${filters.reactionFilter}:${filters.sort}:${filters.pageSize}:${data.currentPage}`} articles={data.articles} reporters={data.reporters} characters={data.characters} comments={data.comments} total={data.total} totalPages={data.totalPages} currentPage={data.currentPage} filters={filters} /></div>
+  return <div className="space-y-6 p-8"><div className="flex items-start justify-between gap-4"><div><h1 className="text-xl font-black text-white">BBS 기사 관리</h1><p className="mt-1 text-sm text-zinc-500">인게임 기사 등록, 공개 상태와 첨부 이미지를 관리합니다.</p></div><div className="flex flex-wrap items-start justify-end gap-2"><BbsListCacheRefreshButton /><BbsCacheRefreshButton /></div></div><BbsArticleManager key={`${filters.search}:${filters.category}:${filters.status}:${filters.reporterId}:${filters.reactionFilter}:${filters.sort}:${filters.pageSize}:${data.currentPage}`} articles={data.articles} reporters={data.reporters} characters={data.characters} comments={data.comments} total={data.total} totalPages={data.totalPages} currentPage={data.currentPage} filters={filters} /></div>
 }

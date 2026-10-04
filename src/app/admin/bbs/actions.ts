@@ -201,6 +201,12 @@ export async function refreshBbsCache(): Promise<ActionResult> {
   return { success: true }
 }
 
+export async function refreshBbsListCache(): Promise<ActionResult> {
+  await requireAdmin()
+  revalidateBbsList()
+  return { success: true }
+}
+
 export async function createBbsUploadUrl(data: { fileName: string; contentType: string; size: number }) {
   const contentType = data.contentType.trim().toLowerCase()
   const extension = BBS_ALLOWED_IMAGE_TYPES.get(contentType)

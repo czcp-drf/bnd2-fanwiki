@@ -3,9 +3,9 @@
 import { RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { refreshBbsCache } from './actions'
+import { refreshBbsListCache } from './actions'
 
-export default function BbsCacheRefreshButton() {
+export default function BbsListCacheRefreshButton() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [message, setMessage] = useState('')
@@ -13,12 +13,12 @@ export default function BbsCacheRefreshButton() {
   function handleRefresh() {
     setMessage('')
     startTransition(async () => {
-      const result = await refreshBbsCache()
+      const result = await refreshBbsListCache()
       if (result.success) {
-        setMessage('캐시를 갱신했습니다.')
+        setMessage('목록 캐시를 갱신했습니다.')
         router.refresh()
       } else {
-        setMessage(result.error ?? '캐시 갱신에 실패했습니다.')
+        setMessage(result.error ?? '목록 캐시 갱신에 실패했습니다.')
       }
     })
   }
@@ -29,10 +29,10 @@ export default function BbsCacheRefreshButton() {
         type="button"
         onClick={handleRefresh}
         disabled={isPending}
-        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/5 px-3 text-xs font-medium text-amber-300 transition-colors hover:bg-amber-400/10 disabled:cursor-wait disabled:opacity-60"
       >
-        <RefreshCw size={15} className={isPending ? 'animate-spin' : ''} />
-        {isPending ? '갱신 중...' : '기사 전체 캐시 갱신'}
+        <RefreshCw size={14} className={isPending ? 'animate-spin' : ''} />
+        {isPending ? '갱신 중...' : '기사 목록 캐시 갱신'}
       </button>
       {message && <span className="text-xs text-zinc-500" role="status">{message}</span>}
     </div>
