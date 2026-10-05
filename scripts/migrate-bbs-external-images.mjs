@@ -7,6 +7,7 @@ const BUCKET = 'bbs-media'
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024
 const CACHE_CONTROL = '31536000'
+const QUERY_BATCH_SIZE = 100
 const ALLOWED_TYPES = new Map([
   ['image/jpeg', 'jpg'],
   ['image/jpg', 'jpg'],
@@ -37,6 +38,17 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!supabaseUrl || !serviceRoleKey) throw new Error('NEXT_PUBLIC_SUPABASE_URL과 SUPABASE_SERVICE_ROLE_KEY가 필요합니다.')
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
+
+async function selectByArticleIds(table, columns, articleIds) {
+  const rows = []
+  for (let index = 0; index < articleIds.length; index += QUERY_BATCH_SIZE) {
+    const batch = articleIds.slice(index, index + QUERY_BATCH_SIZE)
+    const { data, error } = await supabase.from(table).select(columns).in('article_id', batch)
+    if (error) return { data: null, error }
+    rows.push(...(data || []))
+  }
+  return { data: rows, error: null }
+}
 
 function writeBackup(manifest, { overwrite = false } = {}) {
   if (!overwrite && existsSync(backupFile)) throw new Error(`백업 파일이 이미 존재합니다. 다른 경로를 지정하세요: ${backupFile}`)
@@ -173,11 +185,11 @@ const articleRows = (articles || [])
   .slice(0, limit)
 const articleIds = articleRows.map((article) => article.id)
 const { data: sourceMappingRows, error: sourceMappingError } = articleIds.length
-  ? await supabase.from('bbs_article_media_sources').select('article_id, source_url, storage_url').in('article_id', articleIds)
+  ? await selectByArticleIds('bbs_article_media_sources', 'article_id, source_url, storage_url', articleIds)
   : { data: [], error: null }
 if (sourceMappingError) throw new Error(`이미지 원본 매핑 조회 실패: ${sourceMappingError.message} (049 migration 적용 여부를 확인하세요.)`)
 const { data: mediaRows, error: mediaError } = articleIds.length
-  ? await supabase.from('bbs_article_media').select('id, article_id, image_url').in('article_id', articleIds)
+  ? await selectByArticleIds('bbs_article_media', 'id, article_id, image_url', articleIds)
   : { data: [], error: null }
 if (mediaError) throw new Error(`기사 첨부 이미지 조회 실패: ${mediaError.message}`)
 

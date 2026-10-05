@@ -3,6 +3,7 @@ import path from 'node:path'
 import { createClient } from '@supabase/supabase-js'
 
 const BUCKET = 'bbs-media'
+const QUERY_BATCH_SIZE = 100
 const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
 const confirmed = args.includes('--confirm')
@@ -25,6 +26,17 @@ if (manifest.bucket !== BUCKET || !Array.isArray(manifest.articles) || !Array.is
 }
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } })
+
+async function selectByArticleIds(table, columns, articleIds) {
+  const rows = []
+  for (let index = 0; index < articleIds.length; index += QUERY_BATCH_SIZE) {
+    const batch = articleIds.slice(index, index + QUERY_BATCH_SIZE)
+    const { data, error } = await supabase.from(table).select(columns).in('article_id', batch)
+    if (error) return { data: null, error }
+    rows.push(...(data || []))
+  }
+  return { data: rows, error: null }
+}
 const articleIds = manifest.articles.map((article) => article.id)
 const { data: currentArticles, error: articleError } = articleIds.length
   ? await supabase.from('bbs_articles').select('id, content, thumbnail_url').in('id', articleIds)
@@ -32,7 +44,7 @@ const { data: currentArticles, error: articleError } = articleIds.length
 if (articleError) throw new Error(`현재 기사 조회 실패: ${articleError.message}`)
 
 const { data: currentMedia, error: mediaError } = articleIds.length
-  ? await supabase.from('bbs_article_media').select('id, article_id, image_url').in('article_id', articleIds)
+  ? await selectByArticleIds('bbs_article_media', 'id, article_id, image_url', articleIds)
   : { data: [], error: null }
 if (mediaError) throw new Error(`현재 첨부 이미지 조회 실패: ${mediaError.message}`)
 
