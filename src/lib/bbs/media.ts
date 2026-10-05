@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { isHttpUrl } from './media-url'
+import { isAllowedBbsVideoUrl, isHttpUrl } from './media-url'
 
 export const BBS_MEDIA_BUCKET = 'bbs-media'
 export const BBS_MEDIA_CACHE_CONTROL = '31536000'
 export const BBS_MEDIA_MAX_SIZE = 10 * 1024 * 1024
+export const BBS_VIDEO_MAX_SIZE = 100 * 1024 * 1024
 
 export const BBS_ALLOWED_IMAGE_TYPES = new Map([
   ['image/jpeg', 'jpg'],
@@ -16,11 +17,17 @@ export const BBS_ALLOWED_IMAGE_TYPES = new Map([
   ['image/avif', 'avif'],
 ])
 
-const STORAGE_PATH_PATTERN = /^articles\/[0-9a-f-]+\/(?:[0-9a-f-]+|[0-9a-f]{64})\.(jpg|png|webp|gif|avif)$/i
+export const BBS_ALLOWED_VIDEO_TYPES = new Map([
+  ['video/webm', 'webm'],
+  ['video/mp4', 'mp4'],
+  ['video/quicktime', 'mov'],
+])
+
+const STORAGE_PATH_PATTERN = /^articles\/[0-9a-f-]+\/(?:[0-9a-f-]+|[0-9a-f]{64})\.(jpg|png|webp|gif|avif|webm|mp4|mov)$/i
 
 type BbsSupabaseClient = SupabaseClient<Database>
 
-export type BbsImageMigrationResult = {
+export type BbsMediaMigrationResult = {
   content: string
   thumbnailUrl: string | null
   uploadedPaths: string[]
@@ -31,6 +38,8 @@ export type BbsImageSourceMapping = {
   sourceUrl: string
   storageUrl: string
 }
+
+export type BbsImageMigrationResult = BbsMediaMigrationResult
 
 function normalizeImageUrl(value: string) {
   return isHttpUrl(value) ? new URL(value.trim()).toString() : null
@@ -61,6 +70,12 @@ export function isAllowedBbsExternalImageUrl(value: string) {
   }
 }
 
+export function isAllowedBbsExternalVideoUrl(value: string) {
+  const normalized = normalizeImageUrl(value)
+  if (!normalized || isBbsStorageUrl(normalized)) return false
+  return isAllowedBbsVideoUrl(normalized)
+}
+
 export function isBbsStoragePath(value: string) {
   return STORAGE_PATH_PATTERN.test(value)
 }
@@ -80,11 +95,39 @@ function collectImageUrls(content: string) {
   return urls
 }
 
+function collectVideoUrls(content: string) {
+  const urls: string[] = []
+  const markdownPattern = /\[([^\]]*)\]\(\s*<?(https?:\/\/[^)\s>]+)>?\s*\)/gi
+  const htmlPattern = /<video\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>/gi
+  const sourcePattern = /<source\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>/gi
+
+  for (const match of content.matchAll(markdownPattern)) {
+    const url = normalizeImageUrl(match[2])
+    if (url && isAllowedBbsVideoUrl(url)) urls.push(url)
+  }
+  for (const pattern of [htmlPattern, sourcePattern]) {
+    for (const match of content.matchAll(pattern)) {
+      const url = normalizeImageUrl(match[1])
+      if (url && isAllowedBbsVideoUrl(url)) urls.push(url)
+    }
+  }
+
+  return urls
+}
+
 export function extractBbsImageUrls(content: string, thumbnailUrl = '') {
   const urls = [...collectImageUrls(content)]
   const thumbnail = normalizeImageUrl(thumbnailUrl)
   if (thumbnail) urls.push(thumbnail)
   return [...new Set(urls)]
+}
+
+export function extractBbsVideoUrls(content: string) {
+  return [...new Set(collectVideoUrls(content))]
+}
+
+export function extractBbsMediaUrls(content: string, thumbnailUrl = '') {
+  return [...new Set([...extractBbsImageUrls(content, thumbnailUrl), ...extractBbsVideoUrls(content)])]
 }
 
 export function getFirstBbsImageUrl(content: string) {
@@ -97,27 +140,31 @@ export function replaceBbsImageUrls(value: string, replacements: Map<string, str
   return result
 }
 
+export const replaceBbsMediaUrls = replaceBbsImageUrls
+
 function getPublicUrl(supabase: BbsSupabaseClient, path: string) {
   return supabase.storage.from(BBS_MEDIA_BUCKET).getPublicUrl(path).data.publicUrl
 }
 
-async function uploadExternalBbsImage(supabase: BbsSupabaseClient, articleId: string, sourceUrl: string) {
-  if (!isAllowedBbsExternalImageUrl(sourceUrl)) throw new Error('허용되지 않은 이미지 원본 주소입니다.')
+async function uploadExternalBbsMedia(supabase: BbsSupabaseClient, articleId: string, sourceUrl: string) {
+  const isVideo = isAllowedBbsExternalVideoUrl(sourceUrl)
+  if (!isVideo && !isAllowedBbsExternalImageUrl(sourceUrl)) throw new Error('허용되지 않은 미디어 원본 주소입니다.')
 
   const response = await fetch(sourceUrl, { redirect: 'follow' })
   if (!response.ok) throw new Error(`이미지 다운로드 실패 (${response.status})`)
-  if (!isAllowedBbsExternalImageUrl(response.url)) throw new Error('허용되지 않은 이미지 리다이렉트입니다.')
+  if (isVideo ? !isAllowedBbsExternalVideoUrl(response.url) : !isAllowedBbsExternalImageUrl(response.url)) throw new Error('허용되지 않은 미디어 리다이렉트입니다.')
 
   const contentType = (response.headers.get('content-type') ?? '').split(';', 1)[0].trim().toLowerCase()
-  const extension = BBS_ALLOWED_IMAGE_TYPES.get(contentType)
-  if (!extension) throw new Error('지원하지 않는 이미지 형식입니다.')
+  const extension = (isVideo ? BBS_ALLOWED_VIDEO_TYPES : BBS_ALLOWED_IMAGE_TYPES).get(contentType)
+  if (!extension) throw new Error(`지원하지 않는 ${isVideo ? '영상' : '이미지'} 형식입니다.`)
   const storageContentType = contentType === 'image/jpg' ? 'image/jpeg' : contentType
+  const maxSize = isVideo ? BBS_VIDEO_MAX_SIZE : BBS_MEDIA_MAX_SIZE
 
   const contentLength = Number(response.headers.get('content-length') ?? 0)
-  if (contentLength > BBS_MEDIA_MAX_SIZE) throw new Error('이미지 용량이 10MB를 초과합니다.')
+  if (contentLength > maxSize) throw new Error(`${isVideo ? '영상' : '이미지'} 용량 제한을 초과합니다.`)
 
   const body = Buffer.from(await response.arrayBuffer())
-  if (!body.length || body.length > BBS_MEDIA_MAX_SIZE) throw new Error('이미지 용량이 10MB를 초과합니다.')
+  if (!body.length || body.length > maxSize) throw new Error(`${isVideo ? '영상' : '이미지'} 용량 제한을 초과합니다.`)
 
   const hash = createHash('sha256').update(body).digest('hex')
   const path = `articles/${articleId}/${hash}.${extension}`
@@ -131,13 +178,13 @@ async function uploadExternalBbsImage(supabase: BbsSupabaseClient, articleId: st
   return { path, publicUrl: getPublicUrl(supabase, path) }
 }
 
-export async function migrateBbsImageFields(
+export async function migrateBbsMediaFields(
   supabase: BbsSupabaseClient,
   articleId: string,
   content: string,
   thumbnailUrl: string | null,
 ): Promise<BbsImageMigrationResult> {
-  const sourceUrls = extractBbsImageUrls(content, thumbnailUrl ?? '')
+  const sourceUrls = extractBbsMediaUrls(content, thumbnailUrl ?? '')
     .filter((url) => !isBbsStorageUrl(url))
 
   const replacements = new Map<string, string>()
@@ -145,7 +192,7 @@ export async function migrateBbsImageFields(
   const sourceMappings: BbsImageSourceMapping[] = []
   try {
     for (const sourceUrl of sourceUrls) {
-      const uploaded = await uploadExternalBbsImage(supabase, articleId, sourceUrl)
+      const uploaded = await uploadExternalBbsMedia(supabase, articleId, sourceUrl)
       replacements.set(sourceUrl, uploaded.publicUrl)
       sourceMappings.push({ sourceUrl, storageUrl: uploaded.publicUrl })
       uploadedPaths.push(uploaded.path)
@@ -163,3 +210,5 @@ export async function migrateBbsImageFields(
 
   return { content: nextContent, thumbnailUrl: nextThumbnail, uploadedPaths, sourceMappings }
 }
+
+export const migrateBbsImageFields = migrateBbsMediaFields

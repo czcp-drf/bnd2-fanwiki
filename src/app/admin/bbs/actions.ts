@@ -15,7 +15,10 @@ import {
   getFirstBbsImageUrl,
   isBbsStoragePath,
   isBbsStorageUrl,
-  migrateBbsImageFields,
+  extractBbsMediaUrls,
+  extractBbsVideoUrls,
+  isAllowedBbsExternalVideoUrl,
+  migrateBbsMediaFields,
   extractBbsImageUrls,
   type BbsImageSourceMapping,
 } from '@/lib/bbs/media'
@@ -65,6 +68,19 @@ export type BbsCommentUpdateInput = {
   createdAt?: string
 }
 
+export type BbsCommentImportRow = {
+  author: string
+  content: string
+  createdAt?: string
+}
+
+export type BbsCommentImportResult = {
+  imported: number
+  skipped: number
+  unmatchedAuthors: string[]
+  error?: string
+}
+
 type ValidatedArticleInput = {
   title: string
   category: string
@@ -107,6 +123,9 @@ function validateArticleInput(input: BbsArticleInput): { error: string } | { dat
   for (const imageUrl of extractBbsImageUrls(content)) {
     const error = validateStorageImageUrl(imageUrl, '본문 이미지')
     if (error) return { error }
+  }
+  for (const videoUrl of extractBbsVideoUrls(content)) {
+    if (!isBbsStorageUrl(videoUrl) && !isAllowedBbsExternalVideoUrl(videoUrl)) return { error: '본문 영상은 Fivemanage 원본 또는 bbs-media Storage URL이어야 합니다.' }
   }
   if (thumbnailUrl) {
     const error = validateStorageImageUrl(thumbnailUrl, '대표 이미지 주소')
@@ -167,7 +186,7 @@ async function removeStoragePaths(supabase: Awaited<ReturnType<typeof requireAdm
 
 function getArticleStoragePaths(content: string, thumbnailUrl: string | null, mediaUrls: string[]) {
   return new Set(
-    [thumbnailUrl ?? '', ...extractBbsImageUrls(content), ...mediaUrls]
+    [thumbnailUrl ?? '', ...extractBbsMediaUrls(content), ...mediaUrls]
       .map((url) => extractStoragePath(url))
       .filter((path): path is string => Boolean(path)),
   )
@@ -327,12 +346,44 @@ export async function createBbsArticle(input: BbsArticleInput): Promise<ActionRe
     return { error: '기사를 등록하지 못했습니다. 입력값과 migration 적용 상태를 확인해 주세요.' }
   }
 
+  let migrated: Awaited<ReturnType<typeof migrateBbsMediaFields>>
+  try {
+    migrated = await migrateBbsMediaFields(supabase, article.id, validated.data.content, validated.data.thumbnailUrl)
+  } catch (migrationError) {
+    await supabase.from('bbs_articles').delete().eq('id', article.id)
+    console.error('BBS article media migration failed:', migrationError instanceof Error ? migrationError.message : migrationError)
+    return { error: '기사 본문 영상을 Storage로 이전하지 못했습니다.' }
+  }
+
+  const { error: migratedArticleError } = await supabase.from('bbs_articles').update({
+    content: migrated.content,
+    thumbnail_url: migrated.thumbnailUrl,
+  }).eq('id', article.id)
+  if (migratedArticleError) {
+    await supabase.from('bbs_articles').delete().eq('id', article.id)
+    await removeStoragePaths(supabase, migrated.uploadedPaths)
+    return { error: 'Storage 미디어 주소를 기사에 반영하지 못했습니다.' }
+  }
+
   const mediaResult = await saveBbsMedia(supabase, article.id, validated.data.media)
   if (mediaResult.error) {
     await supabase.from('bbs_articles').delete().eq('id', article.id)
-    await removeStoragePaths(supabase, validated.data.media.map((item) => item.storagePath).filter((path): path is string => Boolean(path)))
+    await removeStoragePaths(supabase, [
+      ...validated.data.media.map((item) => item.storagePath).filter((path): path is string => Boolean(path)),
+      ...migrated.uploadedPaths,
+    ])
     console.error('BBS article media create failed:', mediaResult.error.code, mediaResult.error.message)
     return { error: '기사 이미지를 등록하지 못했습니다.' }
+  }
+
+  const mappingResult = await saveBbsImageSourceMappings(supabase, article.id, migrated.sourceMappings)
+  if (mappingResult.error) {
+    await supabase.from('bbs_articles').delete().eq('id', article.id)
+    await removeStoragePaths(supabase, [
+      ...validated.data.media.map((item) => item.storagePath).filter((path): path is string => Boolean(path)),
+      ...migrated.uploadedPaths,
+    ])
+    return { error: '기사 미디어 원본 연결을 저장하지 못했습니다.' }
   }
 
   if (validated.data.isPublished) {
@@ -358,12 +409,20 @@ export async function updateBbsArticle(id: string, input: BbsArticleInput): Prom
   if (reporterError || !reporter) return { error: '담당기자를 확인하지 못했습니다.' }
   if (previousArticleError || !previousArticle) return { error: '수정할 기사를 찾을 수 없습니다.' }
 
+  let migrated: Awaited<ReturnType<typeof migrateBbsMediaFields>>
+  try {
+    migrated = await migrateBbsMediaFields(supabase, articleId, validated.data.content, validated.data.thumbnailUrl)
+  } catch (migrationError) {
+    console.error('BBS article media migration failed:', migrationError instanceof Error ? migrationError.message : migrationError)
+    return { error: '기사 본문 영상을 Storage로 이전하지 못했습니다.' }
+  }
+
   const { error } = await supabase.from('bbs_articles').update({
     title: validated.data.title,
     category: validated.data.category,
     summary: validated.data.summary,
-    content: validated.data.content,
-    thumbnail_url: validated.data.thumbnailUrl,
+    content: migrated.content,
+    thumbnail_url: migrated.thumbnailUrl,
     approved_at: validated.data.approvedAt,
     is_published: validated.data.isPublished,
     reporter_character_id: validated.data.reporterCharacterId,
@@ -384,11 +443,16 @@ export async function updateBbsArticle(id: string, input: BbsArticleInput): Prom
     console.error('BBS article image source mapping cleanup failed:', sourceMappingResult.error.message)
     return { error: '기사 이미지 원본 연결을 갱신하지 못했습니다.' }
   }
+  const mappingResult = await saveBbsImageSourceMappings(supabase, articleId, migrated.sourceMappings)
+  if (mappingResult.error) {
+    console.error('BBS article media source mapping save failed:', mappingResult.error.message)
+    return { error: '기사 미디어 원본 연결을 갱신하지 못했습니다.' }
+  }
 
   const previousPaths = getArticleStoragePaths(previousArticle.content, previousArticle.thumbnail_url, mediaResult.oldPaths)
   const nextPaths = getArticleStoragePaths(
-    validated.data.content,
-    validated.data.thumbnailUrl,
+    migrated.content,
+    migrated.thumbnailUrl,
     validated.data.media.map((item) => item.imageUrl),
   )
   await removeStoragePaths(supabase, [...previousPaths].filter((path) => !nextPaths.has(path)))
@@ -469,7 +533,7 @@ export async function importBbsArticles(rows: BbsImportRow[]): Promise<BbsImport
 
     let uploadedPaths: string[] = []
     try {
-      const migrated = await migrateBbsImageFields(supabase, article.id, rawContent, rawThumbnailUrl)
+      const migrated = await migrateBbsMediaFields(supabase, article.id, rawContent, rawThumbnailUrl)
       uploadedPaths = migrated.uploadedPaths
       const { error: imageUpdateError } = await supabase
         .from('bbs_articles')
@@ -477,11 +541,11 @@ export async function importBbsArticles(rows: BbsImportRow[]): Promise<BbsImport
         .eq('id', article.id)
       if (imageUpdateError) throw new Error(imageUpdateError.message)
       const mappingResult = await saveBbsImageSourceMappings(supabase, article.id, migrated.sourceMappings)
-      if (mappingResult.error) throw new Error(`이미지 원본 연결 저장 실패: ${mappingResult.error.message}`)
+      if (mappingResult.error) throw new Error(`미디어 원본 연결 저장 실패: ${mappingResult.error.message}`)
     } catch (imageError) {
       await supabase.from('bbs_articles').delete().eq('id', article.id)
       if (uploadedPaths.length) await supabase.storage.from(BBS_MEDIA_BUCKET).remove(uploadedPaths)
-      const reason = `이미지 이전에 실패했습니다. ${imageError instanceof Error ? imageError.message : ''}`.trim()
+      const reason = `미디어 이전에 실패했습니다. ${imageError instanceof Error ? imageError.message : ''}`.trim()
       errors.push(`${index + 1}번째 기사: ${reason}`)
       failedRows.push({ index: index + 1, row, reason, canUseOriginalUrls: true })
       continue
@@ -628,6 +692,79 @@ export async function createBbsComment(input: BbsCommentInput): Promise<ActionRe
   revalidateBbsAdmin()
   revalidateBbsArticle(articleId)
   return { success: true }
+}
+
+function parseImportedCommentDate(value: string | undefined) {
+  const input = value?.trim()
+  if (!input) return new Date().toISOString()
+  const kstParts = input.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?$/)
+  const parsed = kstParts
+    ? new Date(`${kstParts[1]}-${kstParts[2].padStart(2, '0')}-${kstParts[3].padStart(2, '0')}T${(kstParts[4] ?? '00').padStart(2, '0')}:${kstParts[5] ?? '00'}:00+09:00`)
+    : new Date(input)
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+}
+
+function normalizeCommentAuthor(value: string) {
+  return value.normalize('NFKC').replace(/\s+/g, '').toLocaleLowerCase()
+}
+
+export async function importBbsComments(articleId: string, rows: BbsCommentImportRow[]): Promise<BbsCommentImportResult> {
+  const normalizedArticleId = articleId.trim()
+  if (!UUID_PATTERN.test(normalizedArticleId)) return { imported: 0, skipped: 0, unmatchedAuthors: [], error: '댓글을 등록할 기사를 찾을 수 없습니다.' }
+  if (!Array.isArray(rows) || rows.length === 0) return { imported: 0, skipped: 0, unmatchedAuthors: [], error: '등록할 댓글이 없습니다.' }
+  if (rows.length > 500) return { imported: 0, skipped: 0, unmatchedAuthors: [], error: '한 번에 최대 500개 댓글까지 등록할 수 있습니다.' }
+
+  const supabase = await requireAdmin()
+  const [{ data: article, error: articleError }, { data: characters, error: characterError }, { data: existingComments, error: commentsError }] = await Promise.all([
+    supabase.from('bbs_articles').select('id').eq('id', normalizedArticleId).maybeSingle(),
+    supabase.from('characters').select('id, name'),
+    supabase.from('bbs_article_comments').select('author_name, content, created_at').eq('article_id', normalizedArticleId),
+  ])
+  if (articleError || !article) return { imported: 0, skipped: 0, unmatchedAuthors: [], error: '댓글을 등록할 기사를 찾을 수 없습니다.' }
+  if (characterError) return { imported: 0, skipped: 0, unmatchedAuthors: [], error: '댓글 작성 캐릭터를 확인하지 못했습니다.' }
+  if (commentsError) return { imported: 0, skipped: 0, unmatchedAuthors: [], error: '기존 댓글을 확인하지 못했습니다.' }
+
+  const characterByName = new Map(((characters ?? []) as Array<{ id: string; name: string }>).map((character) => [normalizeCommentAuthor(character.name), character]))
+  const existingKeys = new Set(((existingComments ?? []) as Array<{ author_name: string; content: string; created_at: string }>).map((comment) => `${comment.author_name}\u0000${comment.content}\u0000${comment.created_at}`))
+  const pendingKeys = new Set<string>()
+  const unmatchedAuthors = new Set<string>()
+  const inserts: Array<{ article_id: string; author_character_id: string | null; author_name: string; content: string; created_at: string }> = []
+  let skipped = 0
+
+  for (const row of rows) {
+    const author = String(row?.author ?? '').trim()
+    const content = String(row?.content ?? '').trim()
+    if (!author || !content || content.length > 1000 || author.length > 100) {
+      skipped += 1
+      continue
+    }
+    const createdAt = parseImportedCommentDate(row.createdAt)
+    if (!createdAt) {
+      skipped += 1
+      continue
+    }
+    const character = characterByName.get(normalizeCommentAuthor(author))
+    const authorName = character?.name ?? author
+    if (!character) unmatchedAuthors.add(author)
+    const key = `${authorName}\u0000${content}\u0000${createdAt}`
+    if (existingKeys.has(key) || pendingKeys.has(key)) {
+      skipped += 1
+      continue
+    }
+    pendingKeys.add(key)
+    inserts.push({ article_id: normalizedArticleId, author_character_id: character?.id ?? null, author_name: authorName, content, created_at: createdAt })
+  }
+
+  if (!inserts.length) return { imported: 0, skipped, unmatchedAuthors: [...unmatchedAuthors] }
+  const { error } = await supabase.from('bbs_article_comments').insert(inserts)
+  if (error) {
+    console.error('BBS comment import failed:', error.code, error.message)
+    return { imported: 0, skipped, unmatchedAuthors: [...unmatchedAuthors], error: '댓글을 일괄 등록하지 못했습니다.' }
+  }
+
+  revalidateBbsAdmin()
+  revalidateBbsArticle(normalizedArticleId)
+  return { imported: inserts.length, skipped, unmatchedAuthors: [...unmatchedAuthors] }
 }
 
 export async function updateBbsComment(id: string, input: BbsCommentUpdateInput): Promise<ActionResult> {

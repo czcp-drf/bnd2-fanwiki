@@ -7,6 +7,7 @@ import Select, { type SelectOption } from '@/components/ui/Select'
 import BongstagramDisplayName from '@/app/bongstagram/BongstagramDisplayName'
 import BongstagramProfileAvatar from '@/app/bongstagram/BongstagramProfileAvatar'
 import { createBbsComment, deleteBbsComment, updateBbsComment } from './actions'
+import BbsCommentImport from './BbsCommentImport'
 
 type Character = { id: string; name: string; avatar_url: string | null; streamers: { display_name: string; profile_image_url: string | null } | null }
 type Comment = { id: string; article_id: string; author_character_id: string | null; author_name: string; content: string; created_at: string }
@@ -107,6 +108,7 @@ export default function BbsArticleCommentPanel({ articleId, comments, characters
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
       <div className="flex items-center gap-2 text-xs font-semibold text-zinc-300"><MessageCircle size={14} />댓글 관리 <span className="font-normal text-zinc-600">{comments.length}개</span></div>
+      <BbsCommentImport articleId={articleId} />
       <div className="mt-3 grid gap-2 md:grid-cols-[220px_minmax(0,1fr)_190px_auto] md:items-end">
         <label className="space-y-1"><span className="text-[11px] text-zinc-500">작성 캐릭터</span><Select value={authorCharacterId} onChange={setAuthorCharacterId} options={authorOptions} placeholder="캐릭터 선택" searchable searchPlaceholder="캐릭터 검색" fullWidth disabled={isPending} /></label>
         <label className="space-y-1"><span className="text-[11px] text-zinc-500">댓글 내용</span><textarea value={content} onChange={(event) => setContent(event.target.value)} maxLength={1000} rows={2} placeholder="댓글 내용을 입력해 주세요." disabled={isPending} className="block w-full resize-y rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-amber-400/60 focus:outline-none disabled:opacity-50" /></label>

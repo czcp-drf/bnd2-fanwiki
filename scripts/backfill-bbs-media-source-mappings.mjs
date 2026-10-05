@@ -52,18 +52,24 @@ function isStorageUrl(value) {
   return parsed.origin === new URL(supabaseUrl).origin && parsed.pathname.startsWith(`/storage/v1/object/public/${BUCKET}/`)
 }
 
-function collectImageUrls(content) {
+function collectMediaUrls(content) {
   const urls = []
   const patterns = [
     /!\[[^\]]*\]\(\s*<?(https?:\/\/[^)\s>]+)>?\s*\)/gi,
+    /\[[^\]]*\]\(\s*<?(https?:\/\/[^)\s>]+)>?\s*\)/gi,
     /<img\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>/gi,
+    /<(?:video|source)\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>/gi,
   ]
+  const matches = []
   for (const pattern of patterns) {
     for (const match of String(content || '').matchAll(pattern)) {
       const url = normalizeUrl(match[1])
-      if (url) urls.push(url)
+      const isVideo = /\/phone\.videos\/[^/]+\.(?:webm|mp4|mov)(?:$|\?)/i.test(url ? new URL(url).pathname + new URL(url).search : '')
+      if (url && (pattern === patterns[1] ? isVideo : pattern === patterns[3] ? isVideo : true)) matches.push({ index: match.index ?? 0, url })
     }
   }
+  matches.sort((a, b) => a.index - b.index)
+  for (const match of matches) if (!urls.includes(match.url)) urls.push(match.url)
   return urls
 }
 
@@ -85,10 +91,10 @@ for (const original of manifest.articles) {
     continue
   }
 
-  const originalBody = collectImageUrls(original.content)
-  const currentBody = collectImageUrls(current.content)
+  const originalBody = collectMediaUrls(original.content)
+  const currentBody = collectMediaUrls(current.content)
   if (originalBody.length !== currentBody.length) {
-    skipped.push(`${original.id}: 본문 이미지 수 불일치 (${originalBody.length}/${currentBody.length})`)
+    skipped.push(`${original.id}: 본문 미디어 수 불일치 (${originalBody.length}/${currentBody.length})`)
   }
   for (let index = 0; index < Math.min(originalBody.length, currentBody.length); index += 1) {
     addPair(sourceMappings, original.id, originalBody[index], currentBody[index])

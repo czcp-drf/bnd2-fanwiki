@@ -33,7 +33,7 @@ const restorableIds = new Set(restorableArticles.map((article) => article.id))
 const restorableMedia = manifest.media.filter((media) => restorableIds.has(media.article_id))
 const restorableSourceMappings = originalSourceMappings.filter((mapping) => restorableIds.has(mapping.article_id))
 const storagePaths = manifest.created_storage_paths.filter((storagePath) => (
-  typeof storagePath === 'string' && /^articles\/[0-9a-f-]{36}\/[a-f0-9]{64}\.(jpg|png|webp|gif|avif)$/.test(storagePath)
+  typeof storagePath === 'string' && /^articles\/[0-9a-f-]{36}\/[a-f0-9]{64}\.(jpg|png|webp|gif|avif|webm|mp4|mov)$/.test(storagePath)
 ))
 
 console.log(JSON.stringify({

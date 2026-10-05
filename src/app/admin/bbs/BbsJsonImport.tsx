@@ -147,7 +147,7 @@ export default function BbsJsonImport() {
   const [pending, setPending] = useState(false)
   const [originalUrlPending, setOriginalUrlPending] = useState<string | null>(null)
   const [failedRows, setFailedRows] = useState<BbsImportFailure[]>([])
-  const [message, setMessage] = useState('JSON 파일의 이미지는 Supabase Storage로 이전한 뒤 비공개 기사로 저장합니다.')
+  const [message, setMessage] = useState('JSON 파일의 이미지와 영상은 Supabase Storage로 이전한 뒤 비공개 기사로 저장합니다.')
 
   async function handleFile(file: File) {
     setPending(true)

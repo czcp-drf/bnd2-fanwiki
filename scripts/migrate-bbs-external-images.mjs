@@ -4,7 +4,8 @@ import path from 'node:path'
 import { createClient } from '@supabase/supabase-js'
 
 const BUCKET = 'bbs-media'
-const MAX_SIZE = 10 * 1024 * 1024
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024
 const CACHE_CONTROL = '31536000'
 const ALLOWED_TYPES = new Map([
   ['image/jpeg', 'jpg'],
@@ -13,6 +14,9 @@ const ALLOWED_TYPES = new Map([
   ['image/webp', 'webp'],
   ['image/gif', 'gif'],
   ['image/avif', 'avif'],
+  ['video/webm', 'webm'],
+  ['video/mp4', 'mp4'],
+  ['video/quicktime', 'mov'],
 ])
 const SOURCE_HOST = /(?:^|\.)fivemanage\.com$/i
 
@@ -66,9 +70,11 @@ function isAllowedSource(value) {
 
 function collectImageUrls(content) {
   const urls = []
-  const markdownPattern = /!\[[^\]]*\]\(\s*<?(https?:\/\/[^)\s>]+)>?\s*\)/gi
-  const htmlPattern = /<img\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>/gi
-  for (const pattern of [markdownPattern, htmlPattern]) {
+  const patterns = [
+    /!\[[^\]]*\]\(\s*<?(https?:\/\/[^)\s>]+)>?\s*\)/gi,
+    /<img\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>/gi,
+  ]
+  for (const pattern of patterns) {
     for (const match of content.matchAll(pattern)) {
       const url = normalizeUrl(match[1])
       if (url) urls.push(url)
@@ -77,8 +83,29 @@ function collectImageUrls(content) {
   return urls
 }
 
-function extractImageUrls(content, thumbnailUrl, mediaRows) {
-  const urls = [...collectImageUrls(content)]
+function collectVideoUrls(content) {
+  const urls = []
+  const patterns = [
+    /\[[^\]]*\]\(\s*<?(https?:\/\/[^)\s>]+)>?\s*\)/gi,
+    /<(?:video|source)\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>/gi,
+  ]
+  for (const pattern of patterns) {
+    for (const match of content.matchAll(pattern)) {
+      const url = normalizeUrl(match[1])
+      if (url && /\/phone\.videos\/[^/]+\.(?:webm|mp4|mov)(?:$|\?)/i.test(new URL(url).pathname + new URL(url).search)) urls.push(url)
+    }
+  }
+  return urls
+}
+
+function collectMediaUrls(content) {
+  const urls = []
+  urls.push(...collectImageUrls(content), ...collectVideoUrls(content))
+  return [...new Set(urls)]
+}
+
+function extractMediaUrls(content, thumbnailUrl, mediaRows) {
+  const urls = [...collectMediaUrls(content)]
   const thumbnail = normalizeUrl(thumbnailUrl || '')
   if (thumbnail) urls.push(thumbnail)
   for (const row of mediaRows) {
@@ -88,8 +115,8 @@ function extractImageUrls(content, thumbnailUrl, mediaRows) {
   return [...new Set(urls)]
 }
 
-function countImageReferences(content, thumbnailUrl, mediaRows) {
-  const bodyCount = collectImageUrls(content).length
+function countMediaReferences(content, thumbnailUrl, mediaRows) {
+  const bodyCount = collectMediaUrls(content).length
   const thumbnailCount = normalizeUrl(thumbnailUrl || '') ? 1 : 0
   const mediaCount = mediaRows.filter((row) => normalizeUrl(row.image_url)).length
   return bodyCount + thumbnailCount + mediaCount
@@ -101,7 +128,7 @@ function replaceUrls(value, replacements) {
   return result
 }
 
-async function uploadImage(articleId, sourceUrl) {
+async function uploadMedia(articleId, sourceUrl) {
   if (!isAllowedSource(sourceUrl)) throw new Error(`허용되지 않은 원본 URL: ${sourceUrl}`)
   const response = await fetch(sourceUrl, { redirect: 'follow' })
   if (!response.ok) throw new Error(`${response.status} ${sourceUrl}`)
@@ -110,12 +137,14 @@ async function uploadImage(articleId, sourceUrl) {
   const contentType = (response.headers.get('content-type') || '').split(';', 1)[0].trim().toLowerCase()
   const extension = ALLOWED_TYPES.get(contentType)
   if (!extension) throw new Error(`지원하지 않는 형식 ${contentType || '(없음)'}: ${sourceUrl}`)
+  const isVideo = ['webm', 'mp4', 'mov'].includes(extension)
+  const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE
   const storageContentType = contentType === 'image/jpg' ? 'image/jpeg' : contentType
   const contentLength = Number(response.headers.get('content-length') || 0)
-  if (contentLength > MAX_SIZE) throw new Error(`10MB 초과: ${sourceUrl}`)
+  if (contentLength > maxSize) throw new Error(`${isVideo ? '100MB' : '10MB'} 초과: ${sourceUrl}`)
 
   const body = Buffer.from(await response.arrayBuffer())
-  if (!body.length || body.length > MAX_SIZE) throw new Error(`10MB 초과: ${sourceUrl}`)
+  if (!body.length || body.length > maxSize) throw new Error(`${isVideo ? '100MB' : '10MB'} 초과: ${sourceUrl}`)
 
   const hash = createHash('sha256').update(body).digest('hex')
   const path = `articles/${articleId}/${hash}.${extension}`
@@ -168,15 +197,15 @@ for (const row of sourceMappingRows || []) {
 
 const candidates = articleRows.map((article) => {
   const articleMedia = mediaByArticle.get(article.id) || []
-  const bodyImageCount = collectImageUrls(article.content || '').length
-  const sourceUrls = extractImageUrls(article.content || '', article.thumbnail_url, articleMedia)
+  const bodyMediaCount = collectMediaUrls(article.content || '').length
+  const sourceUrls = extractMediaUrls(article.content || '', article.thumbnail_url, articleMedia)
     .filter((url) => !isStorageUrl(url))
   return {
     article,
     articleMedia,
-    bodyImageCount,
+    bodyMediaCount,
     sourceUrls,
-    referenceCount: countImageReferences(article.content || '', article.thumbnail_url, articleMedia),
+    referenceCount: countMediaReferences(article.content || '', article.thumbnail_url, articleMedia),
   }
 }).filter((candidate) => candidate.sourceUrls.length > 0)
 
@@ -222,10 +251,10 @@ if (!dryRun) {
 }
 
 for (const candidate of candidates) {
-  const { article, articleMedia, bodyImageCount, sourceUrls, referenceCount } = candidate
+  const { article, articleMedia, bodyMediaCount, sourceUrls, referenceCount } = candidate
 
   if (dryRun) {
-    console.log(`[dry-run] ${article.id}: 고유 원본 ${sourceUrls.length}개 / 본문 이미지 ${bodyImageCount}장 / 대표·첨부 포함 ${referenceCount}건`)
+    console.log(`[dry-run] ${article.id}: 고유 원본 ${sourceUrls.length}개 / 본문 미디어 ${bodyMediaCount}개 / 대표·첨부 포함 ${referenceCount}건`)
     changed += 1
     continue
   }
@@ -237,7 +266,7 @@ for (const candidate of candidates) {
     snapshot.status = 'uploading'
     writeBackup(manifest, { overwrite: true })
     for (const sourceUrl of sourceUrls) {
-      const result = await uploadImage(article.id, sourceUrl)
+      const result = await uploadMedia(article.id, sourceUrl)
       replacements.set(sourceUrl, result.url)
       if (result.created) {
         createdPaths.push(result.path)
@@ -285,7 +314,7 @@ for (const candidate of candidates) {
     manifest.migrated_article_ids = [...(manifest.migrated_article_ids || []), article.id]
     writeBackup(manifest, { overwrite: true })
     changed += 1
-    console.log(`[migrated] ${article.id}: 고유 원본 ${sourceUrls.length}개 / 본문 이미지 ${bodyImageCount}장 / 대표·첨부 포함 ${referenceCount}건`)
+    console.log(`[migrated] ${article.id}: 고유 원본 ${sourceUrls.length}개 / 본문 미디어 ${bodyMediaCount}개 / 대표·첨부 포함 ${referenceCount}건`)
   } catch (error) {
     const { error: restoreArticleError } = await supabase.from('bbs_articles').update({
       content: article.content || '',
