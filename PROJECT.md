@@ -751,3 +751,12 @@ src/
 - 별도 DB 마이그레이션은 필요하지 않습니다.
 - 검증: `npx tsc --noEmit`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 커밋 `e59fbdd` 생성 및 `deploy/main` 푸시 완료를 확인했습니다.
+
+## 2026-10-05 BBS 영상 Storage 이전·외부 댓글 등록
+
+- BBS 본문에 포함된 Fivemanage WebM·MP4·MOV 영상을 `bbs-media` Supabase Storage로 자동 이전하고, `BBS_MEDIA_MODE=storage`에서는 Storage URL을, `external`에서는 원본 URL을 사용하도록 확장했습니다. 원본·Storage 매핑은 기존 `bbs_article_media_sources` 테이블을 재사용합니다.
+- JSON 기사 가져오기와 관리자 기사 저장 시 영상 이전을 적용했으며, 기존 미디어 백필·롤백·원본 매핑 복구 스크립트도 영상 형식과 100MB 제한을 지원합니다. 별도 DB 마이그레이션은 필요하지 않습니다.
+- 관리자 BBS 댓글 패널에서 외부 댓글 정제 JSON을 붙여 넣어 일괄 등록할 수 있도록 추가했습니다. 캐릭터명이 일치하면 자동 연결하고, 미일치 작성자명은 보존하며, 동일 댓글은 중복 등록하지 않습니다.
+- `public/bbs/bongnudo-gallery-comments.user.js`에 `bongnudo-gallery.vercel.app` 댓글 정제용 Tampermonkey 스크립트를 추가했습니다.
+- 검증: `npx tsc --noEmit`, 관련 ESLint, `npm run build`, 스크립트 `node --check`, `git diff --check` 통과.
+- 대상 브랜치: `main` → `deploy/main`. 커밋 `f1b9633` 생성 및 `deploy/main` 푸시 완료를 확인했습니다.
