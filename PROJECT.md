@@ -760,3 +760,11 @@ src/
 - `public/bbs/bongnudo-gallery-comments.user.js`에 `bongnudo-gallery.vercel.app` 댓글 정제용 Tampermonkey 스크립트를 추가했습니다.
 - 검증: `npx tsc --noEmit`, 관련 ESLint, `npm run build`, 스크립트 `node --check`, `git diff --check` 통과.
 - 대상 브랜치: `main` → `deploy/main`. 커밋 `f1b9633` 생성 및 `deploy/main` 푸시 완료를 확인했습니다.
+
+## 2026-10-05 BBS 미디어 마이그레이션 배치 조회 보완
+
+- 전체 기사 UUID를 한 번에 Supabase REST `in` 조건으로 조회해 요청 URL이 길어지던 문제를 확인했습니다. 미디어 원본 매핑·첨부 미디어 조회를 100개 단위 배치로 나누어 처리하도록 수정했습니다.
+- 이미지·영상 외부 미디어 마이그레이션 스크립트와 백필 스크립트에 같은 배치 조회 방식을 적용했습니다. 049 마이그레이션 누락이 아닌 요청 크기 문제였으며, DB 구조 변경은 없습니다.
+- 전체 873개 기사 드라이런 검증 결과: 변경 후보 119개, 스킵 754개, 업로드 0개, 실패 0개입니다. 드라이런이므로 실제 Storage 업로드와 기사 수정은 수행하지 않았습니다.
+- 검증: `node --check` 대상 스크립트 2개, 전체 드라이런, `git diff --check` 통과.
+- 대상 브랜치: `main` → `deploy/main`. 코드 커밋 `91cab41` 및 문서 커밋 생성 후 `deploy/main` 푸시 완료를 확인했습니다.
